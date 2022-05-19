@@ -1,0 +1,29 @@
+#
+##### Standard python packages #####
+pandas~=1.4.0
+numpy>=1.18.5
+scipy>=1.3.1
+html5lib>=1.0.1
+urllib3>=1.25.9
+tabulate>=0.8.7
+matplotlib>=3.2.2
+xlsxwriter>=1.2.9
+seaborn>=0.10.1
+xlrd>=1.2.0
+requests>=2.26.0
+openpyxl>=3.0.9
+beautifulsoup4~=4.11.1
+geopy~=2.2.0
+pyyaml~=6.0
+
+#pvlib
+# conda install -c pvlib pvlib
+# https://pvlib-python.readthedocs.io/en/stable/installation.html
+#
+##### git repos #####
+# pvlib
+git+https://github.com/pvlib/pvlib-python.git
+#
+##### Other stuff #####
+# Install numba to speed up solar power calculation:
+#    http://numba.pydata.org/#installing

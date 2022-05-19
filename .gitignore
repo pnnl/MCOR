@@ -1,0 +1,12 @@
+MCOR_error_messages.log
+.DS_Store
+.cache
+.idea
+__pycache__
+venv/
+data/*
+main_files/*
+output/*
+solar_data/*
+creds.yaml
+tests/system_tests/data/solar_data/*

@@ -1,0 +1,3836 @@
+{
+    "1": [
+        {
+            "index_": 0,
+            "month": 1,
+            "ghi_state_to": 2.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 1,
+            "month": 1,
+            "ghi_state_to": 2.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 2,
+            "month": 1,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 3,
+            "month": 1,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 4,
+            "month": 1,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 5,
+            "month": 1,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 6,
+            "month": 1,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 7,
+            "month": 1,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 3,
+            "count_sum": 61,
+            "prob": 0.0491803279
+        },
+        {
+            "index_": 8,
+            "month": 1,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 61,
+            "prob": 0.0491803279
+        },
+        {
+            "index_": 9,
+            "month": 1,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 10,
+            "month": 1,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 11,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 12,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 13,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 14,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 15,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 16,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 17,
+            "month": 1,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 18,
+            "month": 1,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 19,
+            "month": 1,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 61,
+            "prob": 0.0491803279
+        },
+        {
+            "index_": 20,
+            "month": 1,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 21,
+            "month": 1,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 22,
+            "month": 1,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 23,
+            "month": 1,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 61,
+            "prob": 0.0491803279
+        },
+        {
+            "index_": 24,
+            "month": 1,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 25,
+            "month": 1,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 26,
+            "month": 1,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 27,
+            "month": 1,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 28,
+            "month": 1,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 29,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 30,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 61,
+            "prob": 0.0327868852
+        },
+        {
+            "index_": 31,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 32,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 33,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 34,
+            "month": 1,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 61,
+            "prob": 0.0163934426
+        },
+        {
+            "index_": 35,
+            "month": 1,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 61,
+            "prob": 0.0491803279
+        },
+        {
+            "index_": 36,
+            "month": 1,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 6,
+            "count_sum": 61,
+            "prob": 0.0983606557
+        }
+    ],
+    "2": [
+        {
+            "index_": 37,
+            "month": 2,
+            "ghi_state_to": 2.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 38,
+            "month": 2,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 39,
+            "month": 2,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 40,
+            "month": 2,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 41,
+            "month": 2,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 42,
+            "month": 2,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 43,
+            "month": 2,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 44,
+            "month": 2,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 45,
+            "month": 2,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 46,
+            "month": 2,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 47,
+            "month": 2,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 48,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 49,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 50,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 51,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 52,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 56,
+            "prob": 0.0535714286
+        },
+        {
+            "index_": 53,
+            "month": 2,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 54,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 55,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 56,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 57,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 58,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 59,
+            "month": 2,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 60,
+            "month": 2,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 61,
+            "month": 2,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 62,
+            "month": 2,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 63,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 64,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 65,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 66,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 56,
+            "prob": 0.0535714286
+        },
+        {
+            "index_": 67,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 68,
+            "month": 2,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 69,
+            "month": 2,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 70,
+            "month": 2,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 56,
+            "prob": 0.0535714286
+        },
+        {
+            "index_": 71,
+            "month": 2,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 56,
+            "prob": 0.0178571429
+        },
+        {
+            "index_": 72,
+            "month": 2,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 73,
+            "month": 2,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 56,
+            "prob": 0.0357142857
+        },
+        {
+            "index_": 74,
+            "month": 2,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 5,
+            "count_sum": 56,
+            "prob": 0.0892857143
+        }
+    ],
+    "3": [
+        {
+            "index_": 75,
+            "month": 3,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 76,
+            "month": 3,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 77,
+            "month": 3,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 78,
+            "month": 3,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 79,
+            "month": 3,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 80,
+            "month": 3,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 81,
+            "month": 3,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 82,
+            "month": 3,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 83,
+            "month": 3,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 84,
+            "month": 3,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 85,
+            "month": 3,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 86,
+            "month": 3,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 87,
+            "month": 3,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 88,
+            "month": 3,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 89,
+            "month": 3,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 90,
+            "month": 3,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 91,
+            "month": 3,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 92,
+            "month": 3,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 93,
+            "month": 3,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 94,
+            "month": 3,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 95,
+            "month": 3,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 96,
+            "month": 3,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 97,
+            "month": 3,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 98,
+            "month": 3,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 99,
+            "month": 3,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 100,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 101,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 102,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 103,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 104,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 4,
+            "count_sum": 62,
+            "prob": 0.064516129
+        },
+        {
+            "index_": 105,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 106,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 107,
+            "month": 3,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 108,
+            "month": 3,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 109,
+            "month": 3,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 110,
+            "month": 3,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 7,
+            "count_sum": 62,
+            "prob": 0.1129032258
+        }
+    ],
+    "4": [
+        {
+            "index_": 111,
+            "month": 4,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 112,
+            "month": 4,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 113,
+            "month": 4,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 114,
+            "month": 4,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 115,
+            "month": 4,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 116,
+            "month": 4,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 117,
+            "month": 4,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 118,
+            "month": 4,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 119,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 120,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 121,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 122,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 123,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 124,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 125,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 126,
+            "month": 4,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 127,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 128,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 129,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 130,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 131,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 132,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 133,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 134,
+            "month": 4,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 135,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 4,
+            "count_sum": 60,
+            "prob": 0.0666666667
+        },
+        {
+            "index_": 136,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 137,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 2,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 138,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 139,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 140,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 141,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 142,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 143,
+            "month": 4,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 144,
+            "month": 4,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 145,
+            "month": 4,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 13,
+            "count_sum": 60,
+            "prob": 0.2166666667
+        }
+    ],
+    "5": [
+        {
+            "index_": 146,
+            "month": 5,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 147,
+            "month": 5,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 148,
+            "month": 5,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 149,
+            "month": 5,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 150,
+            "month": 5,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 151,
+            "month": 5,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 152,
+            "month": 5,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 153,
+            "month": 5,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 154,
+            "month": 5,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 155,
+            "month": 5,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 156,
+            "month": 5,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 157,
+            "month": 5,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 158,
+            "month": 5,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 159,
+            "month": 5,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 160,
+            "month": 5,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 161,
+            "month": 5,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 162,
+            "month": 5,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 163,
+            "month": 5,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 164,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 165,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 166,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 4,
+            "count_sum": 62,
+            "prob": 0.064516129
+        },
+        {
+            "index_": 167,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 4,
+            "count_sum": 62,
+            "prob": 0.064516129
+        },
+        {
+            "index_": 168,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 169,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 170,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 171,
+            "month": 5,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 172,
+            "month": 5,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 6,
+            "count_sum": 62,
+            "prob": 0.0967741935
+        },
+        {
+            "index_": 173,
+            "month": 5,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 14,
+            "count_sum": 62,
+            "prob": 0.2258064516
+        }
+    ],
+    "6": [
+        {
+            "index_": 174,
+            "month": 6,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 175,
+            "month": 6,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 176,
+            "month": 6,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 177,
+            "month": 6,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 178,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 179,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 180,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 181,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 182,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 183,
+            "month": 6,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 184,
+            "month": 6,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 185,
+            "month": 6,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 186,
+            "month": 6,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 187,
+            "month": 6,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 188,
+            "month": 6,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 189,
+            "month": 6,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 190,
+            "month": 6,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 191,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 192,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 193,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 4,
+            "count_sum": 60,
+            "prob": 0.0666666667
+        },
+        {
+            "index_": 194,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 4,
+            "count_sum": 60,
+            "prob": 0.0666666667
+        },
+        {
+            "index_": 195,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 196,
+            "month": 6,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 197,
+            "month": 6,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 198,
+            "month": 6,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 6,
+            "count_sum": 60,
+            "prob": 0.1
+        },
+        {
+            "index_": 199,
+            "month": 6,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 200,
+            "month": 6,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 21,
+            "count_sum": 60,
+            "prob": 0.35
+        }
+    ],
+    "7": [
+        {
+            "index_": 201,
+            "month": 7,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 202,
+            "month": 7,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 203,
+            "month": 7,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 204,
+            "month": 7,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 205,
+            "month": 7,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 206,
+            "month": 7,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 207,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 208,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 209,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 210,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 211,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 212,
+            "month": 7,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 213,
+            "month": 7,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 7,
+            "count_sum": 62,
+            "prob": 0.1129032258
+        },
+        {
+            "index_": 214,
+            "month": 7,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 215,
+            "month": 7,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 38,
+            "count_sum": 62,
+            "prob": 0.6129032258
+        }
+    ],
+    "8": [
+        {
+            "index_": 216,
+            "month": 8,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 217,
+            "month": 8,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 218,
+            "month": 8,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 219,
+            "month": 8,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 220,
+            "month": 8,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 221,
+            "month": 8,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 222,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 223,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 224,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 225,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 226,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 227,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 228,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 229,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 230,
+            "month": 8,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 231,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 232,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 233,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 234,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 235,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 5,
+            "count_sum": 62,
+            "prob": 0.0806451613
+        },
+        {
+            "index_": 236,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 237,
+            "month": 8,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 238,
+            "month": 8,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 239,
+            "month": 8,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 9,
+            "count_sum": 62,
+            "prob": 0.1451612903
+        },
+        {
+            "index_": 240,
+            "month": 8,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 241,
+            "month": 8,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 21,
+            "count_sum": 62,
+            "prob": 0.3387096774
+        }
+    ],
+    "9": [
+        {
+            "index_": 242,
+            "month": 9,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 243,
+            "month": 9,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 244,
+            "month": 9,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 245,
+            "month": 9,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 246,
+            "month": 9,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 247,
+            "month": 9,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 248,
+            "month": 9,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 249,
+            "month": 9,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 250,
+            "month": 9,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 251,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 252,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 253,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 254,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 255,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 256,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 257,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 258,
+            "month": 9,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 259,
+            "month": 9,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 260,
+            "month": 9,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 261,
+            "month": 9,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 34,
+            "count_sum": 60,
+            "prob": 0.5666666667
+        }
+    ],
+    "10": [
+        {
+            "index_": 262,
+            "month": 10,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 263,
+            "month": 10,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 264,
+            "month": 10,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 265,
+            "month": 10,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 266,
+            "month": 10,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 267,
+            "month": 10,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 268,
+            "month": 10,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 269,
+            "month": 10,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 270,
+            "month": 10,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 271,
+            "month": 10,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 272,
+            "month": 10,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 273,
+            "month": 10,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 274,
+            "month": 10,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 275,
+            "month": 10,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 276,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 277,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 278,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 279,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 280,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 281,
+            "month": 10,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 282,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 283,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 284,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 285,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 286,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 287,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 288,
+            "month": 10,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 2,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 289,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 290,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 291,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 6,
+            "count_sum": 62,
+            "prob": 0.0967741935
+        },
+        {
+            "index_": 292,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 293,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 294,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 295,
+            "month": 10,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 296,
+            "month": 10,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 297,
+            "month": 10,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 298,
+            "month": 10,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 7,
+            "count_sum": 62,
+            "prob": 0.1129032258
+        }
+    ],
+    "11": [
+        {
+            "index_": 299,
+            "month": 11,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 300,
+            "month": 11,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 301,
+            "month": 11,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 302,
+            "month": 11,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 303,
+            "month": 11,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 304,
+            "month": 11,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 305,
+            "month": 11,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 306,
+            "month": 11,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 307,
+            "month": 11,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 308,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 309,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 310,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 311,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 312,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 313,
+            "month": 11,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 314,
+            "month": 11,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 315,
+            "month": 11,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 316,
+            "month": 11,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 317,
+            "month": 11,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 318,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 319,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 320,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 321,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 322,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 323,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 324,
+            "month": 11,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 325,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 326,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 327,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 328,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        },
+        {
+            "index_": 329,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 8,
+            "count": 2,
+            "count_sum": 60,
+            "prob": 0.0333333333
+        },
+        {
+            "index_": 330,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 331,
+            "month": 11,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 332,
+            "month": 11,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 333,
+            "month": 11,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 5,
+            "count_sum": 60,
+            "prob": 0.0833333333
+        },
+        {
+            "index_": 334,
+            "month": 11,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 335,
+            "month": 11,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 1,
+            "count_sum": 60,
+            "prob": 0.0166666667
+        },
+        {
+            "index_": 336,
+            "month": 11,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 60,
+            "prob": 0.05
+        }
+    ],
+    "12": [
+        {
+            "index_": 337,
+            "month": 12,
+            "ghi_state_to": 2.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 338,
+            "month": 12,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 339,
+            "month": 12,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 340,
+            "month": 12,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 341,
+            "month": 12,
+            "ghi_state_to": 3.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 342,
+            "month": 12,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 6,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 343,
+            "month": 12,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 1.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 344,
+            "month": 12,
+            "ghi_state_to": 4.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 345,
+            "month": 12,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 3,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 346,
+            "month": 12,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 347,
+            "month": 12,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 8,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 348,
+            "month": 12,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 349,
+            "month": 12,
+            "ghi_state_to": 5.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 350,
+            "month": 12,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 2.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 351,
+            "month": 12,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 352,
+            "month": 12,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 353,
+            "month": 12,
+            "ghi_state_to": 6.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 354,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 355,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 3.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 356,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 357,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 4.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 358,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 359,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 6,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 360,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 361,
+            "month": 12,
+            "ghi_state_to": 7.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 362,
+            "month": 12,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 363,
+            "month": 12,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 5.0,
+            "cloud_state_to": 7,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 364,
+            "month": 12,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 4,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 365,
+            "month": 12,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 366,
+            "month": 12,
+            "ghi_state_to": 8.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 367,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 6.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 368,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 369,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 4,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 370,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 7.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 371,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 372,
+            "month": 12,
+            "ghi_state_to": 9.0,
+            "dni_state_to": 8.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 373,
+            "month": 12,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 374,
+            "month": 12,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 9.0,
+            "cloud_state_to": 7,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        },
+        {
+            "index_": 375,
+            "month": 12,
+            "ghi_state_to": 10.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 3,
+            "count_sum": 62,
+            "prob": 0.0483870968
+        },
+        {
+            "index_": 376,
+            "month": 12,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 10.0,
+            "cloud_state_to": 0,
+            "count": 2,
+            "count_sum": 62,
+            "prob": 0.0322580645
+        },
+        {
+            "index_": 377,
+            "month": 12,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 0,
+            "count": 6,
+            "count_sum": 62,
+            "prob": 0.0967741935
+        },
+        {
+            "index_": 378,
+            "month": 12,
+            "ghi_state_to": 11.0,
+            "dni_state_to": 11.0,
+            "cloud_state_to": 1,
+            "count": 1,
+            "count_sum": 62,
+            "prob": 0.0161290323
+        }
+    ],
+    "c_order": [
+        "month",
+        "ghi_state_to",
+        "dni_state_to",
+        "cloud_state_to",
+        "count",
+        "count_sum",
+        "prob",
+        "index_"
+    ],
+    "dtypes": {
+        "month": "int64",
+        "ghi_state_to": "float64",
+        "dni_state_to": "float64",
+        "cloud_state_to": "int64",
+        "count": "int64",
+        "count_sum": "int64",
+        "prob": "float64",
+        "index_": "int64"
+    }
+}

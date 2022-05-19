@@ -1,0 +1,44 @@
+{
+  "load_profile": "sample_load_profile.csv",
+  "off_grid_load_profile": null,
+  "system_level": {
+    "latitude": 46.34,
+    "longitude": -119.28,
+    "timezone": "US/Pacific",
+    "altitude": 0,
+    "num_trials": 10,
+    "length_trials": 3
+  },
+  "pv": {
+    "tilt": 21,
+    "azimuth": 180,
+    "pv_racking": "ground",
+    "pv_tracking": "fixed",
+    "spacing_buffer": 2,
+    "suppress_warnings": false,
+    "solar_data_source": "nsrdb",
+    "solar_data_start_year": 1998,
+    "solar_data_end_year": 2020,
+    "solar_source": "nsrdb"
+  },
+  "battery": {
+    "battery_power_to_energy": 0.25,
+    "initial_soc": 1,
+    "one_way_battery_efficiency": 0.9,
+    "one_way_inverter_efficiency": 0.95,
+    "soc_upper_limit": 1,
+    "soc_lower_limit": 0.2,
+    "batt_sizing_method": "longest_night",
+    "percent_at_night": 0.1
+  },
+  "utility_rate": 0.03263,
+  "demand_rate": null,
+  "constraints": [],
+  "ranking_criteria": [{"parameter": "simple_payback_yr",
+                         "order_type": "ascending"}],
+  "existing_components": {},
+  "include_pv": [],
+  "include_batt": [],
+  "net_metering_limits": null,
+  "net_metering_rate": null
+}
