@@ -1657,6 +1657,7 @@ class GridSearchOptimizer(Optimizer):
         # Add title
         plt.title('Comparison of {} and \n{} across system sizes'.
                   format(x_var, y_var), position=(0.5, 1.05))
+        plt.tight_layout()
 
     def plot_compare_sizes(self, var='simple_payback_yr', cmap='BuGn_r'):
         """
