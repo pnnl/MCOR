@@ -10,8 +10,8 @@ Solar power calculations carried out with pvlib-python:
     https://github.com/pvlib/pvlib-python
 
 For an explanation of the pvlib power calculation:
-    http://nbviewer.jupyter.org/github/pvlib/pvlib-python/blob/master/docs/tutorials/pvsystem.ipynb
-    
+    https://github.com/pvlib/pvlib-python/blob/main/docs/tutorials/pvsystem.ipynb
+
 Default solar module selected by choosing a new module similar to the top U.S. installed panel
 according to OpenPV:
     https://openpv.nrel.gov
