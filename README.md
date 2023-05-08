@@ -13,7 +13,7 @@ the systems according to the goals of the site.
 * Python 3
 * pvlib:
   https://github.com/pvlib/pvlib-python.git
-* numba
+* numba (optional) - 
   Install numba to speed up solar power calculation:
   http://numba.pydata.org/#installing
   
@@ -53,7 +53,7 @@ Output data from an MCOR run is saved here (Excel and pkl files).
 Includes downloaded NREL solar data and generated solar profile files that are created when
 running MCOR.
 
-### testing/
+### tests/
 Unit and integration tests.
 
 ### alternative_solar_profiles.py
@@ -67,8 +67,8 @@ Classes:
 Standalone functions:
 * date_parser
 
-### creds.py
-Includes credentials for NREL api key.
+### creds.yaml
+Includes credentials for NREL api key. Needs to be created upon MCOR installation/set-up. 
 
 ### config.py
 Includes repository paths.
@@ -140,7 +140,12 @@ Standalone functions:
 * ...various custom validation functions
 
 ## Contact
-For questions, please reach out to sarah.newman@pnnl.gov
+For questions, please reach out to mcor@pnnl.gov
+
+## Citation
+For analyses performed using MCOR, please cite the following paper:
+
+Newman, S., Shiozawa, K., Follum, J., Barrett, E., Douville, T., Hardy, T., and Solana, A., 2020. “A comparison of PV resource modeling for sizing microgrid components”, Renewable Energy, vol. 162, pp 831-843. 
 
 ## Disclaimer Notice
 This material was prepared as an account of work sponsored by an agency of the United States Government.  Neither the United States Government nor the United States Department of Energy, nor Battelle, nor any of their employees, nor any jurisdiction or organization that has cooperated in the development of these materials, makes any warranty, express or implied, or assumes any legal liability or responsibility for the accuracy, completeness, or usefulness or any information, apparatus, product, software, or process disclosed, or represents that its use would not infringe privately owned rights.
