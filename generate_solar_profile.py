@@ -748,9 +748,11 @@ def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
                 elif source == 'himawari':
                     dataset = 'himawari-download'
                     interval = 30
-                else:
+                elif source == 'nsrdb' and name <= 2020:
                     dataset = 'psm3-download'
                     interval = 30
+                elif source == 'nsrdb' and name > 2020:
+                    dataset = 'psm3-2-2-download'
                 url = f'https://developer.nrel.gov/api/nsrdb/v2/solar/' \
                       f'{dataset}.csv?api_key={key}&email={email}'
                 payload = f'wkt=POINT({longitude}+{latitude})&names={name}&{attributes}' \

@@ -19,7 +19,7 @@ dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt",,,,
 duration,int,1,86400,,,,,
 net_metering_rate,"int,float",0,1,,,,,
 electricity_rate,"int,float",0,1,,,,,
-end_year,int,1998,2020,,,,,
+end_year,int,1998,2021,,,,,
 existing,bool,,,,,,,
 existing_components,dict,,,,,check_existing_components,,"Existing components can only include PV, Battery, Generator, or FuelTank objects, and have keys 'pv', 'batt',  'gen', or 'fuel_tank'."
 filter_constraints,list,,,,,check_filter_constraints,,"The filter_constraints list must contain dictionaries with the format:  {parameter, type, value} where parameter can be any of the following: capital_cost_usd, pv_area_ft2, annual_benefits_usd, simple_payback_yr,  fuel_used_gal mean, fuel_used_gal most-conservative, pv_capacity, or pv_percent mean and type can be [max, min] and value is the maximum or minimum allowable value."
@@ -141,5 +141,5 @@ fuel_tank_size,"int,float",0,10000000,,,,,
 om_cost,"int,float",0,500,,,,,
 demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
 demand_rate,"int,float",0,50,,,,,
-solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2016. The Himawari dataset only contains data from 2016-2020
+solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2021. The Himawari dataset only contains data from 2016-2020.
 scenario_criteria,str,,,"pv,gen",,,,

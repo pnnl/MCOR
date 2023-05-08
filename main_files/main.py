@@ -48,7 +48,7 @@ if __name__ == "__main__":
     #   covers East Asia and the Pacific Islands. It has data from 2016-2020.
     solar_data_source = 'nsrdb'
     solar_data_start_year = 1998  # the first year of historical solar data
-    solar_data_end_year = 2020  # the last year of historical solar data
+    solar_data_end_year = 2021  # the last year of historical solar data
 
     # Battery
     battery_power_to_energy = 0.25
