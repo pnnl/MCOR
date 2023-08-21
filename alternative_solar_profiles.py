@@ -48,7 +48,7 @@ class AlternativeSolarProfiles:
 
         num_trials: Number of solar profiles to create
 
-        length_trials: Length of solar profiles in days
+        length_trials: Length of solar profiles in hours
 
         start_year: Start year for solar data download
 
@@ -402,7 +402,7 @@ class AlternativeSolarProfiles:
             (self.nrel_data_df['hour'] >= self.cloud_hours[0]) &
             (self.nrel_data_df['hour'] < self.cloud_hours[1])].groupby(
             ['year', 'month', 'day'])['cloud_type'].apply(
-            lambda x: stats.mode(x).mode[0])
+            lambda x: stats.mode(x).mode[0])  # lambda x: x.mode(x).mode[0])
         daily_data = daily_data.merge(
             daily_cloud_type.reset_index(name='cloud_state'),
             left_on=['year', 'month', 'day'],
@@ -608,7 +608,7 @@ class AlternativeSolarProfiles:
             self.state_prob_daily: dataframe holding the probabilities of transition to a
                 given daily state, given the from-state.
             self.num_trials: number of solar profiles to generate
-            self.length_trials: length of profiles in days
+            self.length_trials: length of profiles in hours
 
         outputs:
             self.solar_trials: dict containing a dataframe for each trial
@@ -717,7 +717,7 @@ class AlternativeSolarProfiles:
             start_datetimes: list of datetime objects. If set as None (default), these are
                 generated randomly.
             self.nrel_data_df: historical solar data
-            self.length_trials: number of days in each trial
+            self.length_trials: number of hours in each trial
             self.num_trials: number of trials to generate
 
         outputs
@@ -727,12 +727,12 @@ class AlternativeSolarProfiles:
 
         # Randomly generate start times for each trial
         if start_datetimes is None:
-            start_datetimes = self.nrel_data_df.iloc[:-self.length_trials * 24].sample(
+            start_datetimes = self.nrel_data_df.iloc[:-self.length_trials].sample(
                 self.num_trials)['datetime'].values
 
         # Create a date range object for each start datetime
         date_ranges = [pd.date_range(start=start_date,
-                                     periods=self.length_trials * 24,
+                                     periods=self.length_trials,
                                      freq='H')
                        for start_date in start_datetimes]
 
@@ -805,7 +805,7 @@ class AlternativeSolarProfiles:
 
         inputs:
             date_range: datetimeindex object for the trial
-            self.length_trials: length of profiles in days
+            self.length_trials: length of profiles in hours
             self.state_prob_daily_grouped: dataframe holding the probabilities of transition
                 to a given daily state, given the from-state, grouped by month and from-state.
             self.simple_prob_daily_grouped: dataframe holding the probabilities of
@@ -979,7 +979,7 @@ class AlternativeSolarProfiles:
             night_states: list containing a Boolean indicating if it is night-time for each
                 hour in the day
             current_state: array with hourly state from previous hour
-            self.length_trials: length of profiles in days
+            self.length_trials: length of profiles in hours
             self.nrel_data_df: historical solar data
             self.state_prob_hourly_grouped: dataframe holding the probabilities of transition
                 to a given daily state, given the from-state, grouped by month, hour,
@@ -1088,8 +1088,12 @@ def date_parser(month, day, year, hour):
 if __name__ == "__main__":
     # Used for testing
     t = dt.datetime.utcnow()
+
+    # convert days to hours
+    days_to_hours = 24
+
     asp = AlternativeSolarProfiles(latitude=46.34, longitude=-119.28,
-                                   num_trials=10, length_trials=14,
+                                   num_trials=10, length_trials=14 * days_to_hours,
                                    max_iter=200, multithreading=False)
     asp.create_state_transition_matrices()
     print('time for setup: {}'.format(dt.datetime.utcnow()-t))

@@ -90,7 +90,7 @@ class SolarProfileGenerator:
     
         num_trials: Number of solar profiles to create
     
-        length_trials: Length of solar profiles in days
+        length_trials: Length of solar profiles in hours
 
         pv_racking: Type of pv racking (options: [roof, ground, carport])
             Default = ground
@@ -545,7 +545,7 @@ class SolarProfileGenerator:
 
         # Create a date range object for each start datetime
         date_ranges = [pd.date_range(start=start_date,
-                                     periods=self.length_trials * 24,
+                                     periods=self.length_trials,
                                      freq='H')
                        for start_date in start_datetimes]
 

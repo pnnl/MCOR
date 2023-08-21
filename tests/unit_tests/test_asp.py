@@ -375,7 +375,7 @@ class TestASP(unittest.TestCase):
 
         # for each date range assert they have the appropriate number of
         #   datetime objects and that they are that many hours apart
-        range_length = self.asp.length_trials * 24
+        range_length = self.asp.length_trials
         for date_range in test_ranges:
             self.assertEqual(len(date_range), range_length)
             first_hour = date_range[0]
@@ -466,7 +466,7 @@ class TestASP(unittest.TestCase):
             self.load_daily_grouped_probabilities()
 
         # create date_range to generate random states for
-        range_length = self.asp.length_trials * 24
+        range_length = self.asp.length_trials
         date_range = pd.date_range(start='2009-02-09 15:00:00', periods=range_length,
                                    freq='H')
 
@@ -605,7 +605,7 @@ class TestASP(unittest.TestCase):
         daily_state.index = daily_state.index.date
 
         # create date_range to generate random states for
-        range_length = self.asp.length_trials * 24
+        range_length = self.asp.length_trials
         date_range = pd.date_range(start='2009-02-09 15:00:00', periods=range_length,
                                    freq='H')
 
