@@ -117,6 +117,8 @@ if __name__ == "__main__":
     # Go back to main working directory
     os.chdir('..')
 
+    days_to_hours = 24
+
     # Define parameters and populate dict for run_mcor()
     input_dict = {}
 
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     input_dict["system_inputs"]["timezone"] = 'US/Pacific'
     input_dict["system_inputs"]["altitude"] = 0
     input_dict["system_inputs"]["num_trials"] = 200
-    input_dict["system_inputs"]["length_trials"] = 14
+    input_dict["system_inputs"]["length_trials"] = 14 * days_to_hours
 
     # PV dictionary
     input_dict["pv_inputs"] = {}
