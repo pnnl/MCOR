@@ -1611,7 +1611,7 @@ class GridSearchOptimizer(Optimizer):
         assumptions_sheet.write(12, 1, '', bold_bottomborder)
         assumptions_sheet.set_column(0, 1, 30, index_format)
 
-        writer.save()
+        writer.close()
 
     def plot_compare_metrics(self, x_var='simple_payback_yr',
                              y_var='capital_cost_usd', cmap='BuGn_r'):

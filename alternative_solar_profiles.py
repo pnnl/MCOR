@@ -387,7 +387,8 @@ class AlternativeSolarProfiles:
         """
 
         # Aggregate historical data to daily values
-        daily_data = self.nrel_data_df.groupby(['year', 'month', 'day']).sum().reset_index()
+        daily_data = self.nrel_data_df.drop(columns=['datetime']).groupby(
+            ['year', 'month', 'day']).sum().reset_index()
 
         # Calculate states (bins) for daily ghi and dni data
         daily_data['ghi_state'] = np.round(daily_data['ghi'] /
@@ -402,7 +403,7 @@ class AlternativeSolarProfiles:
             (self.nrel_data_df['hour'] >= self.cloud_hours[0]) &
             (self.nrel_data_df['hour'] < self.cloud_hours[1])].groupby(
             ['year', 'month', 'day'])['cloud_type'].apply(
-            lambda x: stats.mode(x).mode[0])
+            lambda x: stats.mode(x, keepdims=True).mode[0])
         daily_data = daily_data.merge(
             daily_cloud_type.reset_index(name='cloud_state'),
             left_on=['year', 'month', 'day'],
@@ -797,7 +798,7 @@ class AlternativeSolarProfiles:
         self.state_prob_daily_grouped = {
             label: dataframe for label, dataframe in state_prob_daily_groups}
         self.simple_prob_daily_grouped = {
-            label: dataframe for label, dataframe in simple_prob_daily_groups}
+            label[0]: dataframe for label, dataframe in simple_prob_daily_groups}
 
     def generate_random_state_daily(self, date_range):
         """
