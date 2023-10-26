@@ -277,6 +277,7 @@ class GridSearchOptimizer(Optimizer):
                  net_metering_limits=None,
                  generator_buffer=1.1,
                  gen_power_percent=(), existing_components={},
+                 existing_generator=True,
                  off_grid_load_profile=None,
                  output_tmy=False, validate=True):
 
@@ -299,6 +300,7 @@ class GridSearchOptimizer(Optimizer):
         self.generator_buffer = generator_buffer
         self.gen_power_percent = gen_power_percent
         self.existing_components = existing_components
+        self.existing_generator = existing_generator
         self.off_grid_load_profile = off_grid_load_profile
         self.output_tmy = output_tmy
         self.load_profiles = []
@@ -319,6 +321,7 @@ class GridSearchOptimizer(Optimizer):
                          'battery_params': battery_params,
                          'duration': duration,
                          'gen_power_percent': gen_power_percent,
+                         'existing_generator': existing_generator,
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
                          'system_costs': system_costs}
@@ -389,7 +392,7 @@ class GridSearchOptimizer(Optimizer):
         # Calculate round-trip efficiency based on battery and inverter
         #   efficiency
         system_rte = self.battery_params['one_way_battery_efficiency'] ** 2 \
-            * self.battery_params['one_way_inverter_efficiency'] ** 2
+                     * self.battery_params['one_way_inverter_efficiency'] ** 2
 
         # Calculate the amount of pv energy lost through
         #   charging/discharging batteries at the net zero capacity
@@ -462,7 +465,7 @@ class GridSearchOptimizer(Optimizer):
         excess_pv['pv_base'] = self.tmy_solar.values
         for size in pv_sizes:
             excess_pv[int(size)] = excess_pv['pv_base'] * size
-            excess_pv['{}_exported'.format(int(size))] = excess_pv[int(size)]\
+            excess_pv['{}_exported'.format(int(size))] = excess_pv[int(size)] \
                                                          - excess_pv['load']
         excess_pv[excess_pv < 0] = 0
 
@@ -854,9 +857,14 @@ class GridSearchOptimizer(Optimizer):
                 log_error(message)
                 raise Exception(message)
 
-            # Size and dispatch generator
-            simulation.size_single_generator(
-                self.system_costs['generator_costs'], validate=False)
+            if not self.existing_generator:
+                # Size and dispatch generator
+                simulation.size_single_generator(
+                    self.system_costs['generator_costs'], validate=False)
+            else:
+                simulation.calc_existing_generator_dispatch(
+                    self.system_costs['generator_costs'], validate=False
+                )
 
             # Add the results to the lists
             results_summary['pv_percent'] += \
@@ -922,33 +930,47 @@ class GridSearchOptimizer(Optimizer):
         if not len(self.output_system_grid):
             self.run_sims()
 
-        # Results columns
-        metrics = ['pv_capacity', 'battery_capacity', 'battery_power',
-                   'generator_power', 'fuel_tank_size_gal',
-                   'capital_cost_usd', 'pv_capital', 'battery_capital',
-                   'generator_capital', 'fuel_tank_capital', 'pv_o&m',
-                   'battery_o&m', 'generator_o&m', 'pv_area_ft2',
-                   'annual_benefits_usd', 'demand_benefits_usd',
-                   'simple_payback_yr', 'pv_percent mean',
-                   'batt_percent mean', 'gen_percent mean',
-                   'generator_power_kW mean', 'generator_power_kW std',
-                   'generator_power_kW most-conservative',
-                   'fuel_used_gal mean', 'fuel_used_gal std',
-                   'fuel_used_gal most-conservative']
+        if not self.existing_generator:
+            # Results columns
+            metrics = ['pv_capacity', 'battery_capacity', 'battery_power',
+                       'generator_power', 'fuel_tank_size_gal',
+                       'capital_cost_usd', 'pv_capital', 'battery_capital',
+                       'generator_capital', 'fuel_tank_capital', 'pv_o&m',
+                       'battery_o&m', 'generator_o&m', 'pv_area_ft2',
+                       'annual_benefits_usd', 'demand_benefits_usd',
+                       'simple_payback_yr', 'pv_percent mean',
+                       'batt_percent mean', 'gen_percent mean',
+                       'generator_power_kW mean', 'generator_power_kW std',
+                       'generator_power_kW most-conservative',
+                       'fuel_used_gal mean', 'fuel_used_gal std',
+                       'fuel_used_gal most-conservative']
+        else:
+            # Results columns
+            metrics = ['pv_capacity', 'battery_capacity', 'battery_power',
+                       'generator_power', 'fuel_tank_size_gal',
+                       'capital_cost_usd', 'pv_capital', 'battery_capital',
+                       'generator_capital', 'fuel_tank_capital', 'pv_o&m',
+                       'battery_o&m', 'generator_o&m', 'pv_area_ft2',
+                       'annual_benefits_usd', 'demand_benefits_usd',
+                       'simple_payback_yr', 'pv_percent mean',
+                       'batt_percent mean', 'gen_percent mean',
+                       'fuel_used_gal mean', 'fuel_used_gal std',
+                       'fuel_used_gal most-conservative']
 
-        # Add columns for displaying information about smaller generator sizes
-        for perc in self.gen_power_percent:
-            metrics += ['{}%_smaller_gen_size'.format(perc),
-                        '{}%_smaller_gen_typical_fuel_gal'.format(perc),
-                        '{}%_smaller_gen_conservative_fuel_gal'.format(perc),
-                        '{}%_smaller_gen_cost'.format(perc),
-                        '{}%_smaller_gen_scenarios_not_met'.format(perc),
-                        '{}%_smaller_gen_hours_not_met_average'.format(perc),
-                        '{}%_smaller_gen_hours_not_met_max'.format(perc),
-                        '{}%_smaller_gen_kWh_not_met_average'.format(perc),
-                        '{}%_smaller_gen_kWh_not_met_max'.format(perc),
-                        '{}%_smaller_gen_max_%_kW_not_met_average'.format(perc),
-                        '{}%_smaller_gen_max_%_kW_not_met_max'.format(perc)]
+        if not self.existing_generator:
+            # Add columns for displaying information about smaller generator sizes
+            for perc in self.gen_power_percent:
+                metrics += ['{}%_smaller_gen_size'.format(perc),
+                            '{}%_smaller_gen_typical_fuel_gal'.format(perc),
+                            '{}%_smaller_gen_conservative_fuel_gal'.format(perc),
+                            '{}%_smaller_gen_cost'.format(perc),
+                            '{}%_smaller_gen_scenarios_not_met'.format(perc),
+                            '{}%_smaller_gen_hours_not_met_average'.format(perc),
+                            '{}%_smaller_gen_hours_not_met_max'.format(perc),
+                            '{}%_smaller_gen_kWh_not_met_average'.format(perc),
+                            '{}%_smaller_gen_kWh_not_met_max'.format(perc),
+                            '{}%_smaller_gen_max_%_kW_not_met_average'.format(perc),
+                            '{}%_smaller_gen_max_%_kW_not_met_max'.format(perc)]
 
         # Create dataframe to hold results
         self.results_grid = pd.DataFrame(columns=metrics)
@@ -975,7 +997,7 @@ class GridSearchOptimizer(Optimizer):
             system.set_outputs(results_summary, validate=False)
 
             # Turn results into a dataframe
-            system_row = pd.DataFrame.from_dict(results_summary).transpose().\
+            system_row = pd.DataFrame.from_dict(results_summary).transpose(). \
                 stack()
             system_row.index = [' '.join(col).strip()
                                 for col in system_row.index.values]
@@ -1181,12 +1203,12 @@ class GridSearchOptimizer(Optimizer):
             if scenario_criteria == 'pv':
                 # Find the outage periods with the max and min PV
                 criteria_dict = {key: val.sum() for key, val
-                          in enumerate(self.power_profiles)}
+                                 in enumerate(self.power_profiles)}
                 scenario_label = 'Solar Irradiance Scenario'
             else:
                 # Find the outage periods with the max and min generator runtime
                 criteria_dict = {key: val for key, val
-                          in enumerate(system.outputs['fuel_used_gal'])}
+                                 in enumerate(system.outputs['fuel_used_gal'])}
                 scenario_label = 'Fuel Consumption Scenario'
             max_scenario = max(criteria_dict, key=criteria_dict.get)
             min_scenario = min(criteria_dict, key=criteria_dict.get)
@@ -1284,7 +1306,7 @@ class GridSearchOptimizer(Optimizer):
             for plot_num, (system_name, _) in enumerate(
                     self.results_grid.iloc[
                     fig_num * plot_per_fig:fig_num * plot_per_fig + num_plots].
-                    iterrows()):
+                            iterrows()):
                 # Plot the maximum PV outage dispatch
                 ax = fig.add_subplot(num_plots, 2, plot_num * 2 + 1)
                 self.get_system(system_name).plot_dispatch(max_pv, ax=ax)
@@ -1383,13 +1405,13 @@ class GridSearchOptimizer(Optimizer):
         if 'generator' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
                 '{} units of {}kW'.format(
-                self.existing_components['generator'].num_units,
-                self.existing_components['generator'].rated_power)
+                    self.existing_components['generator'].num_units,
+                    self.existing_components['generator'].rated_power)
         if 'battery' in self.existing_components:
             inputs['Existing Equipment'].loc['Battery'] = \
                 '{}kW, {}kWh'.format(
-                self.existing_components['battery'].power,
-                self.existing_components['battery'].batt_capacity)
+                    self.existing_components['battery'].power,
+                    self.existing_components['battery'].batt_capacity)
         if 'fuel_tank' in self.existing_components:
             inputs['Existing Equipment'].loc['FuelTank'] = \
                 '{}gal'.format(self.existing_components['fuel_tank'].tank_size)
@@ -1416,7 +1438,7 @@ class GridSearchOptimizer(Optimizer):
 
         assumptions['Generator'] = pd.DataFrame.from_dict(
             {'sizing buffer': '{:.0f}%'.format(
-                self.generator_buffer*100-100)}, orient='index')
+                self.generator_buffer * 100 - 100)}, orient='index')
 
         return inputs, assumptions
 
@@ -1459,27 +1481,27 @@ class GridSearchOptimizer(Optimizer):
 
         # Rename columns
         format_results.rename(columns=
-            {'pv_capacity': 'PV Capacity',
-             'battery_capacity': 'Battery Capacity',
-             'battery_power': 'Battery Power',
-             'generator_power_kW mean': 'Generator Power (typical scenario)',
-             'generator_power_kW most-conservative':
-                 'Generator Power (conservative scenario)',
-             'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
-             'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
-             'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
-             'generator_capital': 'Generator Capital',
-             'fuel_tank_capital': 'Fuel Tank Capital',
-             'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
-             'generator_o&m': 'Generator O&M',
-             'annual_benefits_usd': 'Annual PV Net-meter Revenue',
-             'demand_benefits_usd': 'Annual PV Demand Savings',
-             'simple_payback_yr': 'Simple Payback',
-             'pv_percent mean': 'PV Percent',
-             'batt_percent mean': 'Battery Percent',
-             'gen_percent mean': 'Generator Percent',
-             'fuel_used_gal mean': 'Fuel used (average scenario)',
-             'fuel_used_gal most-conservative': 'Fuel used (conservative scenario)'},
+                              {'pv_capacity': 'PV Capacity',
+                               'battery_capacity': 'Battery Capacity',
+                               'battery_power': 'Battery Power',
+                               'generator_power_kW mean': 'Generator Power (typical scenario)',
+                               'generator_power_kW most-conservative':
+                                   'Generator Power (conservative scenario)',
+                               'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
+                               'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
+                               'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
+                               'generator_capital': 'Generator Capital',
+                               'fuel_tank_capital': 'Fuel Tank Capital',
+                               'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
+                               'generator_o&m': 'Generator O&M',
+                               'annual_benefits_usd': 'Annual PV Net-meter Revenue',
+                               'demand_benefits_usd': 'Annual PV Demand Savings',
+                               'simple_payback_yr': 'Simple Payback',
+                               'pv_percent mean': 'PV Percent',
+                               'batt_percent mean': 'Battery Percent',
+                               'gen_percent mean': 'Generator Percent',
+                               'fuel_used_gal mean': 'Fuel used (average scenario)',
+                               'fuel_used_gal most-conservative': 'Fuel used (conservative scenario)'},
                               inplace=True)
 
         # Add units
@@ -1628,20 +1650,20 @@ class GridSearchOptimizer(Optimizer):
 
         # Check that vars exist in results grid
         if x_var not in self.results_grid.columns or y_var not in self.results_grid.columns:
-            return('ERROR: {} or {} are not valid output metrics, please '
-                   'choose one of the following options: {}'.format(
-                    x_var, y_var, ', '.join(self.results_grid.columns.values)))
+            return ('ERROR: {} or {} are not valid output metrics, please '
+                    'choose one of the following options: {}'.format(
+                x_var, y_var, ', '.join(self.results_grid.columns.values)))
 
         # Make pv and batt sizes categorical, so exact sizes are shown
         #   in the legend
         results_mod = self.results_grid.copy()
         results_mod['pv_capacity'] = results_mod['pv_capacity'].apply(
-            lambda x: str(int(x))+'kW')
-        pv_order = [str(elem2)+'kW' for elem2 in np.flipud(
+            lambda x: str(int(x)) + 'kW')
+        pv_order = [str(elem2) + 'kW' for elem2 in np.flipud(
             np.sort([int(elem[:-2]) for elem in results_mod['pv_capacity'].unique()]))]
         results_mod['battery_power'] = results_mod['battery_power'].apply(
-            lambda x: str(int(x))+'kW')
-        batt_order = [str(elem2)+'kW' for elem2 in np.flipud(
+            lambda x: str(int(x)) + 'kW')
+        batt_order = [str(elem2) + 'kW' for elem2 in np.flipud(
             np.sort([int(elem[:-2]) for elem in results_mod['battery_power'].unique()]))]
 
         # Create plot
@@ -1724,7 +1746,7 @@ def get_electricity_rate(location, validate=True):
 
         # Return the electricity rate for that state in $/kWh
         return rates.set_index('Name').loc[
-                   state, 'Average retail price (cents/kWh)'] / 100
+            state, 'Average retail price (cents/kWh)'] / 100
 
     except Exception as e:
         # If there is an error, return the median electricity rate

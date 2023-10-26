@@ -208,7 +208,7 @@ def check_sitename(sitename, path, start_year, end_year):
     if sitename not in dirs:
         return False
     files = os.listdir(os.path.join(path, 'nrel', sitename))
-    for year in range(start_year, end_year+1):
+    for year in range(start_year, end_year + 1):
         if '{}_{}.csv'.format(sitename, year) not in files:
             return False
     return True
@@ -325,6 +325,10 @@ def check_existing_components(existing_components):
         validate_parameter(key, val, data_type=[type_key[key]])
     return True
 
+
+def check_existing_generator(existing_generator):
+    print("test")
+    return True
 
 def check_net_metering_limits(net_metering_limits):
     """ Check that net metering limits have the format:
@@ -743,7 +747,7 @@ def check_temperature(temperature):
         converted_index = pd.to_datetime(temperature.index).map(
             lambda x: x.replace(year=2017))
     except:
-        message = 'The annual temperature profile must have a datetime index,'\
+        message = 'The annual temperature profile must have a datetime index,' \
                   ' and not contain leap days.'
         log_error(message)
         raise Exception(message)
@@ -751,7 +755,7 @@ def check_temperature(temperature):
     # Check that the index has all of the expected values
     comp_index = pd.date_range(start='1/1/2017', end='1/1/2018', freq='H')[:-1]
     if len(set(comp_index).symmetric_difference(set(converted_index))):
-        message = 'The annual temperature profile must begin on January 1 at '\
+        message = 'The annual temperature profile must begin on January 1 at ' \
                   '00:00:00 and have no missing values.'
         log_error(message)
         return False
@@ -854,7 +858,7 @@ def check_inverter(inverter):
                        **CONSTRAINTS_DICT['inverter_database'])
     inverter_name_params = CONSTRAINTS_DICT['inverter_name']
     inverter_name_params['custom_args'] = {'inverter_database':
-                                           inverter['database']}
+                                               inverter['database']}
     validate_parameter('inverter_name', inverter['model'], **inverter_name_params)
 
     return True
@@ -938,7 +942,7 @@ def check_solar_source(solar_source, start_year, end_year):
 
     if (solar_source == 'nsrdb') and \
             (not {start_year, end_year}.issubset(set(range(1998, 2022)))):
-        message = "NREL's NSRDB dataset only covers years 1998-2021. "\
+        message = "NREL's NSRDB dataset only covers years 1998-2021. " \
                   'Please check the start/end years.'
         log_error(message)
         return False
@@ -964,7 +968,7 @@ def annual_load_profile_warnings(annual_load_profile):
 
     # Check frequencies of data
     # Calculate load profile periodogram
-    freq, power = periodogram(annual_load_profile.values, fs=1/3600)
+    freq, power = periodogram(annual_load_profile.values, fs=1 / 3600)
     pg = pd.DataFrame(power, index=freq, columns=['power'])
 
     # Get the peak frequency
@@ -998,9 +1002,9 @@ def annual_load_profile_warnings(annual_load_profile):
     if len(daily_sum_outliers) or len(daily_max_outliers) or len(daily_min_outliers):
         warning_message += 'There are suspicious values for the following ' \
                            'days: {}. '.format(
-                                set(pd.concat([daily_sum_outliers,
-                                               daily_min_outliers,
-                                               daily_max_outliers]).index))
+            set(pd.concat([daily_sum_outliers,
+                           daily_min_outliers,
+                           daily_max_outliers]).index))
     if int(min_period) not in [23, 24, 25] or int(second_period) not in range(165, 172):
         warning_message += 'The load profile does not have natural periods ' \
                            'at 24 hours and/or 1 week. '
@@ -1035,8 +1039,8 @@ def normalize_profile(annual_load_profile):
     load_dow = load_season_norm.groupby('dow')['load'].median()
     load_season_weekly_norm = annual_load_profile.reset_index().apply(
         lambda x: x[annual_load_profile.name] -
-        load_monthly[x[annual_load_profile.index.name].month] -
-        load_dow[x[annual_load_profile.index.name].dayofweek], axis=1)
+                  load_monthly[x[annual_load_profile.index.name].month] -
+                  load_dow[x[annual_load_profile.index.name].dayofweek], axis=1)
     load_season_weekly_norm.index = annual_load_profile.index
 
     # Normalize hourly trend
@@ -1046,9 +1050,9 @@ def normalize_profile(annual_load_profile):
     load_hourly = load_season_weekly_norm.groupby('hour')['load'].median()
     load_normalized = annual_load_profile.reset_index().apply(
         lambda x: x[annual_load_profile.name] -
-        load_monthly[x[annual_load_profile.index.name].month] -
-        load_dow[x[annual_load_profile.index.name].dayofweek] -
-        load_hourly[x[annual_load_profile.index.name].hour], axis=1)
+                  load_monthly[x[annual_load_profile.index.name].month] -
+                  load_dow[x[annual_load_profile.index.name].dayofweek] -
+                  load_hourly[x[annual_load_profile.index.name].hour], axis=1)
     load_normalized.index = annual_load_profile.index
 
     return load_normalized
@@ -1070,11 +1074,11 @@ def chauvenet_outliers(data):
 
     # For each data point, calculate the likelihood that that value is drawn
     # from the underlying distribution
-    data_df['num_stds'] = data_df['data'].apply(lambda x: np.abs((x-avg)/std))
-    data_df['prob'] = data_df['num_stds'].apply(lambda x: (1-norm.cdf(x))*2)
+    data_df['num_stds'] = data_df['data'].apply(lambda x: np.abs((x - avg) / std))
+    data_df['prob'] = data_df['num_stds'].apply(lambda x: (1 - norm.cdf(x)) * 2)
 
     # Determine if each point is an outlier
-    data_df['outlier'] = data_df['prob'].apply(lambda x: x < 1/(2*len(data_df)))
+    data_df['outlier'] = data_df['prob'].apply(lambda x: x < 1 / (2 * len(data_df)))
 
     return data_df[data_df['outlier']]
 
@@ -1093,11 +1097,11 @@ def strings_warnings(strings, module_name, inverter_name):
     # Check that the DC/AC ratio is within a reasonable range
     string_warnings = ''
     dc = module_name['capacity'] * strings['mods_per_string'] * 1000 \
-        * strings['strings_per_inv']
+         * strings['strings_per_inv']
     ac = inverter['Paco']
-    if not 1 <= dc/ac <= 1.1:
+    if not 1 <= dc / ac <= 1.1:
         string_warnings += 'The DC/AC ratio for your PV system is {:.2f}. We recommend a ' \
-                           'value between 1 and 1.1.'.format(dc/ac)
+                           'value between 1 and 1.1.'.format(dc / ac)
 
     # Check string parameters against inverter voltage and current
     system_voltage = module['V_oc_ref'] * strings['mods_per_string']
@@ -1142,6 +1146,7 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_fuel_curve_model': check_fuel_curve_model,
                     'check_outputs': check_outputs,
                     'check_existing_components': check_existing_components,
+                    'check_existing_generator': check_existing_generator,
                     'check_annual_load_profile': check_annual_load_profile,
                     'check_net_metering_limits': check_net_metering_limits,
                     'check_location': check_location,

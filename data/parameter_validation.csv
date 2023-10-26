@@ -22,6 +22,7 @@ electricity_rate,"int,float",0,1,,,,,
 end_year,int,1998,2021,,,,,
 existing,bool,,,,,,,
 existing_components,dict,,,,,check_existing_components,,"Existing components can only include PV, Battery, Generator, or FuelTank objects, and have keys 'pv', 'batt',  'gen', or 'fuel_tank'."
+existing_generator,bool,,,,,check_existing_generator,,
 filter_constraints,list,,,,,check_filter_constraints,,"The filter_constraints list must contain dictionaries with the format:  {parameter, type, value} where parameter can be any of the following: capital_cost_usd, pv_area_ft2, annual_benefits_usd, simple_payback_yr,  fuel_used_gal mean, fuel_used_gal most-conservative, pv_capacity, or pv_percent mean and type can be [max, min] and value is the maximum or minimum allowable value."
 fuel_curve_degree,int,1,3,,,,,
 fuel_curve_model,dict,,,,,check_fuel_curve_model,,"The generator fuel curve model must be of the form {'1/4 Load (gal/hr)': val, '1/2 Load (gal/hr)': val, '3/4 Load (gal/hr)': val,
