@@ -132,6 +132,10 @@ class PVBattGenSimulator(Simulator):
         
         get_load_duration_df: Returns load_duration+df attribute
 
+        get_pv_avg: Returns mean of self.dispatch_df['pv_power'] attribute (excluding 0's)
+
+        get_pv_max: Returns max of self.dispatch_df['pv_power'] attribute
+
     Calculated Attributes
     ----------
 
@@ -500,6 +504,16 @@ class PVBattGenSimulator(Simulator):
         
     def get_load_duration_df(self):
         return self.load_duration_df
+
+    def get_pv_avg(self):
+        non_zero_pv_power = self.dispatch_df[self.dispatch_df['pv_power'] != 0]
+        if len(non_zero_pv_power) > 0:
+            return non_zero_pv_power['pv_power'].mean()
+        else:
+            return 0
+
+    def get_pv_peak(self):
+        return self.dispatch_df['pv_power'].max()
 
 
 def calculate_load_duration(grouped_load, validate=True):

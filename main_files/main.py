@@ -16,6 +16,7 @@ from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, SimpleLiIonBattery, Generator, FuelTank
 
 
+
 def run_mcor(input_dict):
     system_inputs = input_dict["system_inputs"]
     pv_inputs = input_dict["pv_inputs"]
@@ -107,6 +108,7 @@ def run_mcor(input_dict):
     optim.rank_results(ranking_criteria_inputs["ranking_criteria"])
 
     return optim, spg
+
 
 if __name__ == "__main__":
 
@@ -218,6 +220,7 @@ if __name__ == "__main__":
     # Other SolarProfileGenerator inputs dictionary
     input_dict["other_SolarProfileGenerator_inputs"] = {}
     input_dict["other_SolarProfileGenerator_inputs"]["suppress_warnings"] = False
+    input_dict["other_SolarProfileGenerator_inputs"]["save_timeseries_json"] = False
 
     # Settings for dispatch plots
     # To plot the scenarios with min/max pv, set 'scenario_criteria' to 'pv', to plot
@@ -241,3 +244,6 @@ if __name__ == "__main__":
     # Save results
     optim.save_results_to_file(spg, save_filename)
     pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
+
+    if input_dict["other_SolarProfileGenerator_inputs"]["save_timeseries_json"]:
+        optim.save_timeseries_to_json(spg, save_filename)

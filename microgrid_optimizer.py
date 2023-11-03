@@ -251,6 +251,8 @@ class GridSearchOptimizer(Optimizer):
         save_results_to_file: Saves inputs, assumptions, and results to
             an excel file
 
+        save_timeseries_to_json: Saves time series data to a json file
+
     Calculated Attributes
     ----------
 
@@ -814,7 +816,9 @@ class GridSearchOptimizer(Optimizer):
         # Create lists to hold dispatch outputs
         results_summary = {'pv_percent': [], 'batt_percent': [],
                            'gen_percent': [], 'storage_recovery_percent': [],
-                           'fuel_used_gal': [], 'generator_power_kW': []}
+                           'fuel_used_gal': [], 'generator_power_kW': [],
+                           'pv_avg_load': [], 'pv_peak_load': []}
+
 
         # Create empty load duration dictionaries to hold hours, kWh, and
         #   kW not met at each generator size
@@ -871,6 +875,10 @@ class GridSearchOptimizer(Optimizer):
                 [simulation.get_fuel_used()]
             results_summary['generator_power_kW'] += \
                 [simulation.get_generator_power()]
+            results_summary['pv_avg_load'] += \
+                [simulation.get_pv_avg()]
+            results_summary['pv_peak_load'] += \
+                [simulation.get_pv_peak()]
 
             # Add load duration data
             grouped_load = simulation.get_load_duration_df()
@@ -929,8 +937,9 @@ class GridSearchOptimizer(Optimizer):
                    'generator_capital', 'fuel_tank_capital', 'pv_o&m',
                    'battery_o&m', 'generator_o&m', 'pv_area_ft2',
                    'annual_benefits_usd', 'demand_benefits_usd',
-                   'simple_payback_yr', 'pv_percent mean',
-                   'batt_percent mean', 'gen_percent mean',
+                   'simple_payback_yr',
+                   'pv_avg_load mean','pv_peak_load mean', 'pv_peak_load most-conservative',
+                   'pv_percent mean', 'batt_percent mean', 'gen_percent mean',
                    'generator_power_kW mean', 'generator_power_kW std',
                    'generator_power_kW most-conservative',
                    'fuel_used_gal mean', 'fuel_used_gal std',
@@ -962,6 +971,10 @@ class GridSearchOptimizer(Optimizer):
             # For each metric, calculate mean and standard deviation
             results_summary = {key: {'mean': np.mean(val), 'std': np.std(val)}
                                for key, val in outputs.items()}
+
+            # Calculate worst-case scenario metric for peak pv load
+            results_summary['pv_peak_load']['most-conservative'] = \
+                max(outputs['pv_peak_load'])
 
             # Calculate worst-case scenario metric for generator size
             results_summary['generator_power_kW']['most-conservative'] = \
@@ -1452,10 +1465,12 @@ class GridSearchOptimizer(Optimizer):
              'pv_capital', 'battery_capital', 'generator_capital',
              'fuel_tank_capital', 'pv_o&m', 'battery_o&m', 'generator_o&m',
              'annual_benefits_usd', 'demand_benefits_usd',
-             'simple_payback_yr', 'pv_percent mean', 'batt_percent mean',
+             'simple_payback_yr',
+             'pv_avg_load mean','pv_peak_load mean','pv_peak_load most-conservative',
+             'pv_percent mean', 'batt_percent mean',
              'gen_percent mean', 'fuel_used_gal mean',
              'fuel_used_gal most-conservative'] + list(
-                format_results.columns[26:])]
+                format_results.columns[29:])]
 
         # Rename columns
         format_results.rename(columns=
@@ -1475,6 +1490,9 @@ class GridSearchOptimizer(Optimizer):
              'annual_benefits_usd': 'Annual PV Net-meter Revenue',
              'demand_benefits_usd': 'Annual PV Demand Savings',
              'simple_payback_yr': 'Simple Payback',
+             'pv_avg_load mean' : 'Mean PV Load Met',
+             'pv_peak_load mean' : 'Average Peak PV Load Met',
+             'pv_peak_load most-conservative' : 'Max Peak PV Load Met',
              'pv_percent mean': 'PV Percent',
              'batt_percent mean': 'Battery Percent',
              'gen_percent mean': 'Generator Percent',
@@ -1485,7 +1503,7 @@ class GridSearchOptimizer(Optimizer):
         # Add units
         units = ['kW', 'kWh', 'kW', 'kW', 'kW', 'gallons', 'ft^2', '$', '$',
                  '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
-                 '$/year', 'years', '%', '%', '%', 'gallons', 'gallons']
+                 '$/year', 'years', 'kW', 'kW', 'kW', '%', '%', '%', 'gallons', 'gallons']
         for _ in self.gen_power_percent:
             units += ['kW', 'gallons', 'gallons', '$', '', '', '', 'kWh',
                       'kWh', 'kW', 'kW']
@@ -1612,6 +1630,23 @@ class GridSearchOptimizer(Optimizer):
         assumptions_sheet.set_column(0, 1, 30, index_format)
 
         writer.save()
+
+    def save_timeseries_to_json(self, spg, filename='simulation_results'):
+        # Parse time series outputs from dispatch dataframes
+        ts_outputs = {}
+        for system_name, system_obj in self.output_system_grid.items():
+            ts_outputs[system_name] = []
+            for sim in system_obj.simulations.values():
+                df = sim.dispatch_df
+                df = df[['load', 'pv_power', 'battery_soc', 'delta_battery_power', 'load_not_met']]
+                df.rename(columns={'load_not_met': 'gen_power'}, inplace=True)
+                df = df.reset_index()
+                df['index'] = df['index'].apply(lambda x: x.strftime('%Y-%m-%d %X'))
+                df_dict = df.to_dict(orient='list')
+                ts_outputs[system_name] += [df_dict]
+
+        with open('output/{}_timeseries.json'.format(filename), 'w') as f:
+            json.dump(ts_outputs, f, indent=2)
 
     def plot_compare_metrics(self, x_var='simple_payback_yr',
                              y_var='capital_cost_usd', cmap='BuGn_r'):
