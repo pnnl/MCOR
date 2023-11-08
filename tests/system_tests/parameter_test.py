@@ -556,7 +556,7 @@ class TestParameters(unittest.TestCase):
         # Check that for different latitude and longitude, pv and battery sizes are different
         self.latitude = self.latitude + 5
         self.longitude = self.longitude - 3
-        self.length_trials = self.length_trials * 24
+        self.length_trials = self.length_trials
         optim = self.run_main(generate_solar_data=True, generate_solar_profiles=True)
         self.compare_series('pv_capacity', 'not_equal', optim)
         self.compare_series('battery_capacity', 'not_equal', optim)
@@ -566,7 +566,7 @@ class TestParameters(unittest.TestCase):
         #   error
         self.latitude = -18.04
         self.longitude = 178.04
-        self.length_trials = self.length_trials * 24
+        self.length_trials = self.length_trials
         self.timezone = 'Pacific/Fiji'
         self.solar_source = 'himawari'
         self.solar_data_start_year = 2016
