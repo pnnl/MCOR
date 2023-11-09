@@ -332,12 +332,12 @@ class SolarProfileGenerator:
 
         # Create directory to hold data
         if '{}_{}_{}d_{}t'.format(
-                self.latitude, self.longitude, int(self.length_trials),
+                self.latitude, self.longitude, int(self.length_trials/24),
                 int(self.num_trials)) not in \
                 os.listdir(os.path.join(SOLAR_DATA_DIR, 'solar_profiles')):
             os.mkdir(os.path.join(
                 SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials),
+                    self.latitude, self.longitude, int(self.length_trials/24),
                     int(self.num_trials))))
 
         # Extract trial data
@@ -367,7 +367,7 @@ class SolarProfileGenerator:
             # Save to file
             solar_profile.to_csv(os.path.join(
                 SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials),
+                    self.latitude, self.longitude, int(self.length_trials/24),
                     int(self.num_trials)),
                 '{}_{}_solar_trial_{}.csv'.format(self.latitude,
                                                   self.longitude, i)))
@@ -387,7 +387,7 @@ class SolarProfileGenerator:
             try:
                 solar = pd.read_csv(os.path.join(
                     SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                        self.latitude, self.longitude, int(self.length_trials),
+                        self.latitude, self.longitude, int(self.length_trials/24),
                         int(self.num_trials)),
                     '{}_{}_solar_trial_{}.csv'.format(self.latitude, self.longitude, i)),
                     index_col=0, parse_dates=[0])
@@ -398,7 +398,7 @@ class SolarProfileGenerator:
                     solar['temp'] = pd.read_csv(os.path.join(
                         SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
                             self.latitude, self.longitude,
-                            int(self.length_trials),
+                            int(self.length_trials/24),
                             int(self.num_trials)),
                         '{}_{}_temp_trial_{}.csv'.format(self.latitude, self.longitude, i)),
                         index_col=0, parse_dates=[0]).values
