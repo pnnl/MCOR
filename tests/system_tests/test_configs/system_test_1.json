@@ -7,7 +7,7 @@
     "timezone": "US/Pacific",
     "altitude": 0,
     "num_trials": 10,
-    "length_trials": 3
+    "length_trials": 72
   },
   "pv": {
     "tilt": 21,
