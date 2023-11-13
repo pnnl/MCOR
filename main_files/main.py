@@ -210,7 +210,7 @@ if __name__ == "__main__":
                     capital_cost=191000, ideal_minimum_load=0.3,
                     loading_level_to_add_unit=0.9,
                     loading_level_to_remove_unit=0.3, validate=True)
-    input_dict["existing_components_inputs"]["existing_components"] = {'gen': input_dict["existing_components_inputs"]["existing_generator"]}
+    input_dict["existing_components_inputs"]["existing_components"] = {'generator': input_dict["existing_components_inputs"]["existing_generator"]}
 
     # Specific PV and battery sizes dictionary
     input_dict["specific_pv_battery_sizes_inputs"] = {}

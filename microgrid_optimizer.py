@@ -913,13 +913,14 @@ class GridSearchOptimizer(Optimizer):
         results_summary['load_duration']['max_%_kW_not_met_max'] = \
             max_kW_not_met.fillna(0).max(axis=1)
 
-        # Find the simulation with the largest generator and add that
-        #   generator object to the system
-        max_gen_sim_num = \
-            np.where(results_summary['generator_power_kW']
-                     == max(results_summary['generator_power_kW']))[0][0]
-        max_gen_sim = system.get_simulation(max_gen_sim_num)
-        system.add_component(max_gen_sim.generator_obj, validate=False)
+        if not self.existing_generator:
+            # Find the simulation with the largest generator and add that
+            #   generator object to the system
+            max_gen_sim_num = \
+                np.where(results_summary['generator_power_kW']
+                         == max(results_summary['generator_power_kW']))[0][0]
+            max_gen_sim = system.get_simulation(max_gen_sim_num)
+            system.add_component(max_gen_sim.generator_obj, validate=False)
 
         return results_summary, system
 
@@ -1465,52 +1466,96 @@ class GridSearchOptimizer(Optimizer):
         # Re-format column and index names
         format_results = self.results_grid.copy(deep=True)
 
-        # Re-order columns
-        format_results = format_results[
-            ['pv_capacity', 'battery_capacity', 'battery_power',
-             'generator_power_kW mean',
-             'generator_power_kW most-conservative', 'fuel_tank_size_gal',
-             'pv_area_ft2', 'capital_cost_usd',
-             'pv_capital', 'battery_capital', 'generator_capital',
-             'fuel_tank_capital', 'pv_o&m', 'battery_o&m', 'generator_o&m',
-             'annual_benefits_usd', 'demand_benefits_usd',
-             'simple_payback_yr', 'pv_percent mean', 'batt_percent mean',
-             'gen_percent mean', 'fuel_used_gal mean',
-             'fuel_used_gal most-conservative'] + list(
-                format_results.columns[26:])]
+        if not self.existing_generator:
+            # Re-order columns
+            format_results = format_results[
+                ['pv_capacity', 'battery_capacity', 'battery_power',
+                 'generator_power_kW mean',
+                 'generator_power_kW most-conservative', 'fuel_tank_size_gal',
+                 'pv_area_ft2', 'capital_cost_usd',
+                 'pv_capital', 'battery_capital', 'generator_capital',
+                 'fuel_tank_capital', 'pv_o&m', 'battery_o&m', 'generator_o&m',
+                 'annual_benefits_usd', 'demand_benefits_usd',
+                 'simple_payback_yr', 'pv_percent mean', 'batt_percent mean',
+                 'gen_percent mean', 'fuel_used_gal mean',
+                 'fuel_used_gal most-conservative'] + list(
+                    format_results.columns[26:])]
+        else:
+            # Re-order columns
+            format_results = format_results[
+                ['pv_capacity', 'battery_capacity', 'battery_power', 'fuel_tank_size_gal',
+                 'pv_area_ft2', 'capital_cost_usd',
+                 'pv_capital', 'battery_capital', 'generator_capital',
+                 'fuel_tank_capital', 'pv_o&m', 'battery_o&m', 'generator_o&m',
+                 'annual_benefits_usd', 'demand_benefits_usd',
+                 'simple_payback_yr', 'pv_percent mean', 'batt_percent mean',
+                 'gen_percent mean', 'fuel_used_gal mean',
+                 'fuel_used_gal most-conservative'] + list(
+                    format_results.columns[26:])]
 
-        # Rename columns
-        format_results.rename(columns=
-                              {'pv_capacity': 'PV Capacity',
-                               'battery_capacity': 'Battery Capacity',
-                               'battery_power': 'Battery Power',
-                               'generator_power_kW mean': 'Generator Power (typical scenario)',
-                               'generator_power_kW most-conservative':
-                                   'Generator Power (conservative scenario)',
-                               'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
-                               'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
-                               'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
-                               'generator_capital': 'Generator Capital',
-                               'fuel_tank_capital': 'Fuel Tank Capital',
-                               'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
-                               'generator_o&m': 'Generator O&M',
-                               'annual_benefits_usd': 'Annual PV Net-meter Revenue',
-                               'demand_benefits_usd': 'Annual PV Demand Savings',
-                               'simple_payback_yr': 'Simple Payback',
-                               'pv_percent mean': 'PV Percent',
-                               'batt_percent mean': 'Battery Percent',
-                               'gen_percent mean': 'Generator Percent',
-                               'fuel_used_gal mean': 'Fuel used (average scenario)',
-                               'fuel_used_gal most-conservative': 'Fuel used (conservative scenario)'},
-                              inplace=True)
+        if not self.existing_generator:
+            # Rename columns
+            format_results.rename(columns=
+                                  {'pv_capacity': 'PV Capacity',
+                                   'battery_capacity': 'Battery Capacity',
+                                   'battery_power': 'Battery Power',
+                                   'generator_power_kW mean': 'Generator Power (typical scenario)',
+                                   'generator_power_kW most-conservative':
+                                       'Generator Power (conservative scenario)',
+                                   'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
+                                   'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
+                                   'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
+                                   'generator_capital': 'Generator Capital',
+                                   'fuel_tank_capital': 'Fuel Tank Capital',
+                                   'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
+                                   'generator_o&m': 'Generator O&M',
+                                   'annual_benefits_usd': 'Annual PV Net-meter Revenue',
+                                   'demand_benefits_usd': 'Annual PV Demand Savings',
+                                   'simple_payback_yr': 'Simple Payback',
+                                   'pv_percent mean': 'PV Percent',
+                                   'batt_percent mean': 'Battery Percent',
+                                   'gen_percent mean': 'Generator Percent',
+                                   'fuel_used_gal mean': 'Fuel used (average scenario)',
+                                   'fuel_used_gal most-conservative': 'Fuel used (conservative scenario)'},
+                                  inplace=True)
+        else:
+            # Rename columns
+            format_results.rename(columns=
+                                  {'pv_capacity': 'PV Capacity',
+                                   'battery_capacity': 'Battery Capacity',
+                                   'battery_power': 'Battery Power',
+                                   'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
+                                   'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
+                                   'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
+                                   'generator_capital': 'Generator Capital',
+                                   'fuel_tank_capital': 'Fuel Tank Capital',
+                                   'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
+                                   'generator_o&m': 'Generator O&M',
+                                   'annual_benefits_usd': 'Annual PV Net-meter Revenue',
+                                   'demand_benefits_usd': 'Annual PV Demand Savings',
+                                   'simple_payback_yr': 'Simple Payback',
+                                   'pv_percent mean': 'PV Percent',
+                                   'batt_percent mean': 'Battery Percent',
+                                   'gen_percent mean': 'Generator Percent',
+                                   'fuel_used_gal mean': 'Fuel used (average scenario)',
+                                   'fuel_used_gal most-conservative': 'Fuel used (conservative scenario)'},
+                                  inplace=True)
 
-        # Add units
-        units = ['kW', 'kWh', 'kW', 'kW', 'kW', 'gallons', 'ft^2', '$', '$',
-                 '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
-                 '$/year', 'years', '%', '%', '%', 'gallons', 'gallons']
-        for _ in self.gen_power_percent:
-            units += ['kW', 'gallons', 'gallons', '$', '', '', '', 'kWh',
-                      'kWh', 'kW', 'kW']
+        if not self.existing_generator:
+            # Add units
+            units = ['kW', 'kWh', 'kW', 'kW', 'kW', 'gallons', 'ft^2', '$', '$',
+                     '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
+                     '$/year', 'years', '%', '%', '%', 'gallons', 'gallons']
+        else:
+            units = ['kW', 'kWh', 'kW', 'gallons', 'ft^2', '$', '$',
+                     '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
+                     '$/year', 'years', '%', '%', '%', 'gallons', 'gallons']
+
+        if not self.existing_generator:
+            for _ in self.gen_power_percent:
+                units += ['kW', 'gallons', 'gallons', '$', '', '', '', 'kWh',
+                          'kWh', 'kW', 'kW']
+
         format_results.loc['units'] = units
 
         format_results.columns = [col.replace('_', ' ').capitalize()
@@ -1536,14 +1581,22 @@ class GridSearchOptimizer(Optimizer):
         no_fp = workbook.add_format({'num_format': 0x01})
         perc = workbook.add_format({'num_format': 0x01})
 
-        # Determine format for each column
-        formats = [one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, no_fp,
-                   dollars, dollars, dollars, dollars, dollars, dollars,
-                   dollars, dollars, dollars, dollars, one_fp, perc, perc,
-                   perc, one_fp, one_fp]
-        for _ in self.gen_power_percent:
-            formats += [one_fp, one_fp, one_fp, dollars, no_fp, one_fp, no_fp,
-                        no_fp, no_fp, one_fp, one_fp]
+        if not self.existing_generator:
+            # Determine format for each column
+            formats = [one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, no_fp,
+                       dollars, dollars, dollars, dollars, dollars, dollars,
+                       dollars, dollars, dollars, dollars, one_fp, perc, perc,
+                       perc, one_fp, one_fp]
+        else:
+            formats = [one_fp, one_fp, one_fp, one_fp, no_fp,
+                       dollars, dollars, dollars, dollars, dollars, dollars,
+                       dollars, dollars, dollars, dollars, one_fp, perc, perc,
+                       perc, one_fp, one_fp]
+
+        if not self.existing_generator:
+            for _ in self.gen_power_percent:
+                formats += [one_fp, one_fp, one_fp, dollars, no_fp, one_fp, no_fp,
+                            no_fp, no_fp, one_fp, one_fp]
 
         # Write results sheet
         format_results.reset_index(drop=True).to_excel(writer,
