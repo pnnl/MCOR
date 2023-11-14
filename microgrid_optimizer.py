@@ -1511,7 +1511,7 @@ class GridSearchOptimizer(Optimizer):
         # Add units
         units = ['kW', 'kWh', 'kW', 'kW', 'kW', 'gallons', 'ft^2', '$', '$',
                  '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
-                 '$/year', 'years', 'kW', 'kW', 'kW','kW', 'kW', 'kW','kW', 'kW', 'kW', '%', '%', '%', 'gallons', 'gallons']
+                 '$/year', 'years', 'kW', 'kW', 'kW',  'kW', 'kW', 'kW','kW', 'kW', 'kW', '%', '%', '%', 'gallons', 'gallons']
         for _ in self.gen_power_percent:
             units += ['kW', 'gallons', 'gallons', '$', '', '', '', 'kWh',
                       'kWh', 'kW', 'kW']
@@ -1543,7 +1543,7 @@ class GridSearchOptimizer(Optimizer):
         # Determine format for each column
         formats = [one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, no_fp,
                    dollars, dollars, dollars, dollars, dollars, dollars,
-                   dollars, dollars, dollars, dollars, one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, perc, perc,
+                   dollars, dollars, dollars, dollars, one_fp, one_fp, one_fp, one_fp, one_fp, one_fp,one_fp, one_fp, one_fp, one_fp, perc, perc,
                    perc, one_fp, one_fp]
         for _ in self.gen_power_percent:
             formats += [one_fp, one_fp, one_fp, dollars, no_fp, one_fp, no_fp,
