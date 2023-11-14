@@ -131,8 +131,8 @@ if __name__ == "__main__":
     input_dict["system_inputs"]["longitude"] = -119.28
     input_dict["system_inputs"]["timezone"] = 'US/Pacific'
     input_dict["system_inputs"]["altitude"] = 0
-    input_dict["system_inputs"]["num_trials"] = 5
-    input_dict["system_inputs"]["length_trials"] = 3 * days_to_hours
+    input_dict["system_inputs"]["num_trials"] = 200
+    input_dict["system_inputs"]["length_trials"] = 14 * days_to_hours
 
     # PV dictionary
     input_dict["pv_inputs"] = {}
