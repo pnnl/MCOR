@@ -27,6 +27,7 @@ def run_mcor(input_dict):
     utility_rate_inputs = input_dict["utility_rate_inputs"]
     net_metering_inputs = input_dict["net_metering_inputs"]
     demand_rate_inputs = input_dict["demand_rate_inputs"]
+
     existing_components_inputs = input_dict["existing_components_inputs"]
     battery_inputs = input_dict["battery_inputs"]
     specific_pv_battery_sizes_inputs = input_dict["specific_pv_battery_sizes_inputs"]
@@ -130,8 +131,8 @@ if __name__ == "__main__":
     input_dict["system_inputs"]["longitude"] = -119.28
     input_dict["system_inputs"]["timezone"] = 'US/Pacific'
     input_dict["system_inputs"]["altitude"] = 0
-    input_dict["system_inputs"]["num_trials"] = 200
-    input_dict["system_inputs"]["length_trials"] = 14 * days_to_hours
+    input_dict["system_inputs"]["num_trials"] = 5
+    input_dict["system_inputs"]["length_trials"] = 3 * days_to_hours
 
     # PV dictionary
     input_dict["pv_inputs"] = {}
@@ -143,8 +144,8 @@ if __name__ == "__main__":
     input_dict["pv_inputs"]["solar_data_source"] = 'nsrdb'
     input_dict["pv_inputs"]["solar_data_start_year"] = 1998
     input_dict["pv_inputs"]["solar_data_end_year"] = 2021
-    input_dict["pv_inputs"]["get_solar_data"] = True
-    input_dict["pv_inputs"]["get_solar_profiles"] = True
+    input_dict["pv_inputs"]["get_solar_data"] = False
+    input_dict["pv_inputs"]["get_solar_profiles"] = False
 
     # Battery dictionary
     input_dict["battery_inputs"] = {}
@@ -162,7 +163,6 @@ if __name__ == "__main__":
     input_dict["load_inputs"]["annual_load_profile"] = pd.read_csv(
         os.path.join('data', 'sample_load_profile.csv'), index_col=0)['Load']
     input_dict["load_inputs"]["off_grid_load_profile"] = None
-    input_dict["load_inputs"]["save_filename"] = 'project_name'
 
     # Utility rate in $/kWh dictionary
     input_dict["utility_rate_inputs"] = {}
@@ -220,7 +220,11 @@ if __name__ == "__main__":
     # Other SolarProfileGenerator inputs dictionary
     input_dict["other_SolarProfileGenerator_inputs"] = {}
     input_dict["other_SolarProfileGenerator_inputs"]["suppress_warnings"] = False
-    input_dict["other_SolarProfileGenerator_inputs"]["save_timeseries_json"] = False
+
+    # Output / Inputs dictionary
+    input_dict["output_inputs"] = {}
+    input_dict["output_inputs"]["save_timeseries_json"] = True
+    input_dict["output_inputs"]["save_filename"] = 'project_name'
 
     # Settings for dispatch plots
     # To plot the scenarios with min/max pv, set 'scenario_criteria' to 'pv', to plot
@@ -229,7 +233,7 @@ if __name__ == "__main__":
     scenario_criteria = 'pv'
     scenario_num = None
 
-    save_filename = 'project_name'
+    save_filename = input_dict["output_inputs"]["save_filename"]
 
     # call run_mcor()
     optim, spg = run_mcor(input_dict)
@@ -245,5 +249,5 @@ if __name__ == "__main__":
     optim.save_results_to_file(spg, save_filename)
     pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
 
-    if input_dict["other_SolarProfileGenerator_inputs"]["save_timeseries_json"]:
-        optim.save_timeseries_to_json(spg, save_filename)
+    if input_dict["output_inputs"]["save_timeseries_json"]:
+        optim.save_timeseries_to_json(save_filename)
