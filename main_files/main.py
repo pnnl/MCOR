@@ -84,6 +84,7 @@ def run_mcor(input_dict):
                                 net_metering_rate=net_metering_inputs["net_metering_rate"],
                                 demand_rate=demand_rate_inputs["demand_rate"],
                                 existing_components=existing_components_inputs["existing_components"],
+                                existing_generator='existing_generator' in input_dict['existing_components_inputs'],
                                 output_tmy=True,
                                 validate=True,
                                 net_metering_limits=net_metering_inputs["net_metering_limits"],

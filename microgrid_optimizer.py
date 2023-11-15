@@ -277,7 +277,7 @@ class GridSearchOptimizer(Optimizer):
                  net_metering_limits=None,
                  generator_buffer=1.1,
                  gen_power_percent=(), existing_components={},
-                 existing_generator=True,
+                 existing_generator=False,
                  off_grid_load_profile=None,
                  output_tmy=False, validate=True):
 

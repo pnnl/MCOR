@@ -143,4 +143,4 @@ om_cost,"int,float",0,500,,,,,
 demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
 demand_rate,"int,float",0,50,,,,,
 solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2021. The Himawari dataset only contains data from 2016-2020.
-scenario_criteria,str,,,"pv,gen",,,,
+scenario_criteria,str,,,"pv,generator",,,,
