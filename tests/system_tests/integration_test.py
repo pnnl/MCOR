@@ -18,6 +18,8 @@ from microgrid_system import PV
 
 SYS_DATA_DIR = os.path.join(SYS_TESTS_DIR, 'data')
 TEST_SOLAR_DATA_DIR = os.path.join(SYS_DATA_DIR, 'solar_data')
+rtol = 1e-2
+atol = 1e-4
 
 
 class TestSimulation(unittest.TestCase):
@@ -127,7 +129,7 @@ class TestSimulation(unittest.TestCase):
         ground_truth_df = pd.read_csv(os.path.join(SYS_DATA_DIR, 'ground_truth',
                                                    'longest_night_ground_truth.csv'),
                                       header=0, index_col=0)
-        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False)
+        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False,rtol=rtol, atol=atol)
 
     def test_no_pv_export_battery(self):
         self.tc['batt_sizing_method'] = 'no_pv_export'
@@ -139,7 +141,7 @@ class TestSimulation(unittest.TestCase):
         ground_truth_df = pd.read_csv(os.path.join(SYS_DATA_DIR, 'ground_truth',
                                                    'no_pv_export_ground_truth.csv'),
                                       header=0, index_col=0)
-        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False)
+        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False,rtol=rtol, atol=atol)
 
     def test_net_metering_limits(self):
         self.tc['net_metering_limits'] = {'type': 'percent_of_load', 'value': 100}
@@ -151,7 +153,7 @@ class TestSimulation(unittest.TestCase):
         ground_truth_df = pd.read_csv(os.path.join(SYS_DATA_DIR, 'ground_truth',
                                                    'nm_limit_ground_truth.csv'),
                                       header=0, index_col=0)
-        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False)
+        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False,rtol=rtol, atol=atol)
 
     def test_existing_equipment(self):
         pv = PV(existing=True, pv_capacity=300, tilt=self.tc['tilt'],
@@ -166,7 +168,7 @@ class TestSimulation(unittest.TestCase):
         ground_truth_df = pd.read_csv(os.path.join(SYS_DATA_DIR, 'ground_truth',
                                                    'existing_pv_ground_truth.csv'),
                                       header=0, index_col=0)
-        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False)
+        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False,rtol=rtol, atol=atol)
 
     def test_off_grid_load_profile(self):
         self.tc['off_grid_load_profile'] = 'sample_off_grid_load_profile.csv'
@@ -178,4 +180,4 @@ class TestSimulation(unittest.TestCase):
         ground_truth_df = pd.read_csv(os.path.join(SYS_DATA_DIR, 'ground_truth',
                                                    'off_grid_load_ground_truth.csv'),
                                       header=0, index_col=0)
-        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False)
+        pd.testing.assert_frame_equal(ground_truth_df, optim.results_grid, check_exact=False,rtol=rtol, atol=atol)

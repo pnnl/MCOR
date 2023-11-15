@@ -144,8 +144,8 @@ if __name__ == "__main__":
     input_dict["pv_inputs"]["solar_data_source"] = 'nsrdb'
     input_dict["pv_inputs"]["solar_data_start_year"] = 1998
     input_dict["pv_inputs"]["solar_data_end_year"] = 2021
-    input_dict["pv_inputs"]["get_solar_data"] = False
-    input_dict["pv_inputs"]["get_solar_profiles"] = False
+    input_dict["pv_inputs"]["get_solar_data"] = True
+    input_dict["pv_inputs"]["get_solar_profiles"] = True
 
     # Battery dictionary
     input_dict["battery_inputs"] = {}
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     # Output / Inputs dictionary
     input_dict["output_inputs"] = {}
-    input_dict["output_inputs"]["save_timeseries_json"] = True
+    input_dict["output_inputs"]["save_timeseries_json"] = False
     input_dict["output_inputs"]["save_filename"] = 'project_name'
 
     # Settings for dispatch plots
