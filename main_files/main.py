@@ -16,6 +16,7 @@ from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, SimpleLiIonBattery, Generator, FuelTank
 
 
+
 def run_mcor(input_dict):
     system_inputs = input_dict["system_inputs"]
     pv_inputs = input_dict["pv_inputs"]
@@ -26,6 +27,7 @@ def run_mcor(input_dict):
     utility_rate_inputs = input_dict["utility_rate_inputs"]
     net_metering_inputs = input_dict["net_metering_inputs"]
     demand_rate_inputs = input_dict["demand_rate_inputs"]
+
     existing_components_inputs = input_dict["existing_components_inputs"]
     battery_inputs = input_dict["battery_inputs"]
     specific_pv_battery_sizes_inputs = input_dict["specific_pv_battery_sizes_inputs"]
@@ -108,6 +110,7 @@ def run_mcor(input_dict):
 
     return optim, spg
 
+
 if __name__ == "__main__":
 
     ###########################################################################
@@ -160,7 +163,6 @@ if __name__ == "__main__":
     input_dict["load_inputs"]["annual_load_profile"] = pd.read_csv(
         os.path.join('data', 'sample_load_profile.csv'), index_col=0)['Load']
     input_dict["load_inputs"]["off_grid_load_profile"] = None
-    input_dict["load_inputs"]["save_filename"] = 'project_name'
 
     # Utility rate in $/kWh dictionary
     input_dict["utility_rate_inputs"] = {}
@@ -219,6 +221,11 @@ if __name__ == "__main__":
     input_dict["other_SolarProfileGenerator_inputs"] = {}
     input_dict["other_SolarProfileGenerator_inputs"]["suppress_warnings"] = False
 
+    # Output / Inputs dictionary
+    input_dict["output_inputs"] = {}
+    input_dict["output_inputs"]["save_timeseries_json"] = False
+    input_dict["output_inputs"]["save_filename"] = 'project_name'
+
     # Settings for dispatch plots
     # To plot the scenarios with min/max pv, set 'scenario_criteria' to 'pv', to plot
     #   scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', or to plot
@@ -226,7 +233,7 @@ if __name__ == "__main__":
     scenario_criteria = 'pv'
     scenario_num = None
 
-    save_filename = 'project_name'
+    save_filename = input_dict["output_inputs"]["save_filename"]
 
     # call run_mcor()
     optim, spg = run_mcor(input_dict)
@@ -241,3 +248,6 @@ if __name__ == "__main__":
     # Save results
     optim.save_results_to_file(spg, save_filename)
     pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
+
+    if input_dict["output_inputs"]["save_timeseries_json"]:
+        optim.save_timeseries_to_json(save_filename)
