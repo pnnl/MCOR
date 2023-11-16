@@ -1787,7 +1787,7 @@ if __name__ == "__main__":
     longitude = -119.28
     timezone = 'US/Pacific'
     spg = SolarProfileGenerator(latitude, longitude, timezone, 265.176, 20, -180,
-                                200., 14., validate=False)
+                                200., 14. * 24, validate=False)
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.1, validate=False)
     module_params = spg.get_pv_params()
