@@ -132,6 +132,18 @@ class PVBattGenSimulator(Simulator):
         
         get_load_duration_df: Returns load_duration+df attribute
 
+        get_pv_avg: Returns mean of self.dispatch_df['pv_power'] attribute (excluding 0's)
+
+        get_pv_peak: Returns max of self.dispatch_df['pv_power'] attribute
+
+        get_gen_avg: Returns mean of self.dispatch_df['load_not_met'] attribute (excluding 0's)
+
+        get_gen_peak: Returns max of self.dispatch_df['load_not_met'] attribute
+
+        get_batt_avg: Returns mean of self.dispatch_df['delta_battery_power'] attribute (excluding 0's and negative values)
+
+        get_batt_peak: Returns max of self.dispatch_df['delta_battery_power'] attribute
+
     Calculated Attributes
     ----------
 
@@ -444,6 +456,36 @@ class PVBattGenSimulator(Simulator):
         
     def get_load_duration_df(self):
         return self.load_duration_df
+
+    def get_pv_avg(self):
+        non_zero_pv_power = self.dispatch_df[self.dispatch_df['pv_power'] != 0]
+        if len(non_zero_pv_power) > 0:
+            return non_zero_pv_power['pv_power'].mean()
+        else:
+            return 0
+
+    def get_pv_peak(self):
+        return self.dispatch_df['pv_power'].max()
+
+    def get_gen_avg(self):
+        non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_not_met'] != 0]
+        if len(non_zero_gen_power) > 0:
+            return non_zero_gen_power['load_not_met'].mean()
+        else:
+            return 0
+
+    def get_gen_peak(self):
+        return self.dispatch_df['load_not_met'].max()
+
+    def get_batt_avg(self):
+        greater_than_zero_batt_power = self.dispatch_df[self.dispatch_df['delta_battery_power'] > 0]
+        if len(greater_than_zero_batt_power) > 0:
+            return greater_than_zero_batt_power['delta_battery_power'].mean()
+        else:
+            return 0
+
+    def get_batt_peak(self):
+        return self.dispatch_df['delta_battery_power'].max()
 
 
 def calculate_load_duration(grouped_load, validate=True):
