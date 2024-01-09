@@ -1103,7 +1103,7 @@ def calc_night_duration(power_profile, percent_at_night=0, validate=True):
                  and not night_df.iloc[i - 1, -3]):
             night_df.iloc[i, -2] = True
             night_df.iloc[i, -1] = night_lengths.pop(0)
-    night_df['night_duration'].fillna(method='ffill', inplace=True)
+    night_df['night_duration'].ffill(inplace=True)
     night_df.loc[night_df['is_night'] == False, 'night_duration'] = 0
 
     return night_df

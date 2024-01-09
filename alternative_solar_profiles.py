@@ -387,7 +387,7 @@ class AlternativeSolarProfiles:
         """
 
         # Aggregate historical data to daily values
-        daily_data = self.nrel_data_df.groupby(['year', 'month', 'day']).sum().reset_index()
+        daily_data = self.nrel_data_df.groupby(['year', 'month', 'day']).sum(numeric_only=True).reset_index()
 
         # Calculate states (bins) for daily ghi and dni data
         daily_data['ghi_state'] = np.round(daily_data['ghi'] /
@@ -402,7 +402,7 @@ class AlternativeSolarProfiles:
             (self.nrel_data_df['hour'] >= self.cloud_hours[0]) &
             (self.nrel_data_df['hour'] < self.cloud_hours[1])].groupby(
             ['year', 'month', 'day'])['cloud_type'].apply(
-            lambda x: stats.mode(x).mode[0])
+            lambda x: stats.mode(x).mode)
         daily_data = daily_data.merge(
             daily_cloud_type.reset_index(name='cloud_state'),
             left_on=['year', 'month', 'day'],
@@ -841,7 +841,7 @@ class AlternativeSolarProfiles:
             except KeyError:
                 # Same as above, but for simple probabilities
                 states_subset = self.simple_prob_daily_grouped[
-                    date.month].values
+                    tuple([date.month])].values
 
             # Get the probabilities for this subset of states
             probs = states_subset[:, -1].astype(float)
