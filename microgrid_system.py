@@ -7,6 +7,9 @@ File contents:
     Classes:
         Component
         PV (inherits from Component)
+        MRE (inherits from Component)
+        Tidal (inherits from MRE)
+        Wave (inherits from MRE)
         Battery (inherits from Component)
         SimpleLiIonBattery (inherits from Battery)
         Generator (inherits from Component)
@@ -188,6 +191,209 @@ class PV(Component):
         pv_om_cost_per_kw = cost_df['PV_{};{}'.format(
             self.pv_racking, self.pv_tracking)].values[1]
         return adjusted_pv_capacity * pv_om_cost_per_kw
+
+
+class MRE(Component):
+    """
+    Marine Renewable Energy system
+
+    Parameters
+    ----------
+
+        category: equipment type, set to 'mre'
+
+        existing: whether or not the component already exists on site
+
+        num_generators: the number of marine energy generators
+
+        mre_capacity: total_capacity in kW
+
+        generator_type: type of marine energy generator: 'tidal' or 'wave'
+
+        generator_capacity: the capacity per generator, in kW
+
+    Methods
+    ----------
+
+        get_capacity: returns the total array capacity in kW
+
+    """
+
+    def __init__(self, existing, num_generators, mre_capacity, generator_type,
+                 generator_capacity):
+        # Assign parameters
+        self.category = 'mre'
+        self.existing = existing
+        self.num_generators = num_generators
+        self.mre_capacity = mre_capacity  # in kW
+        self.generator_type = generator_type
+        self.generator_capacity = generator_capacity # in kW
+
+    def get_capacity(self):
+        return self.mre_capacity
+
+
+class Tidal(MRE):
+    """
+    Tidal Generator Array
+
+    Parameters
+    ----------
+
+        all parameters from parent class MRE
+
+        generator_type: type of marine energy generator: 'tidal'
+
+        generator_capacity: the capacity per generator, in kW
+
+        depth: depth of generator in meters
+
+        blade_diameter: diameter of blade in meters
+
+        blade_type: type of blade: 'axial' or ????
+
+        other inputs???
+
+    Methods
+    ----------
+
+        all methods from parent class MRE
+
+    """
+
+    def __init__(self, existing, num_generators, mre_capacity, generator_capacity, depth,
+                 blade_diameter, blade_type, validate=True):
+        super().__init__(existing, num_generators, mre_capacity, 'tidal',
+                         generator_capacity)
+        # Assign parameters
+        self.depth = depth
+        self.blade_diameter = blade_diameter
+        self.blade_type = blade_type
+        # Other inputs
+        # TODO
+
+        if validate:
+            # List of initialized parameters to validate
+            args_dict = {'existing': existing, 'mre_capacity': mre_capacity,
+                         'num_generators': num_generators,
+                         'generator_capacity': generator_capacity,
+                         'depth': depth,
+                         'blade_diameter': blade_diameter,
+                         'blade_type': blade_type}
+
+            # Validate input parameters
+            validate_all_parameters(args_dict)
+
+    def __repr__(self):
+        return 'Tidal: Capacity: {:.1f}kW'.format(self.mre_capacity)
+
+    def calc_capital_cost(self, cost_df, existing_components):
+        """ Calculates cost of Tidal array """
+
+        # Adjust total mre_capacity to consider existing mre
+        if 'mre' in existing_components.keys() and \
+                existing_components['mre'].generator_type == 'tidal':
+            adjusted_mre_capacity = max(
+                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+        else:
+            adjusted_mre_capacity = self.mre_capacity
+
+        # Set costs
+        # TODO
+
+        return adjusted_mre_capacity
+
+    def calc_om_cost(self, cost_df, existing_components):
+        """ Calculates O&M costs of a Tidal array """
+
+        # Adjust total mre_capacity to consider existing pv
+        if 'mre' in existing_components.keys() and \
+                existing_components['mre'].generator_type == 'tidal':
+            adjusted_mre_capacity = max(
+                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+        else:
+            adjusted_mre_capacity = self.mre_capacity
+
+        # Set O&M cost
+        # TODO
+
+        return adjusted_mre_capacity
+
+
+class Wave(MRE):
+    """
+    Wave Generator Array
+
+    Parameters
+    ----------
+
+        all parameters from parent class MRE
+
+        generator_type: type of marine energy generator: 'wave'
+
+        generator_capacity: the capacity per generator, in kW
+
+        wave_inputs: TBD
+
+    Methods
+    ----------
+
+        all methods from parent class MRE
+
+    """
+
+    def __init__(self, existing, num_generators, mre_capacity, generator_capacity,
+                 wave_inputs, validate=True):
+        super().__init__(existing, num_generators, mre_capacity, 'wave',
+                         generator_capacity)
+        # Assign parameters
+        self.wave_inputs = wave_inputs
+        # TODO
+
+        if validate:
+            # List of initialized parameters to validate
+            args_dict = {'existing': existing, 'mre_capacity': mre_capacity,
+                         'num_generators': num_generators,
+                         'generator_capacity': generator_capacity,
+                         'wave_inputs': wave_inputs}
+
+            # Validate input parameters
+            validate_all_parameters(args_dict)
+
+    def __repr__(self):
+        return 'Wave: Capacity: {:.1f}kW'.format(self.mre_capacity)
+
+    def calc_capital_cost(self, cost_df, existing_components):
+        """ Calculates cost of Wave array """
+
+        # Adjust total mre_capacity to consider existing mre
+        if 'mre' in existing_components.keys() and \
+                existing_components['mre'].generator_type == 'wave':
+            adjusted_mre_capacity = max(
+                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+        else:
+            adjusted_mre_capacity = self.mre_capacity
+
+        # Set costs
+        # TODO
+
+        return adjusted_mre_capacity
+
+    def calc_om_cost(self, cost_df, existing_components):
+        """ Calculates O&M costs of a Wave array """
+
+        # Adjust total mre_capacity to consider existing pv
+        if 'mre' in existing_components.keys() and \
+                existing_components['mre'].generator_type == 'wave':
+            adjusted_mre_capacity = max(
+                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+        else:
+            adjusted_mre_capacity = self.mre_capacity
+
+        # Set O&M cost
+        # TODO
+
+        return adjusted_mre_capacity
 
 
 class Battery(Component):
