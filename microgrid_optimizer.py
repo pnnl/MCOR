@@ -1637,7 +1637,7 @@ class GridSearchOptimizer(Optimizer):
         assumptions_sheet.write(12, 1, '', bold_bottomborder)
         assumptions_sheet.set_column(0, 1, 30, index_format)
 
-        writer.save()
+        writer.close()
 
     def save_timeseries_to_json(self, filename='simulation_results'):
         # Parse time series outputs from dispatch dataframes

@@ -10,7 +10,7 @@ the systems according to the goals of the site.
 
 ### Prerequisites
 
-* Python 3
+* Python 3.10
 * pvlib:
   https://github.com/pvlib/pvlib-python.git
 * numba (optional) - 
