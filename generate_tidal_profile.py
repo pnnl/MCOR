@@ -37,8 +37,13 @@ from validation import validate_all_parameters, log_error, strings_warnings
 from alternative_solar_profiles import AlternativeSolarProfiles
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
-TIDAL_DEFAULTS = {'turbine_length': 1,
-               'turbine_type' : 'radial'}
+TIDAL_DEFAULTS = {'turbine_output': 100,
+                  'rotor_diameter': 1,
+                  'rotor_number' : 1,
+                  'PTO_efficiency' : .95,
+                  'maximum_cp' : 0.42,
+                  'cut_in_velocity' : 0,
+                  'cut_out_velocity' : 3}
 
 
 class TidalProfileGenerator:
@@ -58,47 +63,12 @@ class TidalProfileGenerator:
             US/Hawaii, US/Indiana-Starke, US/Michigan, US/Mountain, US/Pacific,
             US/Pacific-New, US/Samoa
         
-        altitude: Site altitude in meters
-    
-        tilt: Panel tilt in degrees
-    
-        azimuth: Panel azimuth in degrees
-    
+        depth: depth bin in meters
+
         num_trials: Number of solar profiles to create
     
         length_trials: Length of solar profiles in hours
 
-        pv_racking: Type of pv racking (options: [roof, ground, carport])
-            Default = ground
-
-        pv_tracking: Type of tracking (options: [fixed, single_axis])
-            Default = fixed
-
-        max_track_angle: Maximum rotation angle (in degrees) for single-axis tracking
-
-        backtrack: Whether or not backtracking is allowed for single-axis tracking
-    
-        start_year: Start year for solar data download
-    
-        end_year: End year for solar data download
-
-        solar_source: The source of the solar data to download. The available options are:
-            nsrdb: NREL's NSRDB -- CONUS, Central America, and parts of South America and
-                Canada
-            himawari: Himawari -- Pacific Island and East Asia locations
-            Default = nsrdb
-    
-        num_ghi_states: Number of discrete GHI states for hourly model
-    
-        num_dni_states: Number of discrete DNI states for hourly model
-    
-        cld_hours: Hours of the day (range) used to set the day's cloud state
-        
-        temp_bins: Temperature bins
-    
-        num_daily_ghi_states: Number of discrete GHI states for daily model
-    
-        num_daily_dni_states: Number of discrete DNI states for daily model
 
         max_iter: The maximum number of iterations allowed for trying to match hourly and
             daily states in the ASP code.
@@ -219,6 +189,7 @@ class TidalProfileGenerator:
 
         tidal_constituents = tidal_current
         return tidal_constituents
+
     def extrapolate_tidal_epoch(self, tidal_constituents):
         """Extrapolate 19-year tidal epoch from tidal constituents"""
         tidal_epoch = tidal_constituents
@@ -227,24 +198,34 @@ class TidalProfileGenerator:
     def generate_tidal_profiles(self, tidal_epoch):
         """Generate tidal profiles from tidal epoch data"""
 
-
         # Randomly create start dates
         tidal_epoch.index = pd.date_range(
             start='1/1/2017', end='1/1/2035', freq='H')[:-1]
-        start_datetimes = tidal_epoch.sample(
+        start_datetimes = tidal_epoch.iloc[:-self.length_trials].sample(
             int(self.num_trials)).index.values
 
-        # Create a date range object for each start datetime
         date_ranges = [pd.date_range(start=start_date,
                                      periods=self.length_trials,
                                      freq='H')
                        for start_date in start_datetimes]
 
-        # Create 20-year annual profile to allow for profiles with year-end overlap
-        oneyear_profile = tidal_epoch.head(8760)
-        twentyyear_profile = tidal_epoch.append(oneyear_profile)
-        twentyyear_profile.index = pd.date_range(
-            start='1/1/2017', end='1/1/2036', freq='H')[:-1]
+
+        for i, date_range in enumerate(date_ranges):
+            replace_timesteps = len(date_range[(date_range.month == 2) &
+                                               (date_range.day == 29)])
+            if replace_timesteps:
+                # Remove 2/29
+                date_range = date_range[date_range.date != datetime.date(date_range[0].year, 2, 29)]
+
+                # Add more timesteps
+                date_ranges[i] = date_range.append(pd.date_range(
+                    date_range[-1] + datetime.timedelta(hours=1),
+                    periods=replace_timesteps, freq='H'))
+
+            # Create 20-year annual profile to allow for profiles with year-end overlap
+            twentyyear_profile = tidal_epoch.append(tidal_epoch.head(8760))
+            twentyyear_profile.index = pd.date_range(
+                start='1/1/2017', end='1/1/2036', freq='H')[:-1]
 
 
         # Loop over each date range and sample profile data
@@ -261,147 +242,54 @@ class TidalProfileGenerator:
 
 
 
-
     def get_power_profiles(self):
         """ 
-        Calculate the output AC power for a 1kW system for each solar and temperature profile.
+        Calculate the output AC power for a 1kW system for each tidal profile.
        
         If read_from_file is True, reads the solar and temperature data  from csv, allowing
             for faster lookup rather than re-running get_solar_data and get_solar_profiles.
             
         """
 
-        # For each solar profile, calculate PV production
-        # Load the solar and temperature data from csv
+        # For each tidal profile, calculate production
+        # Load the tidal data from csv
         for i in range(int(self.num_trials)):
             try:
-                solar = pd.read_csv(os.path.join(
-                    SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
+                tidal = pd.read_csv(os.path.join(
+                    TIDAL_DATA_DIR, 'tidal_profiles', '{}_{}_{}d_{}t'.format(
                         self.latitude, self.longitude, int(self.length_trials/24),
                         int(self.num_trials)),
-                    '{}_{}_solar_trial_{}.csv'.format(self.latitude, self.longitude, i)),
+                    '{}_{}_tidal_trial_{}.csv'.format(self.latitude, self.longitude, i)),
                     index_col=0, parse_dates=[0])
 
-                # Allow for backward compatibility with solar profiles generated before ASP
-                #   code was converted to Python
-                if 'temp' not in solar.columns:
-                    solar['temp'] = pd.read_csv(os.path.join(
-                        SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                            self.latitude, self.longitude,
-                            int(self.length_trials/24),
-                            int(self.num_trials)),
-                        '{}_{}_temp_trial_{}.csv'.format(self.latitude, self.longitude, i)),
-                        index_col=0, parse_dates=[0]).values
 
             except FileNotFoundError:
-                message = 'Solar profile csvs not found. Please check that you have entered' \
+                message = 'Tidal profile csvs not found. Please check that you have entered' \
                           ' the longitude, latitude, number, and length of trials for a ' \
-                          'site with previously generated solar profiles.'
+                          'site with previously generated tidal profiles.'
                 log_error(message)
                 raise Exception(message)
 
             # Fix timezone
             try:
-                solar.index = solar.index.tz_convert(self.timezone)
+                tidal.index = tidal.index.tz_convert(self.timezone)
             except AttributeError:
                 # Deal with pandas issue creating datetime index from timeseries including
                 #   daylight savings time shift
-                solar.index = pd.to_datetime(solar.index, utc=True).tz_convert(self.timezone)
+                tidal.index = pd.to_datetime(tidal.index, utc=True).tz_convert(self.timezone)
 
-            # Check that the solar data and index are not misaligned (e.g. the sun is up
-            #   during the day)
-            # Get median solar start hour
-            solar['date'] = solar.index.date
-            median_hour = solar.groupby('date').apply(
-                lambda x: x[x['ghi'] > 0].iloc[0].name.hour
-                if len(x[x['ghi'] > 0]) else 0).median()
-            if not 4 < median_hour < 12:
-                message = 'The solar profiles are mismatched with the index (e.g. the sun ' \
-                          'is not shining at the expected times). Make sure your solar ' \
-                          'profiles are valid.'
-                log_error(message)
-                raise Exception(message)
 
-            self.solar_profiles += [solar]
-            self.temp_profiles += [solar['temp'].to_frame(name='temp_celcius')]
 
-        # Read raw TMY file
-        self.tmy_solar_profile = pd.read_csv(
-            os.path.join(SOLAR_DATA_DIR,
-                         'nrel',
-                         '{}_{}'.format(self.latitude, self.longitude),
-                         '{}_{}_tmy.csv'.format(self.latitude, self.longitude)))
+            self.tidal_profiles += [tidal]
 
-        # Get average wind speed
-        self.get_wind_speed()
 
-        # Calculate PV production for each solar profile
-        for solar, temp in zip(self.solar_profiles, self.temp_profiles):
+
+        # Calculate PV production for each tidal profile
+        for tidal in self.tidal_profiles:
             self.power_profiles += [calc_pv_prod(
-                solar, temp, self.latitude, self.longitude, self.altitude,
-                self.tilt, self.azimuth, self.wind_speed,
-                self.advanced_inputs['albedo'],
-                self.pv_racking,
-                self.advanced_inputs['module'],
-                self.advanced_inputs['inverter'],
-                self.advanced_inputs['strings'],
-                pv_tracking=self.pv_tracking,
-                max_track_angle=self.max_track_angle,
-                backtrack=self.backtrack, validate=False,
+                tidal, temp, self.latitude, self.longitude, self.depth,
                 suppress_warnings=self.suppress_warnings,
                 advanced_inputs=self.advanced_inputs)]
-
-        # Get TMY solar PV power
-        # Parse index
-        tmy_solar = self.tmy_solar_profile
-        tmy_solar.index = pd.to_datetime(tmy_solar[['Year', 'Month', 'Day',
-                                                    'Hour', 'Minute']])
-
-        # Add timezone
-        # If using the himawari dataset, get the timezone for the closest station
-        if self.solar_source == 'himawari':
-            tmy_meta_name = f'{self.latitude}_{self.longitude}_tmy.json'
-            tmy_meta_path = os.path.join(
-                SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(self.latitude, self.longitude),
-                tmy_meta_name)
-            with open(tmy_meta_path, 'r') as f:
-                tmy_meta = json.load(f)
-            if tmy_meta['tz'] < 0:
-                tmy_tz = f'Etc/GMT{int(tmy_meta["tz"])}'
-            else:
-                tmy_tz = f'Etc/GMT+{int(tmy_meta["tz"])}'
-            tmy_solar.index = tmy_solar.index.tz_localize('UTC').tz_convert(tmy_tz)
-        else:
-            tmy_solar.index = tmy_solar.index.tz_localize('UTC').tz_convert(self.timezone)
-
-        # If TMY data is listed as on the hour, add 30 minutes. This is due to a bug in the
-        #   NREL NSRDB api that was corrected sometime in mid-2019, so data downloaded before
-        #   that has to be corrected.
-        if tmy_solar.index[0].minute == 0:
-            tmy_solar.index = tmy_solar.index + datetime.timedelta(minutes=30)
-
-        # Un-shift from timezone conversion so it starts at the beginning of the year
-        if tmy_solar.index[0].month == 1:
-            tmy_solar.index = tmy_solar.index - \
-                              datetime.timedelta(hours=tmy_solar.index[0].hour)
-        else:
-            tmy_solar.index = tmy_solar.index + \
-                              datetime.timedelta(hours=24 - tmy_solar.index[0].hour)
-
-        # Rename columns
-        tmy_solar.rename(columns={'DHI': 'dhi', 'DNI': 'dni', 'GHI': 'ghi'}, inplace=True)
-
-        # Get power profile
-        self.tmy_power_profile = calc_pv_prod(
-            tmy_solar, tmy_solar['Temperature'].to_frame(name='temp_celcius'),
-            self.latitude, self.longitude, self.altitude, self.tilt,
-            self.azimuth, self.wind_speed, self.advanced_inputs['albedo'],
-            self.pv_racking, self.advanced_inputs['module'],
-            self.advanced_inputs['inverter'], self.advanced_inputs['strings'],
-            pv_tracking=self.pv_tracking, max_track_angle=self.max_track_angle,
-            backtrack=self.backtrack, validate=False,
-            suppress_warnings=self.suppress_warnings,
-            advanced_inputs=self.advanced_inputs)
 
 
 
@@ -422,13 +310,13 @@ class TidalProfileGenerator:
             args_dict = {'num_seconds': num_seconds}
             validate_all_parameters(args_dict)
 
-        # For each profile in solar_profiles, power_profiles, temp_profiles and
+        # For each profile in tidal_profiles, power_profiles, temp_profiles and
         #   night_profiles, crop to the specified number of seconds, rounding down to the
         #   nearest timestep
-        for i in range(len(self.solar_profiles)):
-            self.solar_profiles[i] = \
-                self.solar_profiles[i].loc[
-                :self.solar_profiles[i].index[0] + datetime.timedelta(
+        for i in range(len(self.tidal_profiles)):
+            self.tidal_profiles[i] = \
+                self.tidal_profiles[i].loc[
+                :self.tidal_profiles[i].index[0] + datetime.timedelta(
                     seconds=num_seconds - 1)]
 
         for i in range(len(self.power_profiles)):
@@ -437,27 +325,16 @@ class TidalProfileGenerator:
                 :self.power_profiles[i].index[0] + datetime.timedelta(
                     seconds=num_seconds - 1)]
 
-        for i in range(len(self.temp_profiles)):
-            self.temp_profiles[i] = \
-                self.temp_profiles[i].loc[
-                :self.temp_profiles[i].index[0] + datetime.timedelta(
-                    seconds=num_seconds - 1)]
 
-        for i in range(len(self.night_profiles)):
-            self.night_profiles[i] = \
-                self.night_profiles[i].loc[
-                :self.night_profiles[i].index[0] + datetime.timedelta(
-                    seconds=num_seconds - 1)]
+    def tidal_checks(self):
+        """ Several checks to  make sure the tidal profiles look OK. """
 
-    def pv_checks(self):
-        """ Several checks to  make sure the pv profiles look OK. """
-
-        # Get the profiles with the min and max PV energy
+        # Get the profiles with the min and max energy
         total_energy = [prof.sum() for prof in self.power_profiles]
         max_profile_num = np.where(total_energy == max(total_energy))[0][0]
         min_profile_num = np.where(total_energy == min(total_energy))[0][0]
 
-        # Plot the profiles with min and max pv energy
+        # Plot the profiles with min and max energy
         fig = plt.figure()
         ax1 = fig.add_subplot(121)
         self.power_profiles[max_profile_num].plot(
@@ -467,14 +344,6 @@ class TidalProfileGenerator:
         self.power_profiles[min_profile_num].plot(
             ax=ax2, title='Profile with min energy generation')
         ax2.set_ylabel('Power (kW)')
-
-        # Plot the TMY profile
-        fig = plt.figure()
-        temp_profile = self.tmy_power_profile.copy(deep=True)
-        temp_profile.index = temp_profile.index.map(
-            lambda x: x.replace(year=2017))
-        temp_profile.plot(title='TMY power profile')
-        plt.ylabel('Power (kW)')
 
     def get_dc_to_ac(self):
         """ Returns the dc to ac ratio. """
@@ -507,166 +376,21 @@ class TidalProfileGenerator:
 
 
 
-
-def calc_pv_prod(solar_profile, temp_profile, latitude, longitude, altitude, tilt, azimuth,
-                 wind_speed, albedo, pv_racking, module_name, inverter_name, strings,
-                 pv_tracking='fixed', max_track_angle=90, backtrack=True, validate=True,
+def calc_pv_prod(tidal_profile, latitude, longitude, depth, validate=True,
                  suppress_warnings=False, advanced_inputs={}):
-    """ Calculates the PV production from a solar profile using pvlib. """
+    """ Calculates the production from a tidal profile. """
 
     if validate:
         # Put arguments in a dict
-        args_dict = {'solar_profile': solar_profile,
-                     'temp_profile': temp_profile, 'latitude': latitude,
-                     'longitude': longitude, 'altitude': altitude,
-                     'tilt': tilt, 'azimuth': azimuth,
-                     'wind_speed': wind_speed, 'albedo': albedo,
-                     'pv_racking': pv_racking, 'module': module_name,
-                     'inverter': inverter_name, 'strings': strings}
+        args_dict = {'tidal_profile': tidal_profile,
+                     'latitude': latitude,
+                     'longitude': longitude, 'altitude': altitude}
 
         # Validate all parameters
         validate_all_parameters(args_dict)
 
-    # Get solar position
-    # Try using numba if installed to speed up calculation
-    # Catch UserWarnings from pvlib/numba
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        try:
-            solpos = solarposition.get_solarposition(solar_profile.index, latitude,
-                                                     longitude, altitude, method='nrel_numba')
-        except:
-            solpos = solarposition.get_solarposition(solar_profile.index, latitude, longitude,
-                                                     altitude)
-
-    # Calculate extraterrestrial irradiance
-    # try/except block to allow for old or new versions of pvlib-python
-    try:  # new version
-        dni_extra = irradiance.get_extra_radiation(solar_profile.index)
-    except:  # old version
-        dni_extra = irradiance.extraradiation(solar_profile.index)
-
-    # Calculate dhi or ghi if not included (not calculated by ASP code)
-    zenith_angle = np.array([elem if elem < 90 else 90
-                             for elem in solpos['apparent_zenith'].values])
-    if 'dhi' not in solar_profile:
-        solar_profile['dhi'] = solar_profile['ghi'] - \
-                               (solar_profile['dni'] * np.cos(zenith_angle * math.pi / 180))
-    if 'ghi' not in solar_profile:
-        solar_profile['ghi'] = solar_profile['dhi'] + \
-                               (solar_profile['dni'] * np.cos(zenith_angle * math.pi / 180))
-
-    # Make sure dhi not negative
-    plot_power = False
-    if len(solar_profile[solar_profile['dhi'] < 0]):
-        message = 'Warning: dhi value is negative at the following times:{}, check to make ' \
-                  'sure the ghi and dni values are consistent with the timestamp.'.format(
-            solar_profile[solar_profile['dhi'] < 0].index)
-        log_error(message)
-        if not suppress_warnings:
-            plot_power = True
-            print(message)
-        solar_profile.loc[solar_profile['dhi'] < 0, 'dhi'] = 0
-
-    # Deal with issue of poa_sky_diffuse blowing up if solar_zenith too close to 90
-    solpos.loc[(solpos['apparent_zenith'] > 87) &
-               (solpos['apparent_zenith'] <= 90),
-               'apparent_zenith'] = 87.
-    solpos.loc[(solpos['apparent_zenith'] > 90) &
-               (solpos['apparent_zenith'] < 93),
-               'apparent_zenith'] = 93.
-
-    # If single-axis tracking is used, calculate new tilt, azimuth, and aoi
-    if pv_tracking == 'single_axis':
-        tracker_data = tracking.singleaxis(solpos['apparent_zenith'],
-                                           solpos['azimuth'], axis_tilt=tilt,
-                                           axis_azimuth=azimuth,
-                                           max_angle=max_track_angle,
-                                           backtrack=backtrack)
-        tracker_data.fillna(0, inplace=True)
-        surface_tilt = tracker_data['surface_tilt']
-        surface_azimuth = tracker_data['surface_azimuth']
-        aoi = tracker_data['aoi']
-    else:
-        surface_tilt = tilt
-        surface_azimuth = azimuth
-        aoi = irradiance.aoi(tilt, azimuth, solpos['apparent_zenith'], solpos['azimuth'])
-
-    # Calculate plane of array diffuse sky radiation using the Hay Davies model
-    poa_sky_diffuse = irradiance.haydavies(surface_tilt, surface_azimuth,
-                                           solar_profile['dhi'],
-                                           solar_profile['dni'], dni_extra,
-                                           solpos['apparent_zenith'],
-                                           solpos['azimuth'])
-
-    # try/except block to allow for old or new versions of pvlib-python
-    try:  # new
-        # Calculate ground diffuse
-        poa_ground_diffuse = irradiance.get_ground_diffuse(
-            surface_tilt, solar_profile['ghi'], albedo=albedo)
-
-        # Calculate POA total
-        poa_irrad = irradiance.poa_components(aoi, solar_profile['dni'],
-                                              poa_sky_diffuse,
-                                              poa_ground_diffuse)
-    except:  # old
-        # Calculate ground diffuse
-        poa_ground_diffuse = irradiance.grounddiffuse(surface_tilt,
-                                                      solar_profile['ghi'],
-                                                      albedo=albedo)
-
-        # Calculate POA total
-        poa_irrad = irradiance.globalinplane(aoi, solar_profile['dni'],
-                                             poa_sky_diffuse,
-                                             poa_ground_diffuse)
-
-    # Get pvsystem racking type based on racking parameter
-    racking_dict = {'ground': 'open_rack_glass_glass',
-                    'roof': 'close_mount_glass_glass',
-                    'carport': 'open_rack_glass_glass'}
-
-    # Model parameters from pvlib.temperature
-    temp_model_params = TEMPERATURE_MODEL_PARAMETERS['sapm'][racking_dict[pv_racking]]
-
-    # Calculate cell and module temperature
-    pvtemps = sapm_cell(poa_irrad['poa_global'], wind_speed=wind_speed,
-                        temp_air=temp_profile['temp_celcius'],
-                        **temp_model_params)
-
-    # Select module and inverter
-    try:
-        module_list = pvsystem.retrieve_sam(module_name['database'])
-        module = module_list[module_name['model']]
-    except (ValueError, KeyError):
-        message = 'PV module not in database. Please check pvlib module options.'
-        log_error(message)
-        raise Exception(message)
-    try:
-        inverter_list = pvsystem.retrieve_sam(inverter_name['database'])
-        inverter = inverter_list[inverter_name['model']]
-    except (ValueError, KeyError):
-        message = 'Inverter not in database. Please check pvlib module options.'
-        log_error(message)
-        raise Exception(message)
 
     # Calculate DC power
-    # try/except block to account for pvlib-python update which modified function arguments
-    try:
-        photocurrent, saturation_current, resistance_series, \
-        resistance_shunt, nNsVth = pvsystem.calcparams_desoto(
-            poa_irrad['poa_global'], temp_cell=pvtemps['temp_cell'],
-            alpha_isc=module['alpha_sc'], module_parameters=module,
-            EgRef=1.121, dEgdT=-0.0002677)
-    except:
-        photocurrent, saturation_current, resistance_series, \
-        resistance_shunt, nNsVth = pvsystem.calcparams_desoto(
-            poa_irrad['poa_global'], pvtemps,
-            module['alpha_sc'], module['a_ref'], module['I_L_ref'],
-            module['I_o_ref'],
-            module['R_sh_ref'], module['R_s'])
-    # Properly catch RuntimeWarnings not caught in pvlib
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=RuntimeWarning)
         dc_power = pvsystem.singlediode(photocurrent, saturation_current, resistance_series,
                                         resistance_shunt, nNsVth)
 
@@ -708,53 +432,6 @@ def calc_pv_prod(solar_profile, temp_profile, latitude, longitude, altitude, til
     # Divide by the total DC power to get the power (in kW) per 1kW of solar
     return ac_power / (module_name['capacity'] * 1000 *
                        strings['mods_per_string'] * strings['strings_per_inv'])
-
-
-def calc_night_duration(power_profile, percent_at_night=0, validate=True):
-    """ 
-    For each timestep in a solar or power profile, determine if it is night (or there is no PV
-        generation), if it is the first timestep of the night and the total night duration.
-        
-    If percent_at_night is specified, it is considered nighttime when the pv power is at
-        max(power_profile) * percent_at_night, allowing a buffer before sundown. It is allowed
-        to range from 0 to 1.
-
-    """
-
-    if validate:
-        # Put arguments in a dict
-        args_dict = {'percent_at_night': percent_at_night}
-
-        # Validate all parameters
-        validate_all_parameters(args_dict)
-
-    # Create dataframe to hold night info for each timestep
-    night_df = pd.DataFrame(index=power_profile.index)
-
-    # Determine which timesteps are during the nighttime, add to dataframe
-    night_df['is_night'] = power_profile.values <= power_profile.max() * percent_at_night
-
-    # Calculate duration for each night (or 0 PV period)
-    temp1 = night_df['is_night'].cumsum().value_counts()
-    temp2 = np.array(temp1[temp1 > 1].sort_index().index)
-    if night_df.iloc[-1, -1]:
-        temp2 = np.append(temp2, np.array(temp1.sort_index().index[-1]))
-    temp2 = temp2[np.where(temp2 > 0)]
-    night_lengths = [temp2[0]] + list(temp2[1:] - temp2[:-1])
-
-    # Find the first hour of each night (or 0 PV period)
-    night_df['is_first_hour_of_night'] = False
-    night_df['night_duration'] = np.nan
-    for i, _ in enumerate(night_df.iterrows()):
-        if (i == 0 and night_df.iloc[0, -3]) or \
-                (i > 0 and night_df.iloc[i, -3]
-                 and not night_df.iloc[i - 1, -3]):
-            night_df.iloc[i, -2] = True
-            night_df.iloc[i, -1] = night_lengths.pop(0)
-    night_df['night_duration'].ffill(inplace=True)
-    night_df.loc[night_df['is_night'] == False, 'night_duration'] = 0
-
-    return night_df
 
 
 if __name__ == "__main__":
