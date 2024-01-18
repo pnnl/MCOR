@@ -8,14 +8,10 @@ pvlib-python to calculate AC power for each profile.
 File contents:
     Classes:
         TidalProfileGenerator
-        
+
     Standalone functions:
-        get_load_tidal_from_upload
-        extract_tidal_constituents
-        extrapolate_tidal_epoch
-        generate_tidal_profiles
-        calc_tidal_prod
-                   
+        get_tidal_data_from_upload
+        calc_pv_prod
 """
 
 import os
@@ -48,8 +44,8 @@ TIDAL_DEFAULTS = {'turbine_output': 100,
 
 class TidalProfileGenerator:
     """   
-    Class to download NREL solar data, create solar profiles using the ASP model, and
-        calculate power profiles using pvlib.
+    Class to upload user tidal data, create tidal profiles, and
+        calculate power profiles.
     
     Parameters
     ----------
@@ -86,28 +82,21 @@ class TidalProfileGenerator:
                 
     Methods
     ----------
-    
-        get_solar_data: Downloads solar data from NREL
-        
-        get_wind_speed: Gets average wind speed from TMY data
-        
-        get_solar_profiles: Calculates simulated solar profiles based on a solar state
-            probability matrix
-            
-        get_power_profiles: Calculates the output AC power for a 1kW system for each solar and
-            temperature profile.
 
-        get_power_profiles_from_upload: Creates power profiles from uploaded 8760 production
-            data.
-            
-        get_night_duration: For each power profile, gets the hours that are at night, and the
-            duration of each night
-            
-        get_pv_params: Gets the module capacity and area for calculating array size
+
+        get_tidal_data_from_upload: Uploads one year of tidal data
+
+        extract_tidal_constituents: Extracts tidal constituents from tidal current data
+
+        extrapolate_tidal_epoch: Creates tidal epoch of current data from tidal constituents
+
+        generate_tidal_profiles: Generates tidal profiles from tidal epoch
+
+        calc_tidal_prod: Calculates tidal production for each profile
             
         crop_timeline: Used to crop the profiles to a period of less than 1 day
 
-        pv_checks: Creates several plots to verify that the pv power calculation went OK
+        tidal_checks: Creates several plots to verify that the tidal power calculation went OK
 
         get_dc_to_ac: Returns the DC to AC ratio
 
@@ -115,20 +104,10 @@ class TidalProfileGenerator:
         
     Calculated Attributes
     ----------
-    
-        wind_speed: median wind speed in m/s
 
-        solar_profiles: list of Pandas dataframes with solar profiles
-        
-        temp_profiles: list of Pandas dataframes with temperature profiles
+        tidal_profiles: list of Pandas dataframes with tidal profiles
         
         power_profiles: list of Pandas series' with PV power profiles for a 1kW system
-            
-        night_profiles: list of Pandas dataframes with info on whether it is night
-            
-        tmy_solar_profile: TMY solar profile
-        
-        tmy_power_profile: TMY power profile for a 1kW system
 
         constraints: Pandas DataFrame holding constraints for input parameters
 
@@ -182,7 +161,7 @@ class TidalProfileGenerator:
             # skip files that aren't csv files
             if not file.split('.')[-1] == '.csv':
                 continue
-            tidal_current = pd.read_csv(os.path.join(filedir, file))
+            tidal_current = pd.read_csv(os.path.join(filedir, file)) # just one depth??
 
     def extract_tidal_constituents(self, tidal_current):
         """Extract tidal constituents from 8760 of tidal current data"""
@@ -244,7 +223,7 @@ class TidalProfileGenerator:
 
     def get_power_profiles(self):
         """ 
-        Calculate the output AC power for a 1kW system for each tidal profile.
+        Calculate the output AC power for a 1kW system for each tidal profile. Or do we do it for the full size of the specified turbine??
        
         If read_from_file is True, reads the solar and temperature data  from csv, allowing
             for faster lookup rather than re-running get_solar_data and get_solar_profiles.
@@ -291,12 +270,6 @@ class TidalProfileGenerator:
                 suppress_warnings=self.suppress_warnings,
                 advanced_inputs=self.advanced_inputs)]
 
-
-
-    def get_pv_params(self):
-        """ Get the module capacity and area for calculating array size. """
-
-        return self.advanced_inputs['module']
 
     def crop_timeline(self, num_seconds, validate=True):
         """ Used to crop the profiles to a period of less than 1 day 
@@ -436,26 +409,26 @@ def calc_pv_prod(tidal_profile, latitude, longitude, depth, validate=True,
 
 if __name__ == "__main__":
     # Used for testing
-    # Create a SolarProfileGenerator object
+    # Create a TidalProfileGenerator object
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
-    spg = SolarProfileGenerator(latitude, longitude, timezone, 0, 0, 0, 5, 14,
-                                pv_tracking='fixed', validate=True,
-                                start_year=1998, end_year=2020,
-                                solar_source='nsrdb')
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, 0, 5, 14, validate=True)
     print('generation successful')
 
-    # Download NREL profiles
-    spg.get_solar_data()
-    print('downloaded data')
+    tpg.get_tidal_data_from_upload()
+    print('uploaded data')
 
-    # Get solar profiles from ASP code
-    spg.get_solar_profiles()
-    print('generated profiles')
+    tpg.extract_tidal_constituents()
+    print('extracted tidal constituents')
 
-    # Get power profiles using pvlib-python
-    spg.get_power_profiles()
+    tpg.extrapolate_tidal_epoch()
+    print('extrapolated tidal epoch')
+
+    tpg.generate_tidal_profiles()
+    print('generated tidal profiles')
+
+    tpg.get_power_profiles()
     print('calculated power')
 
-    spg.pv_checks()
+    spg.tidal_checks()
