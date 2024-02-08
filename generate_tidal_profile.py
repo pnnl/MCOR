@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Runs the Alternative Solar Profiles (ASP) algorithm used for solar forecasting and uses
-pvlib-python to calculate AC power for each profile.
+
  
 
     
@@ -11,41 +10,33 @@ File contents:
 
     Standalone functions:
         get_tidal_data_from_upload
-        calc_pv_prod
+        calc_tidal_prod
 """
 
 import os
 import pandas as pd
 import numpy as np
-import math
 import datetime
-import pytz
 import matplotlib.pyplot as plt
-import io
-import requests
-import json
-import warnings
-import yaml
+from utide import solve, reconstruct
 
-from pvlib.temperature import sapm_cell, TEMPERATURE_MODEL_PARAMETERS
-from pvlib import solarposition, irradiance, atmosphere, pvsystem, tracking
 from validation import validate_all_parameters, log_error, strings_warnings
-from alternative_solar_profiles import AlternativeSolarProfiles
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
-TIDAL_DEFAULTS = {'turbine_output': 100,
-                  'rotor_diameter': 1,
-                  'rotor_number' : 1,
-                  'PTO_efficiency' : .95,
-                  'maximum_cp' : 0.42,
-                  'cut_in_velocity' : 0,
-                  'cut_out_velocity' : 3}
-
-
+TIDAL_DEFAULTS = {'rated_power': 50,
+                  'rotor_length': 5,
+                  'turbine_number': 1,
+                  'maximum_cp': 0.42,
+                  'cut_in_velocity': 0.7,
+                  'cut_out_velocity': 2.6,
+                  'inverter_efficiency': 90,
+                  'losses': 10}
 class TidalProfileGenerator:
     """   
-    Class to upload user tidal data, create tidal profiles, and
-        calculate power profiles.
+    Class to upload tidal_current tidal data, extract tidal constituents,
+
+
+        extrapolate to tidal epoch, create tidal profiles, and calculate power profiles.
     
     Parameters
     ----------
@@ -58,12 +49,10 @@ class TidalProfileGenerator:
             US/Alaska, US/Aleutian, US/Arizona, US/Central, US/East-Indiana, US/Eastern,
             US/Hawaii, US/Indiana-Starke, US/Michigan, US/Mountain, US/Pacific,
             US/Pacific-New, US/Samoa
-        
-        depth: depth bin in meters
 
-        num_trials: Number of solar profiles to create
+        num_trials: Number of tidal profiles to create
     
-        length_trials: Length of solar profiles in hours
+        length_trials: Length of tidal profiles in hours
 
 
         max_iter: The maximum number of iterations allowed for trying to match hourly and
@@ -113,21 +102,24 @@ class TidalProfileGenerator:
 
     """
 
-    def __init__(self, latitude, longitude, timezone, depth, num_trials,
-                 length_trials, max_iter=200, multithreading=True,
-                 advanced_inputs={}, validate=True, suppress_warnings=False):
+    def __init__(self, latitude, longitude, timezone, num_trials,
+                 length_trials, max_iter=200, validate=True,advanced_inputs={}):
 
         # Assign parameters
         self.latitude = latitude
         self.longitude = longitude
         self.timezone = timezone
-        self.depth = depth
         self.num_trials = num_trials
         self.length_trials = length_trials
+        # self.rated_power = rated_power
+        # self.rotor_length = rotor_length
+        # self.turbine_number = turbine_number
+        # self.inverter_efficiency = inverter_efficiency
+        # self.maximum_cp = maximum_cp
+        # self.losses = losses
         self.max_iter = max_iter
-        self.multithreading = multithreading
         self.advanced_inputs = advanced_inputs
-        self.suppress_warnings = suppress_warnings
+
         self.tidal_profiles = []
         self.power_profiles = []
 
@@ -142,7 +134,6 @@ class TidalProfileGenerator:
             args_dict = {'latitude': self.latitude,
                          'longitude': self.longitude,
                          'timezone': self.timezone,
-                         'depth': self.depth,
                          'num_trials': self.num_trials,
                          'length_trials': self.length_trials,
                          'max_iter': self.max_iter,
@@ -154,33 +145,65 @@ class TidalProfileGenerator:
 
 
     def get_tidal_data_from_upload(self):
-        """Load user-specified tidal data"""
-        filedir = os.path.join(TIDAL_DATA_DIR, 'user')
-        files = os.listdir(filedir)
-        for file in files:
-            # skip files that aren't csv files
-            if not file.split('.')[-1] == '.csv':
-                continue
-            tidal_current = pd.read_csv(os.path.join(filedir, file)) # just one depth??
+        # """Load tidal_current-specified tidal data"""
+        # filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
+        # file = os.listdir(filedir)
+        # # read first (and only) file in directory
+        # self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
 
-    def extract_tidal_constituents(self, tidal_current):
-        """Extract tidal constituents from 8760 of tidal current data"""
 
-        tidal_constituents = tidal_current
-        return tidal_constituents
+        # generate fake tide
+        def fake_tide(t, M2amp, M2phase):
 
-    def extrapolate_tidal_epoch(self, tidal_constituents):
-        """Extrapolate 19-year tidal epoch from tidal constituents"""
-        tidal_epoch = tidal_constituents
-        return tidal_epoch
+            return M2amp * np.sin(2 * np.pi * t / 12.42 - M2phase)
 
-    def generate_tidal_profiles(self, tidal_epoch):
+        t = pd.date_range(
+            start='1/1/2017', end='1/1/2018', freq='H')[:-1]
+
+        # Signal + some noise.
+        u = fake_tide(np.arange(8760), M2amp=2, M2phase=0) + np.random.randn(8760)
+        v = fake_tide(np.arange(8760), M2amp=1, M2phase=np.pi) + np.random.randn(8760)
+
+        self.tidal_current = pd.DataFrame()
+        self.tidal_current['u'] = u
+        self.tidal_current['v'] = v
+
+
+
+    def extrapolate_tidal_epoch(self):
+        """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
+
+        # could modify this in the future to extrapolate any amount of data
+
+        # adding index because dummy data has no index
+        self.tidal_current.index = pd.date_range(
+            start='1/1/2017', end='1/1/2018', freq='H')[:-1]
+        coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
+
+        # go from beginning to end of solar data
+        epoch_index = pd.date_range(
+            start='1/1/2017', end='1/1/2036', freq='H')[:-1]
+
+        tide = reconstruct(epoch_index, coef, verbose=False)
+
+
+        self.tidal_epoch = pd.DataFrame()
+        self.tidal_epoch['v'] = (tide.u**2 + tide.v**2)**(0.5)
+
+        self.tidal_epoch.index = epoch_index
+
+
+    def generate_tidal_profiles(self):
         """Generate tidal profiles from tidal epoch data"""
 
+        # dummy code to generate enough data for testing
+        # self.tidal_epoch = pd.concat([self.tidal_epoch]*18)
+        # self.tidal_epoch = pd.concat([self.tidal_epoch, self.tidal_epoch.iloc[-96:]])
+
         # Randomly create start dates
-        tidal_epoch.index = pd.date_range(
-            start='1/1/2017', end='1/1/2035', freq='H')[:-1]
-        start_datetimes = tidal_epoch.iloc[:-self.length_trials].sample(
+        # self.tidal_epoch.index = pd.date_range(
+        #     start='1/1/2017', end='1/1/2035', freq='H')[:-1]
+        start_datetimes = self.tidal_epoch.iloc[:-self.length_trials].sample(
             int(self.num_trials)).index.values
 
         date_ranges = [pd.date_range(start=start_date,
@@ -202,16 +225,27 @@ class TidalProfileGenerator:
                     periods=replace_timesteps, freq='H'))
 
             # Create 20-year annual profile to allow for profiles with year-end overlap
-            twentyyear_profile = tidal_epoch.append(tidal_epoch.head(8760))
+            twentyyear_profile = pd.concat([self.tidal_epoch, self.tidal_epoch.head(8760)])
             twentyyear_profile.index = pd.date_range(
-                start='1/1/2017', end='1/1/2036', freq='H')[:-1]
+                start='1/1/2017', end='1/1/2037', freq='H')[:-25]
 
 
         # Loop over each date range and sample profile data
         for date_range in date_ranges:
-            self.power_profiles += [twentyyear_profile.loc[date_range]]
+            self.tidal_profiles += [twentyyear_profile.loc[date_range]]
 
-        for i, tidal_profile in self.power_profiles:
+
+        # Create directory to hold data
+        if '{}_{}_{}d_{}t'.format(
+                self.latitude, self.longitude, int(self.length_trials / 24),
+                int(self.num_trials)) not in \
+                os.listdir(os.path.join(TIDAL_DATA_DIR, 'tidal_profiles')):
+            os.mkdir(os.path.join(
+                TIDAL_DATA_DIR, 'tidal_profiles', '{}_{}_{}d_{}t'.format(
+                    self.latitude, self.longitude, int(self.length_trials / 24),
+                    int(self.num_trials))))
+
+        for i, tidal_profile in enumerate(self.tidal_profiles):
             tidal_profile.to_csv(os.path.join(
             TIDAL_DATA_DIR, 'tidal_profiles', '{}_{}_{}d_{}t'.format(
                 self.latitude, self.longitude, int(self.length_trials / 24),
@@ -219,14 +253,15 @@ class TidalProfileGenerator:
             '{}_{}_tidal_trial_{}.csv'.format(self.latitude,
                                               self.longitude, i)))
 
-
+    def add_storm_factors(self):
+        """Add storm factors to tidal profiles, correlate with solar profiles"""
 
     def get_power_profiles(self):
         """ 
-        Calculate the output AC power for a 1kW system for each tidal profile. Or do we do it for the full size of the specified turbine??
+        Calculate the output AC power for a 1kW system for each tidal profile.
        
-        If read_from_file is True, reads the solar and temperature data  from csv, allowing
-            for faster lookup rather than re-running get_solar_data and get_solar_profiles.
+        If read_from_file is True, reads the tidal data from csv,allowing
+            for faster lookup rather than re-running get_tidal_data and get_tidal_profiles.
             
         """
 
@@ -249,26 +284,28 @@ class TidalProfileGenerator:
                 log_error(message)
                 raise Exception(message)
 
-            # Fix timezone
-            try:
-                tidal.index = tidal.index.tz_convert(self.timezone)
-            except AttributeError:
-                # Deal with pandas issue creating datetime index from timeseries including
-                #   daylight savings time shift
-                tidal.index = pd.to_datetime(tidal.index, utc=True).tz_convert(self.timezone)
-
+            # Localize timezone
+            tidal.index = tidal.index.tz_localize(self.timezone)
 
 
             self.tidal_profiles += [tidal]
 
 
 
-        # Calculate PV production for each tidal profile
+        # Calculate production for each tidal profile
         for tidal in self.tidal_profiles:
-            self.power_profiles += [calc_pv_prod(
-                tidal, temp, self.latitude, self.longitude, self.depth,
-                suppress_warnings=self.suppress_warnings,
-                advanced_inputs=self.advanced_inputs)]
+            self.power_profiles += [calc_tidal_prod(
+                tidal,
+                self.latitude,
+                self.longitude,
+                self.advanced_inputs['rated_power'],
+                self.advanced_inputs['rotor_length'],
+                self.advanced_inputs['turbine_number'],
+                self.advanced_inputs['inverter_efficiency'],
+                self.advanced_inputs['maximum_cp'],
+                self.advanced_inputs['losses'],
+                self.advanced_inputs['cut_in_velocity'],
+                self.advanced_inputs['cut_out_velocity'])]
 
 
     def crop_timeline(self, num_seconds, validate=True):
@@ -321,91 +358,77 @@ class TidalProfileGenerator:
     def get_dc_to_ac(self):
         """ Returns the dc to ac ratio. """
 
-        # Get total DC power per inverter
-        dc = self.advanced_inputs['module']['capacity'] * \
-             self.advanced_inputs['strings']['mods_per_string'] * \
-             self.advanced_inputs['strings']['strings_per_inv'] * 1000
+        # we should remove for tidal
 
-        # Get inverter AC power
-        inverter_list = pvsystem.retrieve_sam(
-            self.advanced_inputs['inverter']['database'])
-        inverter = inverter_list[self.advanced_inputs['inverter']['model']]
-        ac = inverter['Paco']
+        # Get DC power output
+        dc = self.advanced_inputs['rated_power']
+
+        # Get inverter AC power output
+        ac = self.advanced_inputs['inverter_output']
 
         return dc / ac
 
     def get_losses(self):
         """ Returns the system losses. """
 
-        # Calculate losses
-        params = {key: val for key, val in self.advanced_inputs.items()
-                  if key in ['soiling', 'shading', 'snow', 'mismatch',
-                             'wiring', 'connections', 'lid',
-                             'nameplate_rating', 'age', 'availability']}
-        losses = pvsystem.pvwatts_losses(**params)
+        losses = self.advanced_inputs['losses']
 
         return losses
 
 
+def calc_tidal_prod(tidal_profile, latitude, longitude,
+                    rated_power, rotor_length, turbine_number,
+                    inverter_efficiency, maximum_cp, losses,
+                    cut_in_velocity, cut_out_velocity, validate=False):
 
-
-def calc_pv_prod(tidal_profile, latitude, longitude, depth, validate=True,
-                 suppress_warnings=False, advanced_inputs={}):
     """ Calculates the production from a tidal profile. """
 
     if validate:
         # Put arguments in a dict
         args_dict = {'tidal_profile': tidal_profile,
                      'latitude': latitude,
-                     'longitude': longitude, 'altitude': altitude}
-
+                     'longitude': longitude,
+                     'rated_power': rated_power,
+                     'rotor_length': rotor_length,
+                     'turbine_number': turbine_number,
+                     'inverter_efficiency': inverter_efficiency,
+                     'maximum_cp': maximum_cp,
+                     'losses': losses,
+                     'cut_in_velocity': 0.7,
+                     'cut_out_velocity': 2.6}
+    #
         # Validate all parameters
         validate_all_parameters(args_dict)
 
 
     # Calculate DC power
-        dc_power = pvsystem.singlediode(photocurrent, saturation_current, resistance_series,
-                                        resistance_shunt, nNsVth)
 
-    # If dc power exceeds the rated module power by more than 110% print out a warning
-    if len(dc_power[dc_power['p_mp'] > module_name['capacity'] * 1000 * 1.1]):
-        message = 'Warning: DC power exceeds module rating by more than ' \
-                  '110% for the following timesteps.'
-        log_error(message)
-        if not suppress_warnings:
-            print(message)
-            print((dc_power.loc[dc_power['p_mp'] > module_name['capacity']
-                                * 1000 * 1.1, 'p_mp'] /
-                   module_name['capacity'] / 1000 * 100).to_frame().rename(
-                columns={'p_mp': 'percentage of module power'}))
+    dc_power = pd.DataFrame()
+
+    for index, row in tidal_profile.iterrows():
+        u = row['v']
+        if u > cut_in_velocity and u < cut_out_velocity:
+            dc_power.at[
+                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 / (rated_power * turbine_number)
+        elif u < cut_in_velocity:
+            dc_power.at[index, 'power'] = 0
+        elif u > cut_out_velocity:
+            dc_power.at[index, 'power'] = rated_power / (rated_power * turbine_number)
+        else:
+            dc_power.at[index, 'power'] = np.nan
 
     # Calculate losses
-    params = {key: val for key, val in advanced_inputs.items()
-              if key in ['soiling', 'shading', 'snow', 'mismatch', 'wiring',
-                         'connections', 'lid', 'nameplate_rating', 'age', 'availability']}
-    losses = pvsystem.pvwatts_losses(**params)
-    dc_power['p_mp'] = dc_power['p_mp'] * (1 - losses / 100)
+    dc_power['power'] = dc_power['power'] * (1 - losses / 100)
 
-    # If dhi was < 0 at any point, plot power to make sure it looks reasonable
-    if plot_power:
-        plt.figure()
-        dc_power['p_mp'].plot(title='DC Power for {:.0f}W system'.format(
-            module_name['capacity'] * 1000))
-
-    # Create strings of modules for conversion to AC power
-    dc_power['v_mp'] *= strings['mods_per_string']
-    dc_power['p_mp'] *= strings['mods_per_string'] * strings['strings_per_inv']
 
     # Calculate AC power
-    ac_power = pvsystem.inverter.sandia(dc_power.v_mp, dc_power.p_mp, inverter)
+    ac_power = dc_power['power'] * inverter_efficiency
 
     # Force values less than 0 to 0
     ac_power[ac_power < 0] = 0
 
-    # Divide by the total DC power to get the power (in kW) per 1kW of solar
-    return ac_power / (module_name['capacity'] * 1000 *
-                       strings['mods_per_string'] * strings['strings_per_inv'])
-
+    # Divide by the total DC power to get the power (in kW) per 1kW of tidal
+    return ac_power / rated_power
 
 if __name__ == "__main__":
     # Used for testing
@@ -413,14 +436,10 @@ if __name__ == "__main__":
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, 0, 5, 14, validate=True)
-    print('generation successful')
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, validate=False)
 
     tpg.get_tidal_data_from_upload()
     print('uploaded data')
-
-    tpg.extract_tidal_constituents()
-    print('extracted tidal constituents')
 
     tpg.extrapolate_tidal_epoch()
     print('extrapolated tidal epoch')
@@ -431,4 +450,4 @@ if __name__ == "__main__":
     tpg.get_power_profiles()
     print('calculated power')
 
-    spg.tidal_checks()
+    tpg.tidal_checks()
