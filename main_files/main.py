@@ -86,6 +86,7 @@ def run_mcor(input_dict):
                                 net_metering_rate=net_metering_inputs["net_metering_rate"],
                                 demand_rate=demand_rate_inputs["demand_rate"],
                                 existing_components=existing_components_inputs["existing_components"],
+                                existing_generator='existing_generator' in input_dict['existing_components_inputs'],
                                 output_tmy=True,
                                 validate=True,
                                 net_metering_limits=net_metering_inputs["net_metering_limits"],
@@ -101,7 +102,9 @@ def run_mcor(input_dict):
     optim.get_load_profiles()
 
     # Run all simulations
-    optim.run_sims_par()
+    # optim.run_sims_par()
+    #run without multi-threading
+    optim.run_sims()
 
     # Filter and rank results
     optim.parse_results()
@@ -202,7 +205,15 @@ if __name__ == "__main__":
     # input_dict["existing_components_inputs"]["pv"] = PV(existing=True, pv_capacity=100, tilt=tilt, azimuth=azimuth,
     #         module_capacity=0.360, module_area=3, spacing_buffer=2,
     #         pv_tracking='fixed', pv_racking='ground')
-    # input_dict["existing_components_inputs"]["existing_components"] = {'pv': pv}
+    # input_dict["existing_components_inputs"]["existing_components"] = {"pv": ["pv"]}
+
+    input_dict["existing_components_inputs"]["existing_generator"] = Generator(existing=True, rated_power=500, num_units=1,
+                    fuel_curve_model={'1/4 Load (gal/hr)': 11, '1/2 Load (gal/hr)': 18.5,
+                                      '3/4 Load (gal/hr)': 26.4, 'Full Load (gal/hr)': 35.7},
+                    capital_cost=191000, ideal_minimum_load=0.3,
+                    loading_level_to_add_unit=0.9,
+                    loading_level_to_remove_unit=0.3, validate=True)
+    input_dict["existing_components_inputs"]["existing_components"] = {'generator': input_dict["existing_components_inputs"]["existing_generator"]}
 
     # Specific PV and battery sizes dictionary
     input_dict["specific_pv_battery_sizes_inputs"] = {}
