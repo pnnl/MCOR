@@ -317,21 +317,24 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
         # Validate all parameters
         validate_all_parameters(args_dict)
 
-    # Calculate DC power (normalized to turbine size. i.e. per 1kW of tidal)
+    # Calculate DC power
     dc_power = pd.DataFrame()
     for index, row in tidal_profile.iterrows():
         u = row['v']
         if u >= cut_in_velocity and u <= cut_out_velocity:
             dc_power.at[
-                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 * turbine_number / (rated_power * turbine_number)
+                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 * turbine_number
         elif u < cut_in_velocity:
             dc_power.at[index, 'power'] = 0
         elif u > cut_out_velocity:
-            dc_power.at[index, 'power'] = rated_power * turbine_number / (rated_power * turbine_number)
+            dc_power.at[index, 'power'] = rated_power * turbine_number
         else:
             dc_power.at[index, 'power'] = np.nan
 
-    # Calculate losses
+    # Normalize DC power generation to turbine size. i.e. per 1kW of tidal
+    dc_power['power'] = dc_power['power'] / (rated_power * turbine_number)
+
+    # Calculate turbine losses
     dc_power['power'] = dc_power['power'] * (1 - turbine_losses / 100)
 
     # Calculate AC power
