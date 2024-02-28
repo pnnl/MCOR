@@ -18,6 +18,7 @@ File contents:
         SimpleMicrogridSystem (inherits from MicrogridSystem)
 
 """
+
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -80,7 +81,7 @@ class PV(Component):
         
         existing: whether or not the component already exists on site
 
-        pv_capacity: total_capacity in kW
+        capacity: total_capacity in kW
         
         tilt: panel tilt in degrees
         
@@ -118,7 +119,7 @@ class PV(Component):
         # Assign parameters
         self.category = 'pv'
         self.existing = existing
-        self.pv_capacity = pv_capacity  # in kW
+        self.capacity = pv_capacity  # in kW
         self.tilt = tilt
         self.azimuth = azimuth
         self.module_area = module_area  # in in^2
@@ -130,7 +131,7 @@ class PV(Component):
 
         if validate:
             # List of initialized parameters to validate
-            args_dict = {'existing': existing, 'pv_capacity': pv_capacity,
+            args_dict = {'existing': existing, 'capacity': pv_capacity,
                          'tilt': tilt, 'azimuth': azimuth,
                          'module_capacity': module_capacity,
                          'module_area_in2': module_area,
@@ -141,17 +142,17 @@ class PV(Component):
             validate_all_parameters(args_dict)
 
     def __repr__(self):
-        return 'PV: Capacity: {:.1f}kW'.format(self.pv_capacity)
+        return 'PV: Capacity: {:.1f}kW'.format(self.capacity)
                 
     def calc_area(self):
         """ Calculates the area of the array """
         
         # Calculate total array area in ft^2
-        return self.pv_capacity / self.module_capacity * \
+        return self.capacity / self.module_capacity * \
             self.module_area / 144 * self.spacing_buffer
 
     def get_capacity(self):
-        return self.pv_capacity
+        return self.capacity
 
     def calc_capital_cost(self, cost_df, existing_components):
         """ Calculates cost of PV array """
@@ -159,9 +160,9 @@ class PV(Component):
         # Adjust total pv_capacity to consider existing pv
         if 'pv' in existing_components.keys():
             adjusted_pv_capacity = max(
-                self.pv_capacity - existing_components['pv'].pv_capacity, 0)
+                self.capacity - existing_components['pv'].capacity, 0)
         else:
-            adjusted_pv_capacity = self.pv_capacity
+            adjusted_pv_capacity = self.capacity
 
         # Set cost to largest size in case pv exceeds max size on cost doc
         pv_cost_per_w = cost_df.loc[(self.pv_racking + ';' + self.pv_tracking)].iloc[-1]
@@ -171,8 +172,8 @@ class PV(Component):
                 break
 
         # If utility-scale roof or carport-mount, print user warning
-        if self.pv_capacity > 5000 and self.pv_racking in ['roof', 'carport']:
-            print(f'WARNING: A pv capacity of {self.pv_capacity}kW does not make sense with '
+        if self.capacity > 5000 and self.pv_racking in ['roof', 'carport']:
+            print(f'WARNING: A pv capacity of {self.capacity}kW does not make sense with '
                   f'{self.pv_racking} racking. It is recommended that you select '
                   f'ground-mounted racking.')
 
@@ -184,9 +185,9 @@ class PV(Component):
         # Adjust total pv_capacity to consider existing pv
         if 'pv' in existing_components.keys():
             adjusted_pv_capacity = max(
-                self.pv_capacity - existing_components['pv'].pv_capacity, 0)
+                self.capacity - existing_components['pv'].capacity, 0)
         else:
-            adjusted_pv_capacity = self.pv_capacity
+            adjusted_pv_capacity = self.capacity
 
         pv_om_cost_per_kw = cost_df['PV_{};{}'.format(
             self.pv_racking, self.pv_tracking)].values[1]
@@ -206,7 +207,7 @@ class MRE(Component):
 
         num_generators: the number of marine energy generators
 
-        mre_capacity: total_capacity in kW
+        capacity: total_capacity in kW
 
         generator_type: type of marine energy generator: 'tidal' or 'wave'
 
@@ -219,18 +220,18 @@ class MRE(Component):
 
     """
 
-    def __init__(self, existing, num_generators, mre_capacity, generator_type,
+    def __init__(self, existing, mre_capacity, num_generators, generator_type,
                  generator_capacity):
         # Assign parameters
         self.category = 'mre'
         self.existing = existing
         self.num_generators = num_generators
-        self.mre_capacity = mre_capacity  # in kW
+        self.capacity = mre_capacity  # in kW
         self.generator_type = generator_type
         self.generator_capacity = generator_capacity # in kW
 
     def get_capacity(self):
-        return self.mre_capacity
+        return self.capacity
 
 
 class Tidal(MRE):
@@ -261,9 +262,9 @@ class Tidal(MRE):
 
     """
 
-    def __init__(self, existing, num_generators, mre_capacity, generator_capacity, depth,
+    def __init__(self, existing, mre_capacity, num_generators, generator_capacity, depth,
                  blade_diameter, blade_type, validate=True):
-        super().__init__(existing, num_generators, mre_capacity, 'tidal',
+        super().__init__(existing, mre_capacity, num_generators, 'tidal',
                          generator_capacity)
         # Assign parameters
         self.depth = depth
@@ -285,23 +286,24 @@ class Tidal(MRE):
             validate_all_parameters(args_dict)
 
     def __repr__(self):
-        return 'Tidal: Capacity: {:.1f}kW'.format(self.mre_capacity)
+        return 'Tidal: Capacity: {:.1f}kW'.format(self.capacity)
 
     def calc_capital_cost(self, cost_df, existing_components):
         """ Calculates cost of Tidal array """
 
         # Adjust total mre_capacity to consider existing mre
+        # TODO - update this to consider # of turbines instead of capacity
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
             adjusted_mre_capacity = max(
-                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+                self.capacity - existing_components['mre'].capacity, 0)
         else:
-            adjusted_mre_capacity = self.mre_capacity
+            adjusted_mre_capacity = self.capacity
 
         # Set costs
-        # TODO
+        tidal_cost_per_turbine = cost_df.reset_index().iloc[0]['Tidal']
 
-        return adjusted_mre_capacity
+        return adjusted_mre_capacity * tidal_cost_per_turbine
 
     def calc_om_cost(self, cost_df, existing_components):
         """ Calculates O&M costs of a Tidal array """
@@ -310,14 +312,13 @@ class Tidal(MRE):
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
             adjusted_mre_capacity = max(
-                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+                self.capacity - existing_components['mre'].capacity, 0)
         else:
-            adjusted_mre_capacity = self.mre_capacity
+            adjusted_mre_capacity = self.capacity
 
         # Set O&M cost
-        # TODO
-
-        return adjusted_mre_capacity
+        tidal_om_cost_per_turbine = cost_df['Tidal'].values[1]
+        return adjusted_mre_capacity * tidal_om_cost_per_turbine
 
 
 class Wave(MRE):
@@ -342,9 +343,9 @@ class Wave(MRE):
 
     """
 
-    def __init__(self, existing, num_generators, mre_capacity, generator_capacity,
+    def __init__(self, existing, mre_capacity, num_generators, generator_capacity,
                  wave_inputs, validate=True):
-        super().__init__(existing, num_generators, mre_capacity, 'wave',
+        super().__init__(existing, mre_capacity, num_generators, 'wave',
                          generator_capacity)
         # Assign parameters
         self.wave_inputs = wave_inputs
@@ -361,7 +362,7 @@ class Wave(MRE):
             validate_all_parameters(args_dict)
 
     def __repr__(self):
-        return 'Wave: Capacity: {:.1f}kW'.format(self.mre_capacity)
+        return 'Wave: Capacity: {:.1f}kW'.format(self.capacity)
 
     def calc_capital_cost(self, cost_df, existing_components):
         """ Calculates cost of Wave array """
@@ -370,9 +371,9 @@ class Wave(MRE):
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'wave':
             adjusted_mre_capacity = max(
-                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+                self.capacity - existing_components['mre'].capacity, 0)
         else:
-            adjusted_mre_capacity = self.mre_capacity
+            adjusted_mre_capacity = self.capacity
 
         # Set costs
         # TODO
@@ -386,9 +387,9 @@ class Wave(MRE):
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'wave':
             adjusted_mre_capacity = max(
-                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+                self.capacity - existing_components['mre'].capacity, 0)
         else:
-            adjusted_mre_capacity = self.mre_capacity
+            adjusted_mre_capacity = self.capacity
 
         # Set O&M cost
         # TODO
@@ -534,8 +535,12 @@ class Battery(Component):
 
 class SimpleLiIonBattery(Battery):
     """ 
-    Models a simple lithium ion battery, where the battery discharges at a constant rate every
-        night, based on the available capacity.
+    Models a simple lithium ion battery, where the battery discharges according to three
+        possible methods: 
+            (1) at a constant rate every night, based on the available capacity
+            (2) at a dynamic rate every night based on remaining available
+                    capacity
+            (3) up to the available capacity at all hours, day or night
         
     Parameters
     ----------
@@ -574,9 +579,7 @@ class SimpleLiIonBattery(Battery):
         self.discharge_eff = self.one_way_battery_efficiency \
             * self.one_way_inverter_efficiency
 
-    def update_state(self, net_load, duration, temperature, is_night,
-                     night_duration, night_hours_left,
-                     soc_at_initial_hour_of_night, dispatch_strategy):
+    def update_state(self, net_load, duration, dispatch_strategy, night_params=None):
         """ 
         Charge or discharge the battery for a single time step.
         
@@ -588,24 +591,22 @@ class SimpleLiIonBattery(Battery):
 
             duration: duration of timestep in seconds
 
-            temperature: outdoor air temperature in degrees Celcius, currently does nothing
-
-            is_night: if it is currently nighttime, boolean
-
-            night_duration: length of current night in number of timesteps, if is_night is
-                false, it is 0
-
-            night_hours_left: remaining hours in night
-
-            soc_at_initial_hour_of_night: the initial state of charge during the first hour of
-                the night
-
             dispatch_strategy: determines the battery dispatch strategy.
-            Options include:
-                night_const_batt (constant discharge at night)
-                night_dynamic_batt (updates the discharge rate based on remaining available
-                    capacity)
-                
+                Options include:
+                    night_const_batt (constant discharge at night)
+                    night_dynamic_batt (updates the discharge rate based on remaining available
+                        capacity)
+                    available_capacity (discharged up to the available capacity)
+
+            night_params: dictionary of night params only used if dispatch_strategy is not
+                set to available_capacity with the following keys: 
+                    is_night: if it is currently nighttime, boolean
+                    night_duration: length of current night in number of timesteps, if is_night is
+                        false, it is 0
+                    night_hours_left: remaining hours in night
+                    soc_at_initial_hour_of_night: the initial state of charge during the first hour of
+                        the night
+
         """
 
         # Initialize delta power
@@ -641,23 +642,18 @@ class SimpleLiIonBattery(Battery):
             #   capacity divided by # hours per timestep
             delta_power = min([abs(net_load), self.power, external_energy/(duration/3600)])
             
-            # If nighttime, limit to maximum nighttime power required to discharge at a
-            #   constant rate
-            if is_night:
+            # If nighttime and using a night-based dispatch strategy, limit the discharge rate
+            if night_params and night_params['is_night']:
                 # Calculate the maximum nighttime discharge power for the whole night
                 if dispatch_strategy == 'night_const_batt':
                     max_nighttime_power = \
-                        (soc_at_initial_hour_of_night - self.soc_lower_limit) \
-                        * self.batt_capacity * self.discharge_eff / night_duration
+                        (night_params['soc_at_initial_hour_of_night'] - self.soc_lower_limit) \
+                        * self.batt_capacity * self.discharge_eff / night_params['night_duration']
                 elif dispatch_strategy == 'night_dynamic_batt':
                     max_nighttime_power = \
                         (self.soc - self.soc_lower_limit) \
-                        * self.batt_capacity * self.discharge_eff / night_hours_left
-                else:
-                    message = 'Invalid battery dispatch strategy defined: ' \
-                              '{}.'.format(dispatch_strategy)
-                    log_error(message)
-                    raise Exception(message)
+                        * self.batt_capacity * self.discharge_eff \
+                        / night_params['night_hours_left']
 
                 delta_power = min([delta_power, max_nighttime_power])
 
@@ -900,7 +896,7 @@ class MicrogridSystem:
         
         capital_cost_usd: total captial costs in USD
         
-        annual_benefits_usd: total annual benefits from the system in USD
+        annual_benefits_usd: dictionary of total annual benefits from the system in USD by re_type
         
         pv_area_ft2: total pv array area in ft^2
         
@@ -943,10 +939,10 @@ class MicrogridSystem:
         
         calc_costs: calculates the system costs in USD
         
-        calc_annual_pv_benefits: calculates the annual system benefits in USD
+        calc_annual_RE_benefits: calculates the annual system benefits in USD
 
-        calc_net_metering_revenue: helper function for calc_annual_pv_benefits. Calculates
-            revenue for either the total PV system or an existing system.
+        calc_net_metering_revenue: helper function for calc_annual_RE_benefits. Calculates
+            revenue for either the total RE system or an existing system.
 
         calc_payback: calculates system payback in years
         
@@ -982,8 +978,8 @@ class MicrogridSystem:
         self.costs_usd = None
         self.capital_cost_usd = 0
         self.om_cost_usd = 0
-        self.annual_benefits_usd = 0
-        self.demand_benefits_usd = 0
+        self.annual_benefits_usd = {}
+        self.demand_benefits_usd = {}
         self.pv_area_ft2 = 0
         self.fuel_used_gal = 0
         self.simple_payback_yr = np.nan
@@ -1014,7 +1010,7 @@ class MicrogridSystem:
     def calc_costs(self, *args):
         pass
     
-    def calc_annual_pv_benefits(self, *args):
+    def calc_annual_RE_benefits(self, *args):
         pass
 
     def calc_payback(self):
@@ -1024,8 +1020,8 @@ class MicrogridSystem:
         """
         
         self.simple_payback_yr = self.capital_cost_usd / \
-                                 (self.annual_benefits_usd +
-                                  self.demand_benefits_usd -
+                                 (np.sum(list(self.annual_benefits_usd.values())) +
+                                  np.sum(list(self.demand_benefits_usd.values())) -
                                   self.om_cost_usd)
         if self.simple_payback_yr < 0:
             self.simple_payback_yr = np.nan
@@ -1152,7 +1148,7 @@ class MicrogridSystem:
                 ax1.set_title('Maximum PV Scenario for {:.0f}kW PV, \n'
                               '{:.0f}kW/{:.0f}kWh Battery, {:.0f}kW Generator '
                               'System'.format(
-                                self.components['pv'].pv_capacity,
+                                self.components['pv'].capacity,
                                 self.components['battery'].power,
                                 self.components['battery'].batt_capacity,
                                 self.components['generator'].rated_power))
@@ -1162,7 +1158,7 @@ class MicrogridSystem:
                 ax2.set_title('Minimum PV Scenario for {:.0f}kW PV, \n'
                               '{:.0f}kW/{:.0f}kWh Battery, {:.0f}kW Generator '
                               'System'.format(
-                                self.components['pv'].pv_capacity,
+                                self.components['pv'].capacity,
                                 self.components['battery'].power,
                                 self.components['battery'].batt_capacity,
                                 self.components['generator'].rated_power))
@@ -1328,15 +1324,16 @@ class SimpleMicrogridSystem(MicrogridSystem):
                 '{}_capital'.format(component_type)]
             self.om_cost_usd += self.costs_usd['{}_o&m'.format(component_type)]
 
-    def calc_annual_pv_benefits(self, tmy_solar, annual_load_profile, duration,
-                                electricity_rate, net_metering_rate, demand_rate,
+    def calc_annual_RE_benefits(self, tmy_generation, annual_load_profile, re_type, 
+                                duration, electricity_rate, net_metering_rate, demand_rate,
                                 batt_sizing_method, batt_eff, inv_eff,
                                 net_metering_limits=None, existing_components={},
                                 validate=True):
         """ 
         Calculate the annual financial benefit of the system.
             
-        tmy_solar_power: pv power time series for a 1kW array based on TMY data
+        tmy_generation: power time series for a 1kW array based on TMY data
+        re_type: type of RE resource: 'pv' or 'mre'
         annual_load_profile: annual load time series
         duration: duration of each timestep in the time series in seconds
         net_metering_limits: any limit on the net-metering policy in the form of:
@@ -1351,7 +1348,8 @@ class SimpleMicrogridSystem(MicrogridSystem):
 
         # Validate input parameters
         if validate:
-            args_dict = {'tmy_solar': tmy_solar,
+            args_dict = {'tmy_generation': tmy_generation,
+                         're_type': re_type,
                          'annual_load_profile': annual_load_profile,
                          'duration': duration,
                          'electricity_rate': electricity_rate,
@@ -1366,47 +1364,47 @@ class SimpleMicrogridSystem(MicrogridSystem):
         if net_metering_rate is None:
             net_metering_rate = electricity_rate
 
-        # Calculate revenue from the whole PV system
-        self.annual_benefits_usd = self.calc_net_metering_revenue(
-            annual_load_profile, tmy_solar, self.components['pv'].pv_capacity,
+        # Calculate revenue from the whole RE system
+        self.annual_benefits_usd[re_type] = self.calc_net_metering_revenue(
+            annual_load_profile, tmy_generation, self.components[re_type].capacity,
             net_metering_limits, electricity_rate, net_metering_rate,
             batt_sizing_method, batt_eff, inv_eff)
 
-        # Reduce revenue generating capacity if there is an existing PV system
-        if 'pv' in existing_components:
+        # Reduce revenue generating capacity if there is an existing RE system of the same type
+        if re_type in existing_components:
             existing_capacity_benefits_usd = \
                 self.calc_net_metering_revenue(
-                    annual_load_profile, tmy_solar,
-                    existing_components['pv'].pv_capacity, net_metering_limits,
+                    annual_load_profile, tmy_generation,
+                    existing_components[re_type].capacity, net_metering_limits,
                     electricity_rate, net_metering_rate, batt_sizing_method,
                     batt_eff, inv_eff)
-            self.annual_benefits_usd = max(
-                self.annual_benefits_usd - existing_capacity_benefits_usd, 0)
+            self.annual_benefits_usd[re_type] = max(
+                self.annual_benefits_usd[re_type] - existing_capacity_benefits_usd, 0)
 
-        # If a demand rate is set, calculate demand charges with and without the pv system
+        # If a demand rate is set, calculate demand charges with and without the RE system
         if demand_rate is not None:
-            # Check if existing PV, and if so, subtract generation from load
-            if 'pv' in existing_components:
-                net_load = annual_load_profile - tmy_solar.values * \
-                                existing_components['pv'].pv_capacity
+            # Check if existing RE, and if so, subtract generation from load
+            if re_type in existing_components:
+                net_load = annual_load_profile - tmy_generation.values * \
+                                existing_components[re_type].capacity
             else:
                 net_load = annual_load_profile
 
-            # Calculate demand charge without new PV capacity
+            # Calculate demand charge without new RE capacity
             base_demand = self.calc_demand_savings(net_load, demand_rate)
 
-            # Calculate demand charge with new PV capacity
-            net_load = annual_load_profile - tmy_solar.values * \
-                self.components['pv'].pv_capacity
+            # Calculate demand charge with new RE capacity
+            net_load = annual_load_profile - tmy_generation.values * \
+                self.components[re_type].capacity
             new_demand = self.calc_demand_savings(net_load, demand_rate)
 
             # Subtract the demand charges to get the savings
-            self.demand_benefits_usd = max(base_demand - new_demand, 0)
+            self.demand_benefits_usd[re_type] = max(base_demand - new_demand, 0)
 
     @staticmethod
     def calc_demand_savings(load_profile, demand_rate):
         """
-        Helper function for calc_annual_pv_benefits. Calculates demand charge savings from PV
+        Helper function for calc_annual_RE_benefits. Calculates demand charge savings from RE
             generation.
         """
 
@@ -1417,22 +1415,22 @@ class SimpleMicrogridSystem(MicrogridSystem):
         return (peak_month_demand * demand_rate).sum()
 
     @staticmethod
-    def calc_net_metering_revenue(load_profile, pv_power_profile, pv_capacity,
+    def calc_net_metering_revenue(load_profile, re_power_profile, capacity,
                                   net_metering_limits, electricity_rate, net_metering_rate,
                                   batt_sizing_method, batt_eff, inv_eff):
         """
-        Helper function for calc_annual_pv_benefits. Calculates revenue for either the total
-            PV system or an existing system.
+        Helper function for calc_annual_RE_benefits. Calculates revenue for either the total
+            RE system or an existing system.
 
         """
 
-        # Calculate hourly power not-imported due to PV and power exported
-        power_df = pd.DataFrame(np.transpose([load_profile.values, pv_power_profile.values]),
-                                columns=['load', 'pv'], index=load_profile.index)
-        power_df['pv_total'] = power_df['pv'] * pv_capacity
+        # Calculate hourly power not-imported due to RE system and power exported
+        power_df = pd.DataFrame(np.transpose([load_profile.values, re_power_profile.values]),
+                                columns=['load', 'RE'], index=load_profile.index)
+        power_df['RE_total'] = power_df['RE'] * capacity
         power_df['power_not_imported'] = power_df.apply(
-            lambda x: min(x['load'], x['pv_total']), axis=1)
-        power_df['power_exported'] = power_df['pv_total'] - power_df['power_not_imported']
+            lambda x: min(x['load'], x['RE_total']), axis=1)
+        power_df['power_exported'] = power_df['RE_total'] - power_df['power_not_imported']
 
         revenue = None
         if net_metering_limits is None:
@@ -1459,13 +1457,14 @@ class SimpleMicrogridSystem(MicrogridSystem):
 
         elif net_metering_limits['type'] == 'no_nm_use_battery':
             # There is no net-metering, but the battery should be used to capture and use
-            #   excess PV generation. This excess less losses is included in differed utility
+            #   excess RE generation. This excess less losses is included in differed utility
             #   costs
             rte = (batt_eff * inv_eff)**2
             revenue = \
                 (power_df['power_not_imported'].sum() +
                  power_df['power_exported'].sum() * rte) * electricity_rate
 
+            # TODO - update when have new batt sizing methods
             # Check that battery sizing method is 'no_pv_export'
             if batt_sizing_method != 'no_pv_export':
                 print('Warning: the "no_nm_use_battery" option should only be used with a '
@@ -1535,13 +1534,17 @@ if __name__ == "__main__":
     # Create a PV object
     pv = PV(existing=False, pv_capacity=500, tilt=0, azimuth=-180,
             module_capacity=0.360, module_area=3, spacing_buffer=2,
-            pv_tracking='fixed', pv_racking='ground')
+            pv_tracking='fixed', pv_racking='ground', validate=False)
+    
+    # Create a MRE object
+    tidal = Tidal(existing=False, mre_capacity=500, num_generators=1, generator_capacity=500, depth=10,
+                  blade_diameter=5, blade_type='foo', validate=False)
 
     # Create a battery object
     batt = SimpleLiIonBattery(existing=False, power=500, batt_capacity=2000,
                               initial_soc=1, one_way_battery_efficiency=0.9,
                               one_way_inverter_efficiency=0.95,
-                              soc_upper_limit=1, soc_lower_limit=0.1)
+                              soc_upper_limit=1, soc_lower_limit=0.1, validate=False)
 
     gen = Generator(existing=False, rated_power=500, num_units=1,
                     fuel_curve_model={'1/4 Load (gal/hr)': 11, '1/2 Load (gal/hr)': 18.5,
@@ -1559,4 +1562,5 @@ if __name__ == "__main__":
     system.add_component(batt, validate=False)
     system.add_component(gen, validate=False)
     system.add_component(fuel_tank, validate=False)
-    system.calc_costs(system_costs, {}, validate=False)
+    system.add_component(tidal, validate=False)
+    #system.calc_costs(system_costs, {}, validate=False)

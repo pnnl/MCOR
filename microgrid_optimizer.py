@@ -13,6 +13,8 @@ File contents:
         get_electricity_rate
 
 """
+
+# %%
 import json
 import multiprocessing
 import os
@@ -26,9 +28,11 @@ import tabulate
 from geopy.geocoders import Nominatim
 
 from generate_solar_profile import SolarProfileGenerator
-from microgrid_simulator import PVBattGenSimulator
-from microgrid_system import PV, SimpleLiIonBattery, SimpleMicrogridSystem
+from microgrid_simulator import REBattGenSimulator
+from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem
 from validation import validate_all_parameters, log_error, annual_load_profile_warnings
+from constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
+    generator_metrics, re_metrics, metric_order
 
 
 class Optimizer:
@@ -44,19 +48,14 @@ class Optimizer:
 class GridSearchOptimizer(Optimizer):
     """
     Simulates a grid of microgrid systems, and for each system, runs all
-    solar profiles.
+     scenario profiles.
 
     Parameters
     ----------
 
-        power_profiles: list of Pandas series' with PV power profiles
-            for a 1kW system
-
-        temp_profiles: list of Pandas dataframes with temperature
-            profiles
-
-        night_profiles: list of Pandas dataframes with info on whether
-            it is night
+        power_profiles: dictionary of lists of Pandas series' with RE power profiles
+            for a 1kW system, also includes list of Pandas dataframes with info on whether
+            it is night if a PV system is included
 
         annual_load_profile: Pandas series with a full year-long load
             profile. It must have a DateTimeIndex with a timezone.
@@ -66,7 +65,9 @@ class GridSearchOptimizer(Optimizer):
             {'longitude': float, 'latitude': float, 'timezone': string,
             'altitude': float}
 
-        tmy_solar: TMY solar pv production time series in kwh
+        tmy_solar: TMY solar pv production time series in kwh, only included if pv considered
+
+        tmy_mre: TMY mre production time series in kwh, only included if mre considered 
 
         pv_params: dictionary with the following keys and value
             datatypes:
@@ -77,6 +78,20 @@ class GridSearchOptimizer(Optimizer):
              'pv_tracking': string (options: [fixed, single_axis]),
              'advanced_inputs': dict (currently does nothing)}
 
+        # TODO
+        tidal_params: dictionary with the following keys and value 
+            datatypes:
+            {
+            
+            }
+
+        # TODO
+        wave_params: dictionary with the following keys and value 
+            datatypes:
+            {
+            
+            }
+
         battery_params: dictionary with the following keys and value
             datatypes:
             {'battery_power_to_energy': float, 'initial_soc': float,
@@ -85,6 +100,7 @@ class GridSearchOptimizer(Optimizer):
               'soc_upper_limit': float, 'soc_lower_limit': float,
               'init_soc_lower_limit': float}
 
+        # TODO: update with wave and tidal costs
         system_costs: dictionary containing the following Pandas
             dataframes:
             pv_costs: cost of PV per Watt, with the upper limit for pv
@@ -121,6 +137,7 @@ class GridSearchOptimizer(Optimizer):
         duration: Timestep duration in seconds.
             Default: 3600 (1 hour)
 
+        # TODO: May want to develop an alternative strategy when using tidal 
         dispatch_strategy: determines the battery dispatch strategy.
             Options include:
                 night_const_batt (constant discharge at night)
@@ -128,9 +145,10 @@ class GridSearchOptimizer(Optimizer):
                     remaining available capacity)
             Default: night_dynamic_batt
 
+        # TODO: May want to develop an alternative strategy when using tidal 
         batt_sizing_method: method for sizing the battery. Options are:
                 - longest_night
-                - no_pv_export
+                - no_RE_export
                 Default = longest_night
 
         electricity_rate: Local electricity rate in $/kWh. If it is set
@@ -140,11 +158,11 @@ class GridSearchOptimizer(Optimizer):
             Default = None
 
         net_metering_rate: Rate in $/kWh used for calculating exported
-            PV revenue. If it is set to None, the rate is assumed to be
+            RE revenue. If it is set to None, the rate is assumed to be
             the same as the electricity rate.
             Default = None
 
-        demand_rate: Demand charge rate in $/kW used for calculating PV
+        demand_rate: Demand charge rate in $/kW used for calculating RE
             system revenue. Can be either a number or a list of 12
             numbers, one for each month. If it is set to None, no demand
             charge savings are calculated.
@@ -160,11 +178,6 @@ class GridSearchOptimizer(Optimizer):
             generator has to be sized 10% larger than the maximum power.
             Default = 1.1
 
-        gen_power_percent: tuple specifying which power levels to report
-            from the generator load duration curve, as a percent of the
-            maximum generator size (which includes a buffer).
-            Default = ()
-
         existing_components: Dictionary containing Component objects for
             equipment already on site in the form:
             {'pv': <PV Object>, 'generator': <Generator Object>}
@@ -177,6 +190,7 @@ class GridSearchOptimizer(Optimizer):
             results.
             Default = None
 
+        # TODO - may need to update when non-PV RE types 
         off_grid_load_profile: load profile to be used for off-grid
             operation. If this parameter is not set to None, the
             annual_load_profile is used to size the PV system and
@@ -187,14 +201,15 @@ class GridSearchOptimizer(Optimizer):
     Methods
     ----------
 
+        # TODO - may need to update when non-PV RE types 
         size_PV_for_netzero: Sizes PV system according to net zero and
             incrementally smaller sizes
 
         size_batt_by_longest_night: Sizes the battery system according
             to the longest night of the year.
 
-        size_batt_for_no_pv_export: Sizes the battery such that no
-            excess PV is exported to the grid during normal operation.
+        size_batt_for_no_RE_export: Sizes the battery such that no
+            excess RE is exported to the grid during normal operation.
 
         create_new_system: Create a new SimpleMicrogridSystem to add to
             the system grid
@@ -217,7 +232,7 @@ class GridSearchOptimizer(Optimizer):
             using Python's multiprocessing package
 
         aggregate_by_system: Runs the simulation for a given system
-            configuration for multiple solar/temp profiles and
+            configuration for multiple resource profiles and
             aggregates the results
 
         parse_results: Parses simulation results into a dataframe
@@ -270,25 +285,27 @@ class GridSearchOptimizer(Optimizer):
 
         """
 
-    def __init__(self, power_profiles, temp_profiles, night_profiles,
-                 annual_load_profile, location, tmy_solar, pv_params,
+    def __init__(self, renewable_resources, power_profiles, annual_load_profile, location, 
                  battery_params, system_costs, duration=3600,
+                 pv_params=None, mre_params=None, 
+                 tmy_solar=None, tmy_mre=None,
                  dispatch_strategy='night_dynamic_batt',
                  batt_sizing_method='longest_night', electricity_rate=None,
                  net_metering_rate=None, demand_rate=None,
                  net_metering_limits=None,
                  generator_buffer=1.1,
-                 gen_power_percent=(), existing_components={},
+                 existing_components={},
                  off_grid_load_profile=None,
                  output_tmy=False, validate=True):
 
+        self.renewable_resources = renewable_resources
         self.power_profiles = power_profiles
-        self.temp_profiles = temp_profiles
-        self.night_profiles = night_profiles
         self.annual_load_profile = annual_load_profile
         self.location = location
         self.tmy_solar = tmy_solar
+        self.tmy_mre = tmy_mre
         self.pv_params = pv_params
+        self.mre_params = mre_params
         self.battery_params = battery_params
         self.system_costs = system_costs
         self.duration = duration
@@ -299,7 +316,6 @@ class GridSearchOptimizer(Optimizer):
         self.demand_rate = demand_rate
         self.net_metering_limits = net_metering_limits
         self.generator_buffer = generator_buffer
-        self.gen_power_percent = gen_power_percent
         self.existing_components = existing_components
         self.off_grid_load_profile = off_grid_load_profile
         self.output_tmy = output_tmy
@@ -312,15 +328,16 @@ class GridSearchOptimizer(Optimizer):
 
         if validate:
             # List of initialized parameters to validate
-            args_dict = {'power_profiles': power_profiles,
-                         'temp_profiles': temp_profiles,
-                         'night_profiles': night_profiles,
+            args_dict = {'renewable_resources': renewable_resources,
+                         'power_profiles': power_profiles,
                          'annual_load_profile': annual_load_profile,
-                         'location': location, 'tmy_solar': tmy_solar,
+                         'location': location, 
                          'pv_params': pv_params,
+                         'mre_params': mre_params,
+                         'tmy_solar': tmy_solar,
+                         'tmy_mre': tmy_mre,
                          'battery_params': battery_params,
                          'duration': duration,
-                         'gen_power_percent': gen_power_percent,
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
                          'system_costs': system_costs}
@@ -341,13 +358,15 @@ class GridSearchOptimizer(Optimizer):
             validate_all_parameters(args_dict)
 
         # De-localize timezones from profiles
-        for profile in self.power_profiles:
-            profile.index = profile.index.map(lambda x: x.tz_localize(None))
-        for profile in self.temp_profiles:
-            profile.index = profile.index.map(lambda x: x.tz_localize(None))
-        for profile in self.night_profiles:
-            profile.index = profile.index.map(lambda x: x.tz_localize(None))
-        tmy_solar.index = tmy_solar.index.map(lambda x: x.tz_localize(None))
+        for re_resource, profiles in self.power_profiles.items():
+            for profile in profiles:
+                profile.index = profile.index.map(lambda x: x.tz_localize(None))
+            # TODO check if this line is needed
+            # self.power_profiles[re_resource] = profiles
+        if tmy_solar is not None:
+            tmy_solar.index = tmy_solar.index.map(lambda x: x.tz_localize(None))
+        if tmy_mre is not None:
+            tmy_mre.index = tmy_mre.index.map(lambda x: x.tz_localize(None))
 
         # Fix annual load profile index
         self.annual_load_profile.index = pd.date_range(
@@ -367,6 +386,52 @@ class GridSearchOptimizer(Optimizer):
             self.electricity_rate = get_electricity_rate(self.location,
                                                          validate=False)
 
+    # TODO - update with a more sophisticated methodology that includes more options
+    def size_RE_system(self):
+        """
+        Sizes Renewable Energy components. If only one type of RE is included, returns the 
+            net-zero capacity for that resource, if multiple types are present, then returns
+            the net-zero capacity for each resource as well as a system where half of the 
+            load is met by each resource (based on the TMY profiles). 
+
+        """
+
+        # Set up dictionary with sizes
+        re_sizes = {}
+
+        # Get the total annual load
+        total_annual_load = self.annual_load_profile.sum()
+
+        # If PV is included, get the total solar energy produced and net-zero capacity
+        if self.pv_params:
+            total_annual_solar = self.tmy_solar.sum()
+            net_zero_pv = total_annual_load / total_annual_solar
+            re_sizes['nz_pv'] = {'pv': net_zero_pv, 'mre': 0}
+
+        # If marine renewable energy is included, get the total solar energy produced and net-zero
+        #   capacity
+        if self.mre_params:
+            total_annual_mre = self.tmy_mre.sum()
+            net_zero_mre = total_annual_load / total_annual_mre
+            re_sizes['nz_mre'] = {'mre': net_zero_mre, 'pv': 0}
+
+        # If both PV and marine resources are included, get the capacities required for each
+        #   resource to supply half of the net-zero load
+        if self.pv_params and self.mre_params:
+            # Take MRE as baseload
+            total_annual_mre = self.tmy_mre.sum()
+            half_net_zero_mre = 0.5 * total_annual_load / total_annual_mre
+
+            # Find the PV capacity required to meet the remaining load
+            remaining_load = self.annual_load_profile.values - self.tmy_mre.values * half_net_zero_mre
+            remaining_load[remaining_load < 0] = 0
+            total_annual_solar = self.tmy_solar.sum()
+            half_net_zero_pv = remaining_load.sum() / total_annual_solar
+            re_sizes['nz_pv_mre'] = {'pv': half_net_zero_pv, 'mre': half_net_zero_mre}
+
+        return re_sizes
+    
+    # TODO - need to update for different types of RE
     def size_PV_for_netzero(self):
         """
         Sizes PV system according to net zero and incrementally smaller
@@ -407,6 +472,7 @@ class GridSearchOptimizer(Optimizer):
         # Create grid based on max, min and standard intervals
         return [max_cap, net_zero, net_zero * 0.5, net_zero * 0.25]
 
+    # TODO - Update for different types of RE
     def size_batt_by_longest_night(self, load_profile):
         """
         Sizes the battery system according to the longest night of the
@@ -424,6 +490,7 @@ class GridSearchOptimizer(Optimizer):
             - O ES
             """
 
+        # TODO - Update for different types of RE
         # Get nighttime load based on TMY pv power
         night_df = load_profile.to_frame(name='load')
         night_df['pv_power'] = self.tmy_solar.values
@@ -453,12 +520,57 @@ class GridSearchOptimizer(Optimizer):
                 (max_cap * 0.25, max_pow * 0.25),
                 (0, 0)]
 
+    # TODO - update with a more sophisticated methodology that includes more options
+    def size_batt_for_no_RE_export(self, re_sizes, load_profile):
+        """
+        Sizes the battery such that no excess renewable energy is exported to the grid during
+        normal operation. 
+
+        Args:
+            re_sizes (dict): dictionary of PV and MRE capacities, with key as system name and
+                values as dictionaries with keys 'pv' and/or 'mre'
+            load_profile (Pandas Series): _description_
+        """
+        
+        # Calculate excess RE production for each system
+        excess_re = load_profile.to_frame(name='load')
+        if self.pv_params:
+            excess_re['pv_base'] = self.tmy_solar.values
+        else:
+            excess_re['pv_base'] = 0
+        if self.mre_params:
+            excess_re['mre_base'] = self.tmy_mre.values
+        else:
+            excess_re['mre_base'] = 0
+        for system_name, sizes in re_sizes.items():
+            excess_re[system_name] = excess_re['pv_base'] * sizes['pv'] \
+                + excess_re['mre_base'] * sizes['mre']
+            excess_re[f'{system_name}_exported'] = excess_re[system_name] \
+                - excess_re['load']
+        excess_re[excess_re < 0] = 0
+
+        # Calculate battery power as the maximum exported RE power
+        power = excess_re.max()
+
+        # Calculate capacity as the maximum daily exported RE energy
+        excess_re['day'] = excess_re.index.date
+        cap = excess_re.groupby('day').sum().max()
+
+        return {system_name: (round(cap[f'{system_name}_exported'] *
+                                    self.battery_params['one_way_inverter_efficiency'] *
+                                    self.battery_params['one_way_battery_efficiency'], 2),
+                              round(power[f'{system_name}_exported'] *
+                                    self.battery_params['one_way_inverter_efficiency'], 2))
+                for system_name in re_sizes.keys()}
+
+    # TODO - Update for different types of RE
     def size_batt_for_no_pv_export(self, pv_sizes, load_profile):
         """
         Sizes the battery such that no excess PV is exported to the grid
             during normal operation.
         """
 
+        # TODO - Update for different types of RE
         # Calculate excess PV production for each PV size
         excess_pv = load_profile.to_frame(name='load')
         excess_pv['pv_base'] = self.tmy_solar.values
@@ -482,20 +594,48 @@ class GridSearchOptimizer(Optimizer):
                        self.battery_params['one_way_inverter_efficiency'], 2))
                 for size in pv_sizes]
 
-    def create_new_system(self, pv_size, battery_size):
+    # TODO - Update when MRE params known 
+    def create_new_system(self, pv_size, mre_size, battery_size):
         """
         Create a new SimpleMicrogridSystem to add to the system grid.
         """
 
+        component_list = []
+        system_name_list = []
         # Create PV object
-        pv = PV('pv' in self.existing_components, pv_size,
-                self.pv_params['tilt'], self.pv_params['azimuth'],
-                self.pv_params['module_capacity'],
-                self.pv_params['module_area'],
-                self.pv_params['spacing_buffer'],
-                self.pv_params['pv_tracking'],
-                self.pv_params['pv_racking'],
-                self.pv_params['advanced_inputs'], validate=False)
+        if self.pv_params:
+            pv = PV('pv' in self.existing_components, pv_size,
+                    self.pv_params['tilt'], self.pv_params['azimuth'],
+                    self.pv_params['module_capacity'],
+                    self.pv_params['module_area'],
+                    self.pv_params['spacing_buffer'],
+                    self.pv_params['pv_tracking'],
+                    self.pv_params['pv_racking'],
+                    self.pv_params['advanced_inputs'], validate=False)
+            component_list += [pv]
+            system_name_list += ['pv_{:.1f}kW'.format(pv_size)]
+            
+        # Create MRE object
+        # TODO - update when we have the final list of params 
+        if self.mre_params:
+            if self.mre_params['generator_type'] == 'tidal':
+                mre = Tidal('mre' in self.existing_components, mre_size,
+                        self.mre_params['num_generators'], 
+                        self.mre_params['generator_capacity'],
+                        self.mre_params['depth'],
+                        self.mre_params['blade diameter'],
+                        self.mre_params['blade type'],
+                        validate=False)
+                component_list += [mre]
+                system_name_list += ['tidal_{:.1f}kW'.format(mre_size)]
+            elif self.mre_params['generator_type'] == 'wave':
+                mre = Wave('mre' in self.existing_components, mre_size,
+                        self.mre_params['num_generators'], 
+                        self.mre_params['generator_capacity'],
+                        self.mre_params['wave_inputs'],
+                        validate=False)
+                component_list += [mre]
+                system_name_list += ['wave_{:.1f}kW'.format(mre_size)]
 
         # Create Battery object
         batt = SimpleLiIonBattery(
@@ -505,21 +645,23 @@ class GridSearchOptimizer(Optimizer):
             self.battery_params['one_way_inverter_efficiency'],
             self.battery_params['soc_upper_limit'],
             self.battery_params['soc_lower_limit'], validate=False)
+        component_list += [batt]
+        system_name_list += ['batt_{:.1f}kW_{:.1f}kWh'.format(battery_size[1], battery_size[0])]
 
         # Determine system name
-        system_name = 'pv_{:.1f}kW_batt_{:.1f}kW_{:.1f}kWh'.format(
-            pv_size, battery_size[1], battery_size[0])
+        system_name = '_'.join(system_name_list)
 
         # Create system object
         system = SimpleMicrogridSystem(system_name)
 
         # Add components to system
-        system.add_component(pv, validate=False)
-        system.add_component(batt, validate=False)
+        for component in component_list:
+            system.add_component(component, validate=False)
 
         return system_name, system
 
-    def define_grid(self, include_pv=(), include_batt=(), validate=True):
+    # TODO - update for new algorithm 
+    def define_grid(self, include_pv=(), include_batt=(), include_mre=(), validate=True):
         """
         Defines the grid of system sizes to consider.
 
@@ -527,12 +669,15 @@ class GridSearchOptimizer(Optimizer):
 
             include_pv: list of pv sizes to be added to the grid (in kW)
 
+            include_mre: list of mre sizes to be added to the grid (in kW)
+
             include_batt: list of battery sizes to be added to the grid
                 in the form of a tuple:
                 (batt capacity, batt power) in (kWh, kW)
 
         """
 
+        # TODO - Update for different types of RE
         if validate:
             # List of initialized parameters to validate
             args_dict = {}
@@ -540,35 +685,46 @@ class GridSearchOptimizer(Optimizer):
                 args_dict['include_pv'] = include_pv
             if len(include_batt):
                 args_dict['include_batt'] = include_batt
+            if len(include_mre):
+                args_dict['include_mre'] = include_mre
 
             if len(args_dict):
                 # Validate input parameters
                 validate_all_parameters(args_dict)
 
-        # Size the pv system based on load and pv power
-        pv_range = self.size_PV_for_netzero()
-
-        # Add any sizes in include_pv
-        for size in include_pv:
-            pv_range += [size]
-
-        # If there is an existing pv system, use this to inform ranges
-        if 'pv' in self.existing_components:
-            # Use the current PV size as the minimum
-            min_cap = self.existing_components['pv'].pv_capacity
-
-            # If it is not currently in the range, add it
-            if self.existing_components['pv'].pv_capacity not in pv_range:
-                pv_range += [self.existing_components['pv'].pv_capacity]
+        # If marine renewables are included, use method that can accept different types of RE
+        if self.mre_params:
+            re_sizes = self.size_RE_system()
         else:
-            min_cap = 0
+            # Size the pv system based on load and pv power
+            pv_range = self.size_PV_for_netzero()
 
-        # Get rid of any pv sizes smaller than the minimum (e.g. from
-        #   existing system)
-        pv_range = [elem for elem in pv_range if elem >= min_cap]
+            # Add any sizes in include_pv
+            for size in include_pv:
+                pv_range += [size]
+
+            # If there is an existing pv system, use this to inform ranges
+            if 'pv' in self.existing_components:
+                # Use the current PV size as the minimum
+                min_cap = self.existing_components['pv'].capacity
+
+                # If it is not currently in the range, add it
+                if self.existing_components['pv'].capacity not in pv_range:
+                    pv_range += [self.existing_components['pv'].capacity]
+            else:
+                min_cap = 0
+
+            # Get rid of any pv sizes smaller than the minimum (e.g. from
+            #   existing system)
+            pv_range = [elem for elem in pv_range if elem >= min_cap]
 
         # Determine which method to use for sizing the battery
-        if self.batt_sizing_method == 'longest_night':
+        if self.mre_params:
+            # Size battery to capture all excess RE generation
+            batt_range = self.size_batt_for_no_RE_export(
+                re_sizes, self.annual_load_profile.copy(deep=True))
+            
+        elif self.batt_sizing_method == 'longest_night':
             # Determine which load profile to use for sizing the battery
             if self.off_grid_load_profile is None:
                 batt_sizing_load = self.annual_load_profile.copy(deep=True)
@@ -593,25 +749,32 @@ class GridSearchOptimizer(Optimizer):
         # Add any sizes in include_batt
         # Note: this will not have an effect for the no pv export battery
         #   sizing methodology
+        # TODO: This will throw an error currently if mre is included
         for size in include_batt:
             batt_range += [size]
 
         # Create MicrogridSystem objects for each system
-        if self.batt_sizing_method == 'longest_night':
+        if self.mre_params:
+            for system_name in re_sizes:
+                system_name, system = self.create_new_system(re_sizes[system_name]['pv'], 
+                                                             re_sizes[system_name]['mre'],
+                                                             batt_range[system_name])
+                self.input_system_grid[system_name] = system
+        elif self.batt_sizing_method == 'longest_night':
             for pv_size in pv_range:
                 for battery_size in batt_range:
                     # Add system to input system dictionary
-                    system_name, system = self.create_new_system(pv_size,
+                    system_name, system = self.create_new_system(pv_size, 0,
                                                                  battery_size)
                     self.input_system_grid[system_name] = system
         elif self.batt_sizing_method == 'no_pv_export':
             for pv_size, battery_size in zip(pv_range, batt_range):
-                system_name, system = self.create_new_system(pv_size,
+                system_name, system = self.create_new_system(pv_size, 0,
                                                              battery_size)
                 self.input_system_grid[system_name] = system
 
-        # Add a system with 0 PV and 0 batteries
-        system_name, system = self.create_new_system(0, [0, 0])
+        # Add a system with 0 RE and 0 batteries
+        system_name, system = self.create_new_system(0, 0, [0, 0])
         self.input_system_grid[system_name] = system
 
         # If there is an existing generator, add to each system
@@ -640,7 +803,7 @@ class GridSearchOptimizer(Optimizer):
 
     def get_load_profiles(self):
         """
-        For each solar profile, extract the load profile from the
+        For each RE profile, extract the load profile from the
             corresponding date/times.
 
         """
@@ -659,8 +822,8 @@ class GridSearchOptimizer(Optimizer):
             start='1/1/2017', end='1/1/2019',
             freq='{}S'.format(int(self.duration)))[:-1]
 
-        # Loop over each solar profile
-        for power_profile in self.power_profiles:
+        # Loop over each RE generation profile
+        for power_profile in self.power_profiles[self.renewable_resources[0]]:
 
             # Get the first timestamp for the solar profile
             start_time = power_profile.index[0]
@@ -707,24 +870,41 @@ class GridSearchOptimizer(Optimizer):
             results, _ = self.aggregate_by_system(system, validate=False)
 
             # Save the results in the MicrogridSystem object
-            system.load_duration = results.pop('load_duration')
             system.outputs = results
 
             # Calculate the annual benefits
-            system.calc_annual_pv_benefits(self.tmy_solar,
-                                           self.annual_load_profile,
-                                           self.duration,
-                                           self.electricity_rate,
-                                           self.net_metering_rate,
-                                           self.demand_rate,
-                                           self.batt_sizing_method,
-                                           self.battery_params[
-                                               'one_way_battery_efficiency'],
-                                           self.battery_params[
-                                               'one_way_inverter_efficiency'],
-                                           self.net_metering_limits,
-                                           self.existing_components,
-                                           validate=False)
+            if self.pv_params:
+                system.calc_annual_RE_benefits(self.tmy_solar,
+                                            self.annual_load_profile,
+                                            'pv',
+                                            self.duration,
+                                            self.electricity_rate,
+                                            self.net_metering_rate,
+                                            self.demand_rate,
+                                            self.batt_sizing_method,
+                                            self.battery_params[
+                                                'one_way_battery_efficiency'],
+                                            self.battery_params[
+                                                'one_way_inverter_efficiency'],
+                                            self.net_metering_limits,
+                                            self.existing_components,
+                                            validate=False)
+            if self.mre_params:
+                system.calc_annual_RE_benefits(self.tmy_mre,
+                                            self.annual_load_profile,
+                                            'mre',
+                                            self.duration,
+                                            self.electricity_rate,
+                                            self.net_metering_rate,
+                                            self.demand_rate,
+                                            self.batt_sizing_method,
+                                            self.battery_params[
+                                                'one_way_battery_efficiency'],
+                                            self.battery_params[
+                                                'one_way_inverter_efficiency'],
+                                            self.net_metering_limits,
+                                            self.existing_components,
+                                            validate=False)
 
             # Calculate the required fuel tank size and number
             system.size_fuel_tank(self.system_costs['fuel_tank_costs'],
@@ -737,7 +917,8 @@ class GridSearchOptimizer(Optimizer):
             system.calc_payback()
 
             # Calculate PV area
-            system.get_pv_area()
+            if self.pv_params:
+                system.get_pv_area()
 
             # Add to output_system_grid list
             self.output_system_grid[system_name] = system
@@ -760,7 +941,6 @@ class GridSearchOptimizer(Optimizer):
                 print('Running system: {}'.format(system.get_name()))
 
                 # Save the results in the MicrogridSystem object
-                system.load_duration = result.pop('load_duration')
                 system.outputs = result
 
                 # Add to output_system_grid list
@@ -768,20 +948,38 @@ class GridSearchOptimizer(Optimizer):
 
         for system in output_list:
             # Calculate the annual benefits
-            system.calc_annual_pv_benefits(self.tmy_solar,
-                                           self.annual_load_profile,
-                                           self.duration,
-                                           self.electricity_rate,
-                                           self.net_metering_rate,
-                                           self.demand_rate,
-                                           self.batt_sizing_method,
-                                           self.battery_params[
-                                               'one_way_battery_efficiency'],
-                                           self.battery_params[
-                                               'one_way_inverter_efficiency'],
-                                           self.net_metering_limits,
-                                           self.existing_components,
-                                           validate=False)
+            if self.pv_params:
+                system.calc_annual_RE_benefits(self.tmy_solar,
+                                            self.annual_load_profile,
+                                            'pv',
+                                            self.duration,
+                                            self.electricity_rate,
+                                            self.net_metering_rate,
+                                            self.demand_rate,
+                                            self.batt_sizing_method,
+                                            self.battery_params[
+                                                'one_way_battery_efficiency'],
+                                            self.battery_params[
+                                                'one_way_inverter_efficiency'],
+                                            self.net_metering_limits,
+                                            self.existing_components,
+                                            validate=False)
+            if self.mre_params:
+                system.calc_annual_RE_benefits(self.tmy_mre,
+                                            self.annual_load_profile,
+                                            'mre',
+                                            self.duration,
+                                            self.electricity_rate,
+                                            self.net_metering_rate,
+                                            self.demand_rate,
+                                            self.batt_sizing_method,
+                                            self.battery_params[
+                                                'one_way_battery_efficiency'],
+                                            self.battery_params[
+                                                'one_way_inverter_efficiency'],
+                                            self.net_metering_limits,
+                                            self.existing_components,
+                                            validate=False)
 
             # Calculate the required fuel tank size and number
             system.size_fuel_tank(self.system_costs['fuel_tank_costs'],
@@ -794,7 +992,8 @@ class GridSearchOptimizer(Optimizer):
             system.calc_payback()
 
             # Calculate PV area
-            system.get_pv_area()
+            if self.pv_params:
+                system.get_pv_area()
 
             # Add to output system grid dict
             self.output_system_grid[system.get_name()] = system
@@ -802,7 +1001,7 @@ class GridSearchOptimizer(Optimizer):
     def aggregate_by_system(self, system, validate=True):
         """
         Runs the simulation for a given system configuration for
-            multiple solar/temp profiles and aggregates the results.
+            multiple resource profiles and aggregates the results.
 
         """
 
@@ -814,47 +1013,50 @@ class GridSearchOptimizer(Optimizer):
             validate_all_parameters(args_dict)
 
         # Create lists to hold dispatch outputs
-        results_summary = {'pv_percent': [], 'batt_percent': [],
+        results_summary = {'pv_percent': [], 'mre_percent': [], 
+                           're_percent': [], 'batt_percent': [],
                            'gen_percent': [], 'storage_recovery_percent': [],
                            'fuel_used_gal': [], 'generator_power_kW': [],
                            'pv_avg_load': [], 'pv_peak_load': [],
+                           'mre_avg_load': [], 'mre_peak_load': [],
                            'gen_avg_load': [], 'gen_peak_load': [],
                            'batt_avg_load': [], 'batt_peak_load': []}
 
 
         # Create empty load duration dictionaries to hold hours, kWh, and
         #   kW not met at each generator size
+        # TODO - this isn't being used, remove or fix
         if self.off_grid_load_profile is None:
             load_profile = self.annual_load_profile
         else:
             load_profile = self.off_grid_load_profile
-        hours_not_met = {}
-        kWh_not_met = {}
-        max_kW_not_met = {}
 
-        # For each solar/temp profile, create a simulator object
-        for i, (power_profile, temp_profile, load_profile, night_profile) in \
-                enumerate(zip(self.power_profiles, self.temp_profiles,
-                              self.load_profiles, self.night_profiles)):
+        # For each resource profile, create a simulator object
+        for i in range(len(self.load_profiles)):
             # Reset battery state
             system.components['battery'].reset_state()
 
             # Set simulation name
             simulation_name = 'system_{}_profile_{}'.format(system.get_name(), i)
 
+            # Get indexed power profile for each RE resource
+            power_profiles = {re_resource: re_profiles[i] 
+                              for re_resource, re_profiles in self.power_profiles.items()}
+
             # Create simulation object
-            simulation = PVBattGenSimulator(
-                simulation_name, power_profile, temp_profile, load_profile,
-                night_profile, system, self.location, self.duration,
+            simulation = REBattGenSimulator(
+                simulation_name, self.renewable_resources,
+                power_profiles, self.load_profiles[i],
+                system, self.location, self.duration,
                 self.dispatch_strategy,
                 generator_buffer=self.generator_buffer, validate=False)
 
             # Run the simulation for each object
-            simulation.scale_power_profile()
+            simulation.scale_power_profiles()
             simulation.calc_dispatch()
 
             # Check length to make sure there was not a merging error
-            if len(simulation.dispatch_df) != len(power_profile):
+            if len(simulation.dispatch_df) != len(self.load_profiles[i]):
                 message = 'Error in dispatch calculation: dispatch ' \
                           'dataframe wrong size - check for merging error.'
                 log_error(message)
@@ -865,8 +1067,23 @@ class GridSearchOptimizer(Optimizer):
                 self.system_costs['generator_costs'], validate=False)
 
             # Add the results to the lists
-            results_summary['pv_percent'] += \
-                [simulation.get_load_breakdown()['pv'] * 100]
+            if self.pv_params:
+                results_summary['pv_percent'] += \
+                    [simulation.get_load_breakdown()['pv'] * 100]
+                results_summary['pv_avg_load'] += \
+                    [simulation.get_renewable_avg()['pv']]
+                results_summary['pv_peak_load'] += \
+                    [simulation.get_renewable_peak()['pv']]
+            if self.mre_params:
+                results_summary['mre_percent'] += \
+                    [simulation.get_load_breakdown()['mre'] * 100]
+                results_summary['mre_avg_load'] += \
+                    [simulation.get_renewable_avg()['mre']]
+                results_summary['mre_peak_load'] += \
+                    [simulation.get_renewable_peak()['mre']]
+            results_summary['re_percent'] += [sum(val for key, val in 
+                                                  simulation.get_load_breakdown().items()
+                                                  if key in ['pv', 'mre']) * 100]
             results_summary['batt_percent'] += \
                 [simulation.get_load_breakdown()['battery'] * 100]
             results_summary['gen_percent'] += \
@@ -877,10 +1094,6 @@ class GridSearchOptimizer(Optimizer):
                 [simulation.get_fuel_used()]
             results_summary['generator_power_kW'] += \
                 [simulation.get_generator_power()]
-            results_summary['pv_avg_load'] += \
-                [simulation.get_pv_avg()]
-            results_summary['pv_peak_load'] += \
-                [simulation.get_pv_peak()]
             results_summary['gen_avg_load'] += \
                 [simulation.get_gen_avg()]
             results_summary['gen_peak_load'] += \
@@ -890,38 +1103,8 @@ class GridSearchOptimizer(Optimizer):
             results_summary['batt_peak_load'] += \
                 [simulation.get_batt_peak()]
 
-            # Add load duration data
-            grouped_load = simulation.get_load_duration_df()
-            hours_not_met['sim_{}'.format(i)] = grouped_load['num_hours_above']
-            kWh_not_met['sim_{}'.format(i)] = grouped_load[
-                'energy_not_met_above_load_level']
-            max_kW_not_met['sim_{}'.format(i)] = grouped_load[
-                'max_percent_not_met']
-
             # Add the simulation to the system simulations dictionary
             system.add_simulation(i, simulation, validate=False)
-
-        # Convert load duration dictionaries to dataframes
-        hours_not_met = pd.concat(hours_not_met, axis=1)
-        kWh_not_met = pd.concat(kWh_not_met, axis=1)
-        max_kW_not_met = pd.concat(max_kW_not_met, axis=1)
-
-        # Get mean and max for each of the load_duration metrics
-        results_summary['load_duration'] = pd.DataFrame()
-        results_summary['load_duration']['hours_not_met_max'] = \
-            hours_not_met.fillna(0).max(axis=1)
-        results_summary['load_duration']['hours_not_met_average'] = \
-            hours_not_met.fillna(0).mean(axis=1)
-        results_summary['load_duration']['scenarios_not_met'] = \
-            hours_not_met[hours_not_met > 0].count(axis=1)
-        results_summary['load_duration']['kWh_not_met_average'] = \
-            kWh_not_met.fillna(0).mean(axis=1)
-        results_summary['load_duration']['kWh_not_met_max'] = \
-            kWh_not_met.fillna(0).max(axis=1)
-        results_summary['load_duration']['max_%_kW_not_met_average'] = \
-            max_kW_not_met.fillna(0).mean(axis=1)
-        results_summary['load_duration']['max_%_kW_not_met_max'] = \
-            max_kW_not_met.fillna(0).max(axis=1)
 
         # Find the simulation with the largest generator and add that
         #   generator object to the system
@@ -941,35 +1124,12 @@ class GridSearchOptimizer(Optimizer):
             self.run_sims()
 
         # Results columns
-        metrics = ['pv_capacity', 'battery_capacity', 'battery_power',
-                   'generator_power', 'fuel_tank_size_gal',
-                   'capital_cost_usd', 'pv_capital', 'battery_capital',
-                   'generator_capital', 'fuel_tank_capital', 'pv_o&m',
-                   'battery_o&m', 'generator_o&m', 'pv_area_ft2',
-                   'annual_benefits_usd', 'demand_benefits_usd',
-                   'simple_payback_yr',
-                   'pv_avg_load mean','pv_peak_load mean', 'pv_peak_load max',
-                   'gen_avg_load mean', 'gen_peak_load mean', 'gen_peak_load max',
-                   'batt_avg_load mean', 'batt_peak_load mean', 'batt_peak_load max',
-                   'pv_percent mean', 'batt_percent mean', 'gen_percent mean',
-                   'generator_power_kW mean', 'generator_power_kW std',
-                   'generator_power_kW max',
-                   'fuel_used_gal mean', 'fuel_used_gal std',
-                   'fuel_used_gal max']
-
-        # Add columns for displaying information about smaller generator sizes
-        for perc in self.gen_power_percent:
-            metrics += ['{}%_smaller_gen_size'.format(perc),
-                        '{}%_smaller_gen_typical_fuel_gal'.format(perc),
-                        '{}%_smaller_gen_conservative_fuel_gal'.format(perc),
-                        '{}%_smaller_gen_cost'.format(perc),
-                        '{}%_smaller_gen_scenarios_not_met'.format(perc),
-                        '{}%_smaller_gen_hours_not_met_average'.format(perc),
-                        '{}%_smaller_gen_hours_not_met_max'.format(perc),
-                        '{}%_smaller_gen_kWh_not_met_average'.format(perc),
-                        '{}%_smaller_gen_kWh_not_met_max'.format(perc),
-                        '{}%_smaller_gen_max_%_kW_not_met_average'.format(perc),
-                        '{}%_smaller_gen_max_%_kW_not_met_max'.format(perc)]
+        metrics = list(system_metrics.keys()) + list(re_metrics.keys()) \
+            + list(battery_metrics.keys()) + list(generator_metrics.keys())
+        if self.pv_params:
+            metrics += list(pv_metrics.keys())
+        if self.mre_params:
+            metrics += list(mre_metrics.keys())
 
         # Create dataframe to hold results
         self.results_grid = pd.DataFrame(columns=metrics)
@@ -982,7 +1142,7 @@ class GridSearchOptimizer(Optimizer):
 
             # For each metric, calculate mean, max, and standard deviation
             results_summary = {key: {'mean': np.mean(val), 'std': np.std(val), 'max':np.max(val)}
-                               for key, val in outputs.items()}
+                               for key, val in outputs.items() if len(val)}
 
             # Save to system object
             system.set_outputs(results_summary, validate=False)
@@ -993,42 +1153,31 @@ class GridSearchOptimizer(Optimizer):
             system_row.index = [' '.join(col).strip()
                                 for col in system_row.index.values]
 
-            # Add load duration info for smaller generator sizes
-            #   specified by gen_power_percent
-            for perc in self.gen_power_percent:
-                # Pad the load duration curve with 0s up to the generator size
-                for row in range(system.load_duration.index[-1] + 1,
-                                 int(system.generator_power_kW[
-                                         'most-conservative']) + 1):
-                    system.load_duration.loc[row] = [0, 0, 0, 0, 0, 0, 0]
-
-                # Find the % smallest generator size from the worst-case
-                system_row = pd.concat([system_row,
-                                        system.calculate_smaller_generator_metrics(
-                                            perc, self.system_costs['generator_costs'],
-                                            validate=False)])
-
             # Add static outputs (ones that don't vary between
             #   simulations)
+            static_outputs = list(system_metrics.keys())
+            if self.pv_params:
+                static_outputs += ['pv_area_ft2']
+            if self.mre_params:
+                static_outputs += ['mre_area_ft2']
             system_row = pd.concat([system_row,
-                                    pd.Series(system.get_outputs(
-                                        ['capital_cost_usd', 'pv_area_ft2',
-                                         'annual_benefits_usd', 'demand_benefits_usd',
-                                         'simple_payback_yr']))])
+                                    pd.Series(system.get_outputs(static_outputs))])
 
             # Get component sizes and costs
-            system_row = pd.concat([system_row,
-                                    pd.Series(
-                                        {'pv_capacity': system.components['pv'].pv_capacity,
-                                         'battery_capacity':
-                                             system.components['battery'].batt_capacity,
-                                         'battery_power': system.components['battery'].power,
-                                         'generator_power':
-                                             system.components['generator'].rated_power
-                                             * system.components['generator'].num_units,
-                                         'fuel_tank_size_gal':
-                                             system.components['fuel_tank'].tank_size
-                                             * system.components['fuel_tank'].num_units})])
+            row_dict = {'battery_capacity':
+                            system.components['battery'].batt_capacity,
+                        'battery_power': system.components['battery'].power,
+                        'generator_power':
+                            system.components['generator'].rated_power
+                            * system.components['generator'].num_units,
+                        'fuel_tank_size_gal':
+                            system.components['fuel_tank'].tank_size
+                            * system.components['fuel_tank'].num_units}
+            if self.pv_params:
+                row_dict['pv_capacity'] = system.components['pv'].capacity
+            if self.mre_params:
+                row_dict['mre_capacity'] = system.components['mre'].capacity
+            system_row = pd.concat([system_row, pd.Series(row_dict)])
             system_row = pd.concat([system_row, pd.Series(system.costs_usd)])
 
             # Add results to dataframe
@@ -1042,9 +1191,9 @@ class GridSearchOptimizer(Optimizer):
             format:
             {parameter, type, value}
         where parameter can be any of the following:
-            capital_cost_usd, pv_area_ft2, annual_benefits_usd, 
-            simple_payback_yr, fuel_used_gal,
-            pv_percent, gen_percent
+            capital_cost_usd, pv_area_ft2, mre_area_ft2, annual_benefits_usd, 
+            simple_payback_yr, fuel_used_gal, re_percent, 
+            pv_percent, mre_percent, gen_percent
         and type can be [max, min]
         and value is the maximum or minimum allowable value
         
@@ -1148,6 +1297,7 @@ class GridSearchOptimizer(Optimizer):
             # Print results info
             print(tabulate.tabulate(row.to_frame(), floatfmt='.1f'))
 
+    # TODO - update for MRE
     def plot_best_system(self, scenario_criteria='pv', scenario_num=None, validate=True):
         """
         Displays dispatch and load duration plots for three systems:
@@ -1251,6 +1401,7 @@ class GridSearchOptimizer(Optimizer):
                 system_name, system.get_name().replace('_', ' '),
                 system.components['generator'].rated_power))
 
+    # TODO - update for MRE
     def plot_system_dispatch(self, num_systems=None, plot_per_fig=3,
                              validate=True):
         """
@@ -1341,6 +1492,7 @@ class GridSearchOptimizer(Optimizer):
     def get_output_systems(self):
         return self.output_system_grid
 
+    # TODO - update for MRE when params known
     def format_inputs(self, spg):
         """
             Formats the inputs into dicts for writing to file.
@@ -1376,13 +1528,14 @@ class GridSearchOptimizer(Optimizer):
         if self.rank is not None:
             inputs['Simulation Info'].loc['scenario ranking'] = \
                 ', '.join([constraint['parameter'] for constraint in self.rank])
-        inputs['PV System'] = \
-            pd.DataFrame.from_dict({
-                'tilt': spg.tilt, 'azimuth': spg.azimuth,
-                'spacing_buffer': self.pv_params['spacing_buffer'],
-                'pv_tracking': self.pv_params['pv_tracking'],
-                'pv_racking': self.pv_params['pv_racking']},
-                orient='index')
+        if self.pv_params:
+            inputs['PV System'] = \
+                pd.DataFrame.from_dict({
+                    'tilt': spg.tilt, 'azimuth': spg.azimuth,
+                    'spacing_buffer': self.pv_params['spacing_buffer'],
+                    'pv_tracking': self.pv_params['pv_tracking'],
+                    'pv_racking': self.pv_params['pv_racking']},
+                    orient='index')
         inputs['Battery System'] = pd.DataFrame.from_dict({
             key.replace('_', ' '): val for key, val in
             self.battery_params.items()}, orient='index')
@@ -1392,7 +1545,7 @@ class GridSearchOptimizer(Optimizer):
             orient='index')
         if 'pv' in self.existing_components:
             inputs['Existing Equipment'].loc['PV'] = \
-                '{}kW'.format(self.existing_components['pv'].pv_capacity)
+                '{}kW'.format(self.existing_components['pv'].capacity)
         if 'generator' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
                 '{} units of {}kW'.format(
@@ -1409,11 +1562,12 @@ class GridSearchOptimizer(Optimizer):
 
         # Store assumptions
         assumptions = {}
-        assumptions['PV System'] = pd.DataFrame.from_dict(
-            {'albedo': spg.advanced_inputs['albedo'],
-             'dc to ac ratio': spg.get_dc_to_ac(),
-             'losses': spg.get_losses(), 'net-metering limits': 'None'},
-            orient='index')
+        if self.pv_params:
+            assumptions['PV System'] = pd.DataFrame.from_dict(
+                {'albedo': spg.advanced_inputs['albedo'],
+                'dc to ac ratio': spg.get_dc_to_ac(),
+                'losses': spg.get_losses(), 'net-metering limits': 'None'},
+                orient='index')
         if self.net_metering_limits is not None:
             if self.net_metering_limits['type'] == 'capacity_cap':
                 assumptions['PV System'].loc['net-metering limits'] = \
@@ -1433,6 +1587,8 @@ class GridSearchOptimizer(Optimizer):
 
         return inputs, assumptions
 
+
+    # TODO: Add marine profile generator object and inputs
     def save_results_to_file(self, spg, filename='simulation_results'):
         """
             Saves inputs, assumptions and results to an excel file.
@@ -1446,6 +1602,7 @@ class GridSearchOptimizer(Optimizer):
 
         """
 
+        # TODO: Add marine profile generator object and inputs
         # Get dictionaries of inputs and assumptions
         inputs, assumptions = self.format_inputs(spg)
 
@@ -1457,65 +1614,22 @@ class GridSearchOptimizer(Optimizer):
         format_results = self.results_grid.copy(deep=True)
 
         # Re-order columns
-        format_results = format_results[
-            ['pv_capacity', 'battery_capacity', 'battery_power',
-             'generator_power_kW mean',
-             'generator_power_kW max', 'fuel_tank_size_gal',
-             'pv_area_ft2', 'capital_cost_usd',
-             'pv_capital', 'battery_capital', 'generator_capital',
-             'fuel_tank_capital', 'pv_o&m', 'battery_o&m', 'generator_o&m',
-             'annual_benefits_usd', 'demand_benefits_usd',
-             'simple_payback_yr',
-             'pv_avg_load mean','pv_peak_load mean','pv_peak_load max',
-             'gen_avg_load mean', 'gen_peak_load mean', 'gen_peak_load max',
-             'batt_avg_load mean', 'batt_peak_load mean', 'batt_peak_load max',
-             'pv_percent mean', 'batt_percent mean',
-             'gen_percent mean', 'fuel_used_gal mean',
-             'fuel_used_gal max'] + list(
-                format_results.columns[35:])]
+        if not self.pv_params:
+            metric_order = [elem for elem in metric_order if 'pv' not in elem]
+        if not self.mre_params:
+            metric_order = [elem for elem in metric_order if 'mre' not in elem]
+        format_results = format_results[metric_order]
 
         # Rename columns
+        merged_metric_dict = {**system_metrics, **re_metrics, **pv_metrics, **battery_metrics, **mre_metrics, 
+                              **generator_metrics}        
         format_results.rename(columns=
-            {'pv_capacity': 'PV Capacity',
-             'battery_capacity': 'Battery Capacity',
-             'battery_power': 'Battery Power',
-             'generator_power_kW mean': 'Generator Power (typical scenario)',
-             'generator_power_kW max':
-                 'Generator Power (conservative scenario)',
-             'fuel_tank_size_gal': 'Total Fuel Tank Capacity',
-             'pv_area_ft2': 'PV Area', 'capital_cost_usd': 'Capital Cost',
-             'pv_capital': 'PV Capital', 'battery_capital': 'Battery Capital',
-             'generator_capital': 'Generator Capital',
-             'fuel_tank_capital': 'Fuel Tank Capital',
-             'pv_o&m': 'PV O&M', 'battery_o&m': 'Battery O&M',
-             'generator_o&m': 'Generator O&M',
-             'annual_benefits_usd': 'Annual PV Net-meter Revenue',
-             'demand_benefits_usd': 'Annual PV Demand Savings',
-             'simple_payback_yr': 'Simple Payback',
-             'pv_avg_load mean' : 'Mean PV Load Met',
-             'pv_peak_load mean' : 'Mean Peak PV Load Met',
-             'pv_peak_load max' : 'Max Peak PV Load Met',
-             'gen_avg_load mean': 'Mean Generator Load Met',
-             'gen_peak_load mean': 'Mean Peak Generator Load Met (typical scenario)',
-             'gen_peak_load max': 'Max Peak Generator Load Met (conservative scenario)',
-             'batt_avg_load mean': 'Mean Battery Load Met',
-             'batt_peak_load mean': 'Mean Peak Battery Load Met',
-             'batt_peak_load max': 'Max Peak Battery Load Met',
-             'pv_percent mean': 'PV Percent',
-             'batt_percent mean': 'Battery Percent',
-             'gen_percent mean': 'Generator Percent',
-             'fuel_used_gal mean': 'Fuel used (average scenario)',
-             'fuel_used_gal max': 'Fuel used (conservative scenario)'},
-                              inplace=True)
+            {col_name: merged_metric_dict[col_name]['display_name'] 
+             for col_name in format_results.columns},
+             inplace=True)
 
         # Add units
-        units = ['kW', 'kWh', 'kW', 'kW', 'kW', 'gallons', 'ft^2', '$', '$',
-                 '$', '$', '$', '$/year', '$/year', '$/year', '$/year',
-                 '$/year', 'years', 'kW', 'kW', 'kW',  'kW', 'kW', 'kW','kW', 'kW', 'kW', '%', '%', '%', 'gallons', 'gallons']
-        for _ in self.gen_power_percent:
-            units += ['kW', 'gallons', 'gallons', '$', '', '', '', 'kWh',
-                      'kWh', 'kW', 'kW']
-        format_results.loc['units'] = units
+        format_results.loc['units'] = [merged_metric_dict[col_name]['units'] for col_name in format_results.columns]
 
         format_results.columns = [col.replace('_', ' ').capitalize()
                                   for col in format_results.columns]
@@ -1535,19 +1649,14 @@ class GridSearchOptimizer(Optimizer):
         bold = workbook.add_format({'bold': True, 'border': 0})
         index_format = workbook.add_format({'align': 'left', 'border': 0,
                                             'bold': False})
-        dollars = workbook.add_format({'num_format': '$#,##0'})
-        one_fp = workbook.add_format({'num_format': '0.0'})
-        no_fp = workbook.add_format({'num_format': 0x01})
-        perc = workbook.add_format({'num_format': 0x01})
+        data_formats = {}
+        data_formats['dollars'] = workbook.add_format({'num_format': '$#,##0'})
+        data_formats['one_fp'] = workbook.add_format({'num_format': '0.0'})
+        data_formats['no_fp'] = workbook.add_format({'num_format': 0x01})
+        data_formats['perc'] = workbook.add_format({'num_format': 0x01})
 
         # Determine format for each column
-        formats = [one_fp, one_fp, one_fp, one_fp, one_fp, one_fp, no_fp,
-                   dollars, dollars, dollars, dollars, dollars, dollars,
-                   dollars, dollars, dollars, dollars, one_fp, one_fp, one_fp, one_fp, one_fp, one_fp,one_fp, one_fp, one_fp, one_fp, perc, perc,
-                   perc, one_fp, one_fp]
-        for _ in self.gen_power_percent:
-            formats += [one_fp, one_fp, one_fp, dollars, no_fp, one_fp, no_fp,
-                        no_fp, no_fp, one_fp, one_fp]
+        formats = [data_formats[merged_metric_dict[col_name]['format']] for col_name in format_results.columns]
 
         # Write results sheet
         format_results.reset_index(drop=True).to_excel(writer,
@@ -1578,14 +1687,23 @@ class GridSearchOptimizer(Optimizer):
             load_sheet.set_column(0, 1, 25, None)
             load_sheet.set_column(0, 2, 25, None)
 
-        # Write TMY solar sheet
+        # Write TMY solar and MRE sheets
         if self.output_tmy:
-            sp = self.tmy_solar.reset_index()
-            sp.columns = ['Datetime', 'PV Power for a 1kW array (kW)']
-            sp['Datetime'] = self.annual_load_profile.index
-            sp.to_excel(writer, sheet_name='TMY PV Profile', index=False)
-            load_sheet = writer.sheets['TMY PV Profile']
-            load_sheet.set_column(0, 1, 25, None)
+            if self.pv_params:
+                sp = self.tmy_solar.reset_index()
+                sp.columns = ['Datetime', 'PV Power for a 1kW array (kW)']
+                sp['Datetime'] = self.annual_load_profile.index
+                sp.to_excel(writer, sheet_name='TMY PV Profile', index=False)
+                load_sheet = writer.sheets['TMY PV Profile']
+                load_sheet.set_column(0, 1, 25, None)
+            # TODO - does it make sense to output tmy_mre? Is this even a thing?
+            if self.mre_params:
+                mp = self.tmy_mre.reset_index()
+                mp.columns = ['Datetime', 'MRE Power for a 1kW array (kW)']
+                mp['Datetime'] = self.annual_load_profile.index
+                mp.to_excel(writer, sheet_name='TMY MRE Profile', index=False)
+                load_sheet = writer.sheets['TMY MRE Profile']
+                load_sheet.set_column(0, 1, 25, None)
 
         # Write inputs sheet
         # Location variables
@@ -1603,10 +1721,19 @@ class GridSearchOptimizer(Optimizer):
         inputs_sheet.write(6, 1, '', bold_bottomborder)
 
         # PV variables
-        inputs['PV System'].reset_index().to_excel(
-            writer, sheet_name='Input Variables', startrow=12, index=False)
-        inputs_sheet.write(12, 0, 'PV System', bold_bottomborder)
-        inputs_sheet.write(12, 1, '', bold_bottomborder)
+        if self.pv_params:
+            inputs['PV System'].reset_index().to_excel(
+                writer, sheet_name='Input Variables', startrow=12, index=False)
+            inputs_sheet.write(12, 0, 'PV System', bold_bottomborder)
+            inputs_sheet.write(12, 1, '', bold_bottomborder)
+
+        # MRE variables
+        # TODO - will need to update
+        if self.mre_params:
+            inputs['MRE System'].reset_index().to_excel(
+                writer, sheet_name='Input Variables', startrow=12, index=False)
+            inputs_sheet.write(12, 0, 'MRE System', bold_bottomborder)
+            inputs_sheet.write(12, 1, '', bold_bottomborder)
 
         # Battery variables
         inputs['Battery System'].reset_index().to_excel(
@@ -1622,11 +1749,13 @@ class GridSearchOptimizer(Optimizer):
         inputs_sheet.set_column(0, 1, 30, index_format)
 
         # Write assumptions sheet
-        assumptions['PV System'].reset_index().to_excel(
-            writer, sheet_name='Assumptions', index=False)
-        assumptions_sheet = writer.sheets['Assumptions']
-        assumptions_sheet.write(0, 0, 'PV System', bold_bottomborder)
-        assumptions_sheet.write(0, 1, '', bold_bottomborder)
+        # TODO - will need to update MRE
+        if self.pv_params:
+            assumptions['PV System'].reset_index().to_excel(
+                writer, sheet_name='Assumptions', index=False)
+            assumptions_sheet = writer.sheets['Assumptions']
+            assumptions_sheet.write(0, 0, 'PV System', bold_bottomborder)
+            assumptions_sheet.write(0, 1, '', bold_bottomborder)
         assumptions['Cost'].reset_index().to_excel(
             writer, sheet_name='Assumptions', startrow=7, index=False)
         assumptions_sheet.write(7, 0, 'Costs', bold_bottomborder)
@@ -1646,7 +1775,12 @@ class GridSearchOptimizer(Optimizer):
             ts_outputs[system_name] = []
             for sim in system_obj.simulations.values():
                 df = sim.dispatch_df
-                df = df[['load', 'pv_power', 'battery_soc', 'delta_battery_power', 'load_not_met']]
+                output_cols = ['load', 'battery_soc', 'delta_battery_power', 'load_not_met']
+                if self.pv_params:
+                    output_cols += ['pv_power']
+                if self.mre_params:
+                    output_cols += ['mre_power']
+                df = df[output_cols]
                 df.rename(columns={'load_not_met': 'gen_power'}, inplace=True)
                 df = df.reset_index()
                 df['index'] = df['index'].apply(lambda x: x.strftime('%Y-%m-%d %X'))
@@ -1656,6 +1790,7 @@ class GridSearchOptimizer(Optimizer):
         with open('output/{}_timeseries.json'.format(filename), 'w') as f:
             json.dump(ts_outputs, f, indent=2)
 
+    # TODO - update for MRE
     def plot_compare_metrics(self, x_var='simple_payback_yr',
                              y_var='capital_cost_usd', cmap='BuGn_r'):
         """
@@ -1702,6 +1837,7 @@ class GridSearchOptimizer(Optimizer):
                   format(x_var, y_var), position=(0.5, 1.05))
         plt.tight_layout()
 
+    # TODO - update for MRE
     def plot_compare_sizes(self, var='simple_payback_yr', cmap='BuGn_r'):
         """
         Compares different systems by plotting sizes against each other
@@ -1774,8 +1910,9 @@ def get_electricity_rate(location, validate=True):
         print('Reverse Geocoding fail, using median U.S. electricity rate')
         return rates['Average retail price (cents/kWh)'].median() / 100
 
-
+# %%
 if __name__ == "__main__":
+    # %%
     # Used for testing
     multiprocessing.freeze_support()
 
@@ -1787,7 +1924,7 @@ if __name__ == "__main__":
     longitude = -119.28
     timezone = 'US/Pacific'
     spg = SolarProfileGenerator(latitude, longitude, timezone, 265.176, 20, -180,
-                                200., 14. * 24, validate=False)
+                                2., 14. * 24, validate=False)
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.1, validate=False)
     module_params = spg.get_pv_params()
@@ -1807,19 +1944,36 @@ if __name__ == "__main__":
                  'pv_racking': 'ground',
                  'pv_tracking': 'fixed',
                  'advanced_inputs': {}}
+    mre_params = {'generator_type': 'tidal',
+                  'num_generators': 1,
+                  'generator_capacity': 100,
+                  'depth': 10,
+                  'blade diameter': 2,
+                  'blade type': 'foo'
+    }
     battery_params = {'battery_power_to_energy': 0.25, 'initial_soc': 1,
                       'one_way_battery_efficiency': 0.9,
                       'one_way_inverter_efficiency': 0.95,
                       'soc_upper_limit': 1, 'soc_lower_limit': 0.1}
 
     # Create optimization object
-    optim = GridSearchOptimizer(spg.power_profiles, spg.temp_profiles,
-                                spg.night_profiles, annual_load_profile,
-                                location, tmy_solar, pv_params, battery_params,
-                                system_costs, electricity_rate=None,
-                                net_metering_limits=None, generator_buffer=1.1,
-                                existing_components={}, output_tmy=False,
-                                validate=True)
+    # TODO: update for MRE
+    renewable_resources = ['pv', 'mre']
+    tidal_profiles = [pd.Series([200]*len(spg.power_profiles[0]),
+                               index=spg.power_profiles[0].index),
+                      pd.Series([200]*len(spg.power_profiles[1]),
+                               index=spg.power_profiles[1].index)]
+    tmy_mre = pd.Series([200]*8760, index=tmy_solar.index)
+    power_profiles = {'pv': spg.power_profiles,
+                      'mre': tidal_profiles,
+                      'night': spg.night_profiles}
+    optim = GridSearchOptimizer(renewable_resources, power_profiles, annual_load_profile,
+                                location, battery_params, system_costs, 
+                                tmy_solar=tmy_solar, pv_params=pv_params, mre_params=mre_params,
+                                tmy_mre=tmy_mre, dispatch_strategy='available_capacity',
+                                electricity_rate=None, net_metering_limits=None, 
+                                generator_buffer=1.1, existing_components={}, output_tmy=False,
+                                validate=False)
 
     # Create a grid of systems
     optim.define_grid()
@@ -1833,3 +1987,5 @@ if __name__ == "__main__":
     ranking_criteria = [{'parameter': 'simple_payback_yr',
                          'order_type': 'ascending'}]
     optim.rank_results(ranking_criteria)
+
+# %%
