@@ -19,12 +19,13 @@ from utide import solve, reconstruct
 from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
-TIDAL_DEFAULTS = {'rated_power': 50,
-                  'rotor_length': 5,
+TIDAL_DEFAULTS = {'turbine_rated_power': 550,
+                  'rotor_length': 10,
+                  'rotor_number': 2,
                   'turbine_number': 1,
                   'maximum_cp': 0.42,
-                  'cut_in_velocity': 0.7,
-                  'cut_out_velocity': 2.6,
+                  'cut_in_velocity': 0.5,
+                  'cut_out_velocity': 3,
                   'inverter_efficiency': 0.9,
                   'turbine_losses': 10}
 
@@ -51,7 +52,7 @@ class TidalProfileGenerator:
 
         advanced_inputs: Dictionary specifying advanced tidal system inputs.
             These could include:
-                rated power, rotor length, turbine number, maximum cp,
+                rated power, rotor length, rotor_number, turbine number, maximum cp,
                 cut in velocity, cut out velocity, inverter efficiency, turbine_losses
                 
     Methods
@@ -100,7 +101,6 @@ class TidalProfileGenerator:
             if key not in self.advanced_inputs:
                 self.advanced_inputs[key] = TIDAL_DEFAULTS[key]
 
-        # TODO: add new params here and add validation checks
         if validate:
             # List of initialized parameters to validate
             args_dict = {'latitude': self.latitude,
@@ -116,35 +116,19 @@ class TidalProfileGenerator:
     def get_tidal_data_from_upload(self):
         """Load tidal_current-specified tidal data"""
 
-        # TODO: edit example csv to include u and v columns
-        # filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
-        # file = os.listdir(filedir)
-        # # read first (and only) file in directory
-        # self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
-
-        # TODO: remove once actual data is available. This code generates fake tide with u and v components
-        def fake_tide(t, M2amp, M2phase):
-
-            return M2amp * np.sin(2 * np.pi * t / 12.42 - M2phase)
-
-        t = pd.date_range(
-            start='1/1/2017', end='1/1/2018', freq='H')[:-1]
-        # Signal + some noise.
-        u = fake_tide(np.arange(8760), M2amp=2, M2phase=0) + np.random.randn(8760)
-        v = fake_tide(np.arange(8760), M2amp=1, M2phase=np.pi) + np.random.randn(8760)
-        self.tidal_current = pd.DataFrame()
-        self.tidal_current['u'] = u
-        self.tidal_current['v'] = v
+        filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
+        file = os.listdir(filedir)
+        # read first (and only) file in directory, assign 'date' column to index
+        self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
+        self.tidal_current.set_index('date', inplace=True)
+        self.tidal_current.index = pd.to_datetime(self.tidal_current.index)
 
     def extrapolate_tidal_epoch(self):
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
 
-        # TODO: modify this in the future to extrapolate any amount of data. Also remove adding index, since user data should have a datetime index
-        self.tidal_current.index = pd.date_range(
-            start='1/1/2017', end='1/1/2018', freq='H')[:-1]
+        # TODO: modify this in the future to extrapolate any amount of data
         coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
 
-        # TODO: match the range of solar data availability from NSRDB
         epoch_index = pd.date_range(
             start='1/1/2017', end='1/1/2036', freq='H')[:-1]
         tide = reconstruct(epoch_index, coef, verbose=False)
@@ -246,34 +230,15 @@ class TidalProfileGenerator:
                 tidal,
                 self.latitude,
                 self.longitude,
-                self.advanced_inputs['rated_power'],
+                self.advanced_inputs['turbine_rated_power'],
                 self.advanced_inputs['rotor_length'],
+                self.advanced_inputs['rotor_number'],
                 self.advanced_inputs['turbine_number'],
                 self.advanced_inputs['inverter_efficiency'],
                 self.advanced_inputs['maximum_cp'],
                 self.advanced_inputs['turbine_losses'],
                 self.advanced_inputs['cut_in_velocity'],
                 self.advanced_inputs['cut_out_velocity'])]
-
-        # Validate parameters
-        if validate:
-            args_dict = {'num_seconds': num_seconds}
-            validate_all_parameters(args_dict)
-
-        # For each profile in tidal_profiles, power_profiles, temp_profiles and
-        #   night_profiles, crop to the specified number of seconds, rounding down to the
-        #   nearest timestep
-        for i in range(len(self.tidal_profiles)):
-            self.tidal_profiles[i] = \
-                self.tidal_profiles[i].loc[
-                :self.tidal_profiles[i].index[0] + datetime.timedelta(
-                    seconds=num_seconds - 1)]
-
-        for i in range(len(self.power_profiles)):
-            self.power_profiles[i] = \
-                self.power_profiles[i].loc[
-                :self.power_profiles[i].index[0] + datetime.timedelta(
-                    seconds=num_seconds - 1)]
 
     def tidal_checks(self):
         """ Several checks to  make sure the tidal profiles look OK. """
@@ -295,7 +260,7 @@ class TidalProfileGenerator:
         ax2.set_ylabel('Power (kW)')
 
 def calc_tidal_prod(tidal_profile, latitude, longitude,
-                    rated_power, rotor_length, turbine_number,
+                    turbine_rated_power, rotor_length, rotor_number, turbine_number,
                     inverter_efficiency, maximum_cp, turbine_losses,
                     cut_in_velocity, cut_out_velocity, validate=False):
     """ Calculates the production from a tidal profile. """
@@ -305,14 +270,15 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
         args_dict = {'tidal_profile': tidal_profile,
                      'latitude': latitude,
                      'longitude': longitude,
-                     'rated_power': rated_power,
+                     'turbine_rated_power': turbine_rated_power,
                      'rotor_length': rotor_length,
+                     'rotor_number': rotor_number,
                      'turbine_number': turbine_number,
                      'inverter_efficiency': inverter_efficiency,
                      'maximum_cp': maximum_cp,
                      'turbine_losses': turbine_losses,
-                     'cut_in_velocity': 0.7,
-                     'cut_out_velocity': 2.6}
+                     'cut_in_velocity': 0.5,
+                     'cut_out_velocity': 3}
 
         # Validate all parameters
         validate_all_parameters(args_dict)
@@ -323,16 +289,16 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
         u = row['v']
         if u >= cut_in_velocity and u <= cut_out_velocity:
             dc_power.at[
-                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 * turbine_number
+                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 * rotor_number * turbine_number
         elif u < cut_in_velocity:
             dc_power.at[index, 'power'] = 0
         elif u > cut_out_velocity:
-            dc_power.at[index, 'power'] = rated_power * turbine_number
+            dc_power.at[index, 'power'] = turbine_rated_power * turbine_number
         else:
             dc_power.at[index, 'power'] = np.nan
 
     # Normalize DC power generation to turbine size. i.e. per 1kW of tidal
-    dc_power['power'] = dc_power['power'] / (rated_power * turbine_number)
+    dc_power['power'] = dc_power['power'] / (turbine_rated_power * turbine_number)
 
     # Calculate turbine losses
     dc_power['power'] = dc_power['power'] * (1 - turbine_losses / 100)
@@ -351,7 +317,7 @@ if __name__ == "__main__":
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, validate=False)
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, validate=True)
 
     tpg.get_tidal_data_from_upload()
     print('uploaded data')
