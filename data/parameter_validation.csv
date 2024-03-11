@@ -1,3 +1,4 @@
+Parameter,Type,Min,Max,Enums,Size,Custom,Custom Arguments,Custom Message
 add_additional_generator,bool,,,,,,,
 age,"int,float",0,100,,,,,
 albedo,"int,float",0,1,,,,,
@@ -19,8 +20,6 @@ category,string,,,"pv,battery,generator",,,,
 cld_hours,tuple,,,,2,check_cld_hours,,each element in cld_hours must be between 0 and 23
 component,microgrid_system.Component,,,,,,,
 connections,"int,float",0,100,,,,,
-cut_in_velocity,"int,float",0,,,,,,
-cut_out_velocity,"int,float",0,,,,,,
 demand_rate,"int,float",0,50,,,,,
 demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
 dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt",,,,
@@ -52,7 +51,6 @@ initial_soc,"int,float",0,1,,,check_initial_soc,"soc_upper_limit,soc_lower_limit
 inverter,dict,,,,,check_inverter,,"Inverter must be a dictionary with the following keys and value datatypes: {'database': string, 'model': string}."
 inverter_cost_per_W,"int,float",0,10,,,,,
 inverter_database,str,,,CECInverter,,,,
-inverter_efficiency,float,0,1,,,,,
 inverter_name,str,,,,,check_inverter_name,,PV inverter not in database. Please check pvlib inverter options in pvlib/data/.
 is_night,bool,,,,,,,
 latitude,"int,float",-90,90,,,,,
@@ -96,7 +94,6 @@ om_costs,pandas.core.frame.DataFrame,,,,,check_om_costs,,"O&M must include the f
 one_way_battery_efficiency,"int,float",0,1,,,,,
 one_way_inverter_efficiency,"int,float",0,1,,,,,
 outputs,dict,,,,,check_outputs,,Something is wrong with the aggregated system outputs.
-Parameter,Type,Min,Max,Enums,Size,Custom,Custom Arguments,Custom Message
 path,str,,,,,check_path,,"Invalid path, check that the specified path exists in your working directory."
 perc,"int, float",0,100,,,,,
 percent_at_night,"int,float",0,1,,,,,
@@ -116,8 +113,6 @@ ranking_criteria,list,,,,,check_ranking_criteria,,"The ranking_criteria list mus
 rated_power,"int,float",0,,,,,,
 read_from_file,bool,,,,,,,
 resilience_percent,"int,float",0,100,,,,,
-rotor_length,"int,float",0,50,,,,,
-rotor_number,int,0,10,,,,,
 scenario_criteria,str,,,"pv,gen",,,,
 shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
@@ -142,14 +137,19 @@ temp_bins,range,,,,,,,
 temp_profile,pandas.core.frame.DataFrame,,,,,check_temp_profile,,"The temperature profile does not have the necessary columns or index, make sure you are using a DataFrame produced by get_solar_profiles."
 temp_profiles,list,,,,,check_temp_profiles,,"One or more of the temperature profiles does not have the necessary columns or index, make sure you are using a list produced by get_solar_profiles."
 temperature,pandas.core.series.Series,,,,,check_temperature,,"The annual temperature profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
+tidal_cut_in_velocity,"int,float",0,,,,,,
+tidal_cut_out_velocity,"int,float",0,,,,,,
+tidal_inverter_efficiency,float,0,1,,,,,
+tidal_rotor_number,int,0,10,,,,,
+tidal_rotor_radius,"int,float",0,50,,,,,
+tidal_turbine_losses,"int,float",0,100,,,,,
+tidal_turbine_number,int,0,,,,,,
+tidal_turbine_rated_power,"int,float",0,100000,,,,,
 tilt,"int,float",0,90,,,,,
 timezone,str,,,,,check_timezone,,The timezone must be a valid pytz timezone. For all options type: pytz.all_timezones.
 TMY,bool,,,,,,,
 tmy_solar,pandas.core.series.Series,,,,8760,,,
 tpg_advanced_inputs,dict,,,,,check_tpg_advanced_inputs,,
-turbine_losses,"int,float",0,100,,,,,
-turbine_number,int,0,,,,,,
-turbine_rated_power,"int,float",0,100000,,,,,
 unmet_load,pandas.core.frame.DataFrame,,,,,check_unmet_load,,Unmet load must be a DataFrame with a DateTimeIndex
 wind_speed,"int,float",0,,,,,,
 wiring,"int,float",0,100,,,,,

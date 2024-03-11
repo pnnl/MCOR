@@ -19,15 +19,15 @@ from utide import solve, reconstruct
 from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
-TIDAL_DEFAULTS = {'turbine_rated_power': 550,
-                  'rotor_length': 10,
-                  'rotor_number': 2,
-                  'turbine_number': 1,
+TIDAL_DEFAULTS = {'tidal_turbine_rated_power': 550,
+                  'tidal_rotor_radius': 10,
+                  'tidal_rotor_number': 2,
+                  'tidal_turbine_number': 1,
                   'maximum_cp': 0.42,
-                  'cut_in_velocity': 0.5,
-                  'cut_out_velocity': 3,
-                  'inverter_efficiency': 0.9,
-                  'turbine_losses': 10}
+                  'tidal_cut_in_velocity': 0.5,
+                  'tidal_cut_out_velocity': 3,
+                  'tidal_inverter_efficiency': 0.9,
+                  'tidal_turbine_losses': 10}
 
 class TidalProfileGenerator:
     """   
@@ -52,8 +52,8 @@ class TidalProfileGenerator:
 
         advanced_inputs: Dictionary specifying advanced tidal system inputs.
             These could include:
-                rated power, rotor length, rotor_number, turbine number, maximum cp,
-                cut in velocity, cut out velocity, inverter efficiency, turbine_losses
+                rated power, rotor length, tidal_rotor_number, turbine number, maximum cp,
+                cut in velocity, cut out velocity, inverter efficiency, tidal_turbine_losses
                 
     Methods
     ----------
@@ -230,15 +230,15 @@ class TidalProfileGenerator:
                 tidal,
                 self.latitude,
                 self.longitude,
-                self.advanced_inputs['turbine_rated_power'],
-                self.advanced_inputs['rotor_length'],
-                self.advanced_inputs['rotor_number'],
-                self.advanced_inputs['turbine_number'],
-                self.advanced_inputs['inverter_efficiency'],
+                self.advanced_inputs['tidal_turbine_rated_power'],
+                self.advanced_inputs['tidal_rotor_radius'],
+                self.advanced_inputs['tidal_rotor_number'],
+                self.advanced_inputs['tidal_turbine_number'],
+                self.advanced_inputs['tidal_inverter_efficiency'],
                 self.advanced_inputs['maximum_cp'],
-                self.advanced_inputs['turbine_losses'],
-                self.advanced_inputs['cut_in_velocity'],
-                self.advanced_inputs['cut_out_velocity'])]
+                self.advanced_inputs['tidal_turbine_losses'],
+                self.advanced_inputs['tidal_cut_in_velocity'],
+                self.advanced_inputs['tidal_cut_out_velocity'])]
 
     def tidal_checks(self):
         """ Several checks to  make sure the tidal profiles look OK. """
@@ -260,9 +260,9 @@ class TidalProfileGenerator:
         ax2.set_ylabel('Power (kW)')
 
 def calc_tidal_prod(tidal_profile, latitude, longitude,
-                    turbine_rated_power, rotor_length, rotor_number, turbine_number,
-                    inverter_efficiency, maximum_cp, turbine_losses,
-                    cut_in_velocity, cut_out_velocity, validate=False):
+                    tidal_turbine_rated_power, tidal_rotor_radius, tidal_rotor_number, tidal_turbine_number,
+                    tidal_inverter_efficiency, maximum_cp, tidal_turbine_losses,
+                    tidal_cut_in_velocity, tidal_cut_out_velocity, validate=False):
     """ Calculates the production from a tidal profile. """
 
     if validate:
@@ -270,15 +270,15 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
         args_dict = {'tidal_profile': tidal_profile,
                      'latitude': latitude,
                      'longitude': longitude,
-                     'turbine_rated_power': turbine_rated_power,
-                     'rotor_length': rotor_length,
-                     'rotor_number': rotor_number,
-                     'turbine_number': turbine_number,
-                     'inverter_efficiency': inverter_efficiency,
+                     'tidal_turbine_rated_power': tidal_turbine_rated_power,
+                     'tidal_rotor_radius': tidal_rotor_radius,
+                     'tidal_rotor_number': tidal_rotor_number,
+                     'tidal_turbine_number': tidal_turbine_number,
+                     'tidal_inverter_efficiency': tidal_inverter_efficiency,
                      'maximum_cp': maximum_cp,
-                     'turbine_losses': turbine_losses,
-                     'cut_in_velocity': 0.5,
-                     'cut_out_velocity': 3}
+                     'tidal_turbine_losses': tidal_turbine_losses,
+                     'tidal_cut_in_velocity': tidal_cut_in_velocity,
+                     'tidal_cut_out_velocity': tidal_cut_out_velocity}
 
         # Validate all parameters
         validate_all_parameters(args_dict)
@@ -287,24 +287,24 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
     dc_power = pd.DataFrame()
     for index, row in tidal_profile.iterrows():
         u = row['v']
-        if u >= cut_in_velocity and u <= cut_out_velocity:
+        if u >= tidal_cut_in_velocity and u <= tidal_cut_out_velocity:
             dc_power.at[
-                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * rotor_length ** 2 * rotor_number * turbine_number
-        elif u < cut_in_velocity:
+                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * tidal_rotor_radius ** 2 * tidal_rotor_number * tidal_turbine_number
+        elif u < tidal_cut_in_velocity:
             dc_power.at[index, 'power'] = 0
-        elif u > cut_out_velocity:
-            dc_power.at[index, 'power'] = turbine_rated_power * turbine_number
+        elif u > tidal_cut_out_velocity:
+            dc_power.at[index, 'power'] = tidal_turbine_rated_power * tidal_turbine_number
         else:
             dc_power.at[index, 'power'] = np.nan
 
     # Normalize DC power generation to turbine size. i.e. per 1kW of tidal
-    dc_power['power'] = dc_power['power'] / (turbine_rated_power * turbine_number)
+    dc_power['power'] = dc_power['power'] / (tidal_turbine_rated_power * tidal_turbine_number)
 
     # Calculate turbine losses
-    dc_power['power'] = dc_power['power'] * (1 - turbine_losses / 100)
+    dc_power['power'] = dc_power['power'] * (1 - tidal_turbine_losses / 100)
 
     # Calculate AC power
-    ac_power = dc_power['power'] * inverter_efficiency
+    ac_power = dc_power['power'] * tidal_inverter_efficiency
 
     # Force values less than 0 to 0
     ac_power[ac_power < 0] = 0
