@@ -1,23 +1,29 @@
 Parameter,Type,Min,Max,Enums,Size,Custom,Custom Arguments,Custom Message
 add_additional_generator,bool,,,,,,,
+age,"int,float",0,100,,,,,
 albedo,"int,float",0,1,,,,,
 altitude,"int,float",0,3000,,,,,
 annual_load_profile,pandas.core.series.Series,,,,,check_annual_load_profile,duration,"The annual load profile must have a datetime index, contain values for each day and hour (or the corresponding interval if duration is not 1 hour) of the year, and have non-negative values."
-off_grid_load_profile,pandas.core.series.Series,,,,,check_off_grid_load_profile,duration,"The off grid load profile must have a datetime index, contain values for each day and hour (or the corresponding interval if duration is not 1 hour) of the year, and have non-negative values."
+annual_production,pandas.core.series.Series,,,,,check_annual_production,,"The annual production profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
+availability,"int,float",0,100,,,,,
 azimuth,"int,float",-180,180,,,,,
 base_power_profile,pandas.core.series.Series,,,,,,,
 batt_capacity,"int,float",0,,,,,,
 batt_cost_per_Wh,"int,float",0,10,,,,,
 batt_percent,"int,float",,,,,,,
+batt_sizing_method,str,,,"longest_night,no_pv_export",,,,
+battery_costs,pandas.core.frame.DataFrame,,,,,check_battery_costs,,"Battery_Cost must include the following columns: 'Battery System', 'Inverter', and 'BOS'"
 battery_params,dict,,,,,check_battery_params,,"battery_params must be a dictionary with the following keys and value datatypes:  {'battery_power_to_energy': float, 'initial_soc': float,   'one_way_battery_efficiency': float,   'one_way_inverter_efficiency': float, 'soc_upper_limit': float, 'soc_lower_limit': float, 'init_soc_lower_limit': float}. The initial SOC must be between the upper and lower limits."
 battery_power_to_energy,"int,float",0,100,,,,,
 capital_cost,"int,float",0,,,,,,
 category,string,,,"pv,battery,generator",,,,
 cld_hours,tuple,,,,2,check_cld_hours,,each element in cld_hours must be between 0 and 23
 component,microgrid_system.Component,,,,,,,
+connections,"int,float",0,100,,,,,
+demand_rate,"int,float",0,50,,,,,
+demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
 dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt",,,,
 duration,int,1,86400,,,,,
-net_metering_rate,"int,float",0,1,,,,,
 electricity_rate,"int,float",0,1,,,,,
 end_year,int,1998,2021,,,,,
 existing,bool,,,,,,,
@@ -26,6 +32,9 @@ filter_constraints,list,,,,,check_filter_constraints,,"The filter_constraints li
 fuel_curve_degree,int,1,3,,,,,
 fuel_curve_model,dict,,,,,check_fuel_curve_model,,"The generator fuel curve model must be of the form {'1/4 Load (gal/hr)': val, '1/2 Load (gal/hr)': val, '3/4 Load (gal/hr)': val,
                 'Full Load (gal/hr)': val}"
+fuel_tank_cost,"int,float",0,10000000,,,,,
+fuel_tank_costs,pandas.core.frame.DataFrame,,,,,check_fuel_tank_costs,,Fuel tanks must include the following columns: 'Costs'
+fuel_tank_size,"int,float",0,10000000,,,,,
 fuel_used_gal,"int,float",0,,,,,,
 gen_percent,"int,float",,,,,,,
 gen_power_percent,tuple,,,,,check_gen_power_percent,,Each value in gen_power_percent must be between 0 and 100.
@@ -39,20 +48,34 @@ ideal_minimum_load,"int,float",0,1,,,,,
 include_batt,tuple,,,,,check_include_batt,,"Include batt must be a list of tuples of the form (battery capacity, battery power)"
 include_pv,tuple,,,,,check_include_pv,,Include pv must be a list of pv sizes in kW
 initial_soc,"int,float",0,1,,,check_initial_soc,"soc_upper_limit,soc_lower_limit",The initial SOC must be within the specified SOC upper and lower limits.
+inverter,dict,,,,,check_inverter,,"Inverter must be a dictionary with the following keys and value datatypes: {'database': string, 'model': string}."
 inverter_cost_per_W,"int,float",0,10,,,,,
+inverter_database,str,,,CECInverter,,,,
+inverter_name,str,,,,,check_inverter_name,,PV inverter not in database. Please check pvlib inverter options in pvlib/data/.
 is_night,bool,,,,,,,
 latitude,"int,float",-90,90,,,,,
 length_trials,"int,float",1,365,,,,,
+lid,"int,float",0,100,,,,,
 load_duration,pandas.core.frame.DataFrame,,,,,,,
 load_profile,pandas.core.series.Series,,,,,check_load_profile,,Load profiles must have a datetime index and non-negative values.
 loading_level_to_add_unit,"int,float",0,1,,,,,
 loading_level_to_remove_unit,"int,float",0,1,,,,,
 location,dict,,,,,check_location,,"Location must be a dictionary with the following keys and value datatypes:  {'longitude': float, 'latitude': float, 'timezone': string,  'altitude': float}"
 longitude,"int,float",-180,180,,,,,
+max_iter,int,1,1000,,,,,
+maximum_cp,float,0,1,,,,,
+mismatch,"int,float",0,100,,,,,
+mods_per_string,int,1,,,,,,
+module,dict,,,,,check_module,,"Module must be a dictionary with the following keys and valid datatype: {'database': string, 'model': string, 'capacity': float, 'area_in2': float}"
 module_area_in2,"int,float",0,,,,,,
 module_capacity,"int,float",0,1,,,,,
+module_database,str,,,"CECMod,SandiaMod",,,,
+module_name,str,,,,,check_module_name,,PV module not in database. Please check pvlib module options in pvlib/data/.
+multithreading,bool,,,,,,,
+nameplate_rating,"int,float",0,100,,,,,
 net_load,float,,,,,,,
 net_metering_limits,dict,,,,,check_net_metering_limits,,"Net metering limits must have the form: {type: ['capacity_cap' or 'percent_of_load'], value: [<kW value> or <percentage>]}."
+net_metering_rate,"int,float",0,1,,,,,
 new_system,microgrid_system.MicrogridSystem,,,,,,,
 night_duration,"int,float",,,,,check_night_duration,is_night,The night duration must be > 0
 night_profile,pandas.core.frame.DataFrame,,,,,check_night_profile,,"The night profile does not have the necessary columns or index, make sure you are using a DataFrame produced by calc_night_duration."
@@ -65,6 +88,9 @@ num_seconds,int,1,86400,,,,,
 num_systems,int,1,,,,,,
 num_trials,"int,float",1,1000,,,,,
 num_units,int,1,,,,,,
+off_grid_load_profile,pandas.core.series.Series,,,,,check_off_grid_load_profile,duration,"The off grid load profile must have a datetime index, contain values for each day and hour (or the corresponding interval if duration is not 1 hour) of the year, and have non-negative values."
+om_cost,"int,float",0,500,,,,,
+om_costs,pandas.core.frame.DataFrame,,,,,check_om_costs,,"O&M must include the following columns: 'Generator', 'Battery', 'PV_ground;fixed', 'PV_ground;single_axis ', 'PV_roof;fixed', 'PV_carport;fixed'"
 one_way_battery_efficiency,"int,float",0,1,,,,,
 one_way_inverter_efficiency,"int,float",0,1,,,,,
 outputs,dict,,,,,check_outputs,,Something is wrong with the aggregated system outputs.
@@ -77,69 +103,53 @@ power_profile,pandas.core.series.Series,,,,,check_power_profile,,"The power prof
 power_profiles,list,,,,,check_power_profiles,,"One or more of the power profiles does not have the necessary columns or index, make sure you are using a list produced by get_power_profiles."
 pv_capacity,"int,float",0,,,,,,
 pv_cost_per_W,"int,float",0,10,,,,,
+pv_costs,pandas.core.frame.DataFrame,,,,,check_pv_costs,,"PV_Cost must include the following columns: '10', '100', '500', '1000 ', '3500'"
 pv_params,dict,,,,,check_pv_params,,"pv_params must be a dictionary with the following keys and value datatypes: {'tilt': float, 'azimuth': float, 'module_capacity': float, 'module_area': float (in square inches),'spacing_buffer': float, 'advanced_inputs': dict, 'pv_tracking': string, 'pv_racking': string}."
 pv_percent,"int,float",,,,,,,
+pv_racking,str,,,"ground,roof,carport",,,,
+pv_tracking,str,,,"fixed,single_axis",,,,
 racking,str,,,"open_rack_cell_glassback,roof_mount_cell_glassback,open_rack_cell_polymerback,insulated_back_polymerback, open_rack_polymer_thinfilm_steel,22x_concentrator_tracker",,,,
 ranking_criteria,list,,,,,check_ranking_criteria,,"The ranking_criteria list must include dictionaries with the format: {parameter, order_type} where parameter can be any of the following: capital_cost_usd, annual_benefits_usd, simple_payback_yr, fuel_used_gal mean, or fuel_used_gal most-conservative and order_type can be [ascending, descending]."
 rated_power,"int,float",0,,,,,,
 read_from_file,bool,,,,,,,
 resilience_percent,"int,float",0,100,,,,,
+scenario_criteria,str,,,"pv,gen",,,,
+shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
+snow,"int,float",0,100,,,,,
 soc_at_initial_hour_of_night,"int,float",0,1,,,,,
 soc_lower_limit,"int,float",0,1,,,,,
 soc_upper_limit,"int,float",0,1,,,,,
+soiling,"int,float",0,100,,,,,
 solar_profile,pandas.core.frame.DataFrame,,,,,check_solar_profile,,"The solar profile does not have the necessary columns or index, make sure you are using a DataFrame produced by get_solar_profiles."
+solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2021. The Himawari dataset only contains data from 2016-2020.
 spacing_buffer,"int,float",0,10,,,,,
+spg_advanced_inputs,dict,,,,,check_spg_advanced_inputs,,
+start_datetimes,list,,,,,check_start_datetimes,"num_trials,start_year,end_year","start_datetimes must have length num_trials, consist of datetime objects, and be within the range of the start and end years"
 start_year,int,1998,2020,,,,,
 storage_recovery_percent,"int,float",,,,,,,
 strings,dict,,,,,check_strings,,The strings parameter much include both mods_per_string and strings_per_inv.
+strings_per_inv,int,1,,,,,,
 system,microgrid_system.MicrogridSystem,,,,,,,
+system_costs,dict,,,,,check_system_costs,,"system_costs must be a dictionary with the following keys and value datatypes:  {'battery_costs': pd.DataFrame, 'generator_costs': pd.DataFrame,  'pv_costs': pd.DataFrame ,  'fuel_tank_costs': pd.DataFrame, 'om_costs': pd.DataFrame}."
 temp_bins,range,,,,,,,
 temp_profile,pandas.core.frame.DataFrame,,,,,check_temp_profile,,"The temperature profile does not have the necessary columns or index, make sure you are using a DataFrame produced by get_solar_profiles."
 temp_profiles,list,,,,,check_temp_profiles,,"One or more of the temperature profiles does not have the necessary columns or index, make sure you are using a list produced by get_solar_profiles."
+temperature,pandas.core.series.Series,,,,,check_temperature,,"The annual temperature profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
+tidal_cut_in_velocity,"int,float",0,,,,,,
+tidal_cut_out_velocity,"int,float",0,,,,,,
+tidal_inverter_efficiency,float,0,1,,,,,
+tidal_rotor_number,int,0,10,,,,,
+tidal_rotor_radius,"int,float",0,50,,,,,
+tidal_turbine_losses,"int,float",0,100,,,,,
+tidal_turbine_number,int,0,,,,,,
+tidal_turbine_rated_power,"int,float",0,100000,,,,,
 tilt,"int,float",0,90,,,,,
 timezone,str,,,,,check_timezone,,The timezone must be a valid pytz timezone. For all options type: pytz.all_timezones.
 TMY,bool,,,,,,,
 tmy_solar,pandas.core.series.Series,,,,8760,,,
+tpg_advanced_inputs,dict,,,,,check_tpg_advanced_inputs,,
 unmet_load,pandas.core.frame.DataFrame,,,,,check_unmet_load,,Unmet load must be a DataFrame with a DateTimeIndex
 wind_speed,"int,float",0,,,,,,
-soiling,"int,float",0,100,,,,,
-shading,"int,float",0,100,,,,,
-snow,"int,float",0,100,,,,,
-mismatch,"int,float",0,100,,,,,
 wiring,"int,float",0,100,,,,,
-connections,"int,float",0,100,,,,,
-lid,"int,float",0,100,,,,,
-nameplate_rating,"int,float",0,100,,,,,
-age,"int,float",0,100,,,,,
-availability,"int,float",0,100,,,,,
-spg_advanced_inputs,dict,,,,,check_spg_advanced_inputs,,
-module,dict,,,,,check_module,,"Module must be a dictionary with the following keys and valid datatype: {'database': string, 'model': string, 'capacity': float, 'area_in2': float}"
-module_database,str,,,"CECMod,SandiaMod",,,,
-inverter,dict,,,,,check_inverter,,"Inverter must be a dictionary with the following keys and value datatypes: {'database': string, 'model': string}."
-inverter_database,str,,,CECInverter,,,,
-mods_per_string,int,1,,,,,,
-strings_per_inv,int,1,,,,,,
-module_name,str,,,,,check_module_name,,PV module not in database. Please check pvlib module options in pvlib/data/.
-inverter_name,str,,,,,check_inverter_name,,PV inverter not in database. Please check pvlib inverter options in pvlib/data/.
-max_iter,int,1,1000,,,,,
-multithreading,bool,,,,,,,
-start_datetimes,list,,,,,check_start_datetimes,"num_trials,start_year,end_year","start_datetimes must have length num_trials, consist of datetime objects, and be within the range of the start and end years"
-annual_production,pandas.core.series.Series,,,,,check_annual_production,,"The annual production profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
-temperature,pandas.core.series.Series,,,,,check_temperature,,"The annual temperature profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
-batt_sizing_method,str,,,"longest_night,no_pv_export",,,,
-system_costs,dict,,,,,check_system_costs,,"system_costs must be a dictionary with the following keys and value datatypes:  {'battery_costs': pd.DataFrame, 'generator_costs': pd.DataFrame,  'pv_costs': pd.DataFrame ,  'fuel_tank_costs': pd.DataFrame, 'om_costs': pd.DataFrame}."
-battery_costs,pandas.core.frame.DataFrame,,,,,check_battery_costs,,"Battery_Cost must include the following columns: 'Battery System', 'Inverter', and 'BOS'"
-pv_costs,pandas.core.frame.DataFrame,,,,,check_pv_costs,,"PV_Cost must include the following columns: '10', '100', '500', '1000 ', '3500'"
-fuel_tank_costs,pandas.core.frame.DataFrame,,,,,check_fuel_tank_costs,,Fuel tanks must include the following columns: 'Costs'
-om_costs,pandas.core.frame.DataFrame,,,,,check_om_costs,,"O&M must include the following columns: 'Generator', 'Battery', 'PV_ground;fixed', 'PV_ground;single_axis ', 'PV_roof;fixed', 'PV_carport;fixed'"
-pv_tracking,str,,,"fixed,single_axis",,,,
-pv_racking,str,,,"ground,roof,carport",,,,
-fuel_tank_cost,"int,float",0,10000000,,,,,
-fuel_tank_size,"int,float",0,10000000,,,,,
-om_cost,"int,float",0,500,,,,,
-demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
-demand_rate,"int,float",0,50,,,,,
-solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2021. The Himawari dataset only contains data from 2016-2020.
-scenario_criteria,str,,,"pv,gen",,,,
