@@ -817,6 +817,33 @@ def check_spg_advanced_inputs(advanced_inputs):
             validate_parameter(key, val, **kwargs)
     return True
 
+def check_tpg_advanced_inputs(advanced_inputs):
+    """Checks that each field in advanced inputs is valid. """
+
+    # Validate each of the fields in advanced_inputs
+    for key, val in advanced_inputs.items():
+        # Check that the field has a validation function
+        try:
+            kwargs = CONSTRAINTS_DICT[key]
+        except KeyError:
+            print("{} does not have a validation function. Skipping "
+                  "validation...".format(key))
+        else:
+            # If the field has a custom function, include custom args
+            if 'custom_func' in kwargs.keys():
+                if 'custom_args' in kwargs.keys() and len(kwargs['custom_args']):
+                    # Note: the following line requires that if a custom validation function
+                    #   for a parameter in advanced_inputs has custom arguments then those
+                    #   arguments must also be included in the advanced_inputs dictionary.
+                    kwargs['custom_args'] = \
+                        {key: advanced_inputs[key] for key in
+                         kwargs['custom_args'].split(',')}
+                else:
+                    kwargs['custom_args'] = {}
+
+            validate_parameter(key, val, **kwargs)
+    return True
+
 
 def check_module(module):
     """ Checks that all of the required fields are included, and that they have valid values.
@@ -1188,6 +1215,7 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_include_batt': check_include_batt,
                     'check_load_profile': check_load_profile,
                     'check_spg_advanced_inputs': check_spg_advanced_inputs,
+                    'check_tpg_advanced_inputs': check_tpg_advanced_inputs,
                     'check_module': check_module,
                     'check_inverter': check_inverter,
                     'check_module_name': check_module_name,
