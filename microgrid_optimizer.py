@@ -14,7 +14,6 @@ File contents:
 
 """
 
-# %%
 import json
 import multiprocessing
 import os
@@ -332,15 +331,19 @@ class GridSearchOptimizer(Optimizer):
                          'power_profiles': power_profiles,
                          'annual_load_profile': annual_load_profile,
                          'location': location, 
-                         'pv_params': pv_params,
-                         'mre_params': mre_params,
-                         'tmy_solar': tmy_solar,
-                         'tmy_mre': tmy_mre,
                          'battery_params': battery_params,
                          'duration': duration,
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
                          'system_costs': system_costs}
+            if pv_params is not None:
+                args_dict['pv_params'] = pv_params
+            if tmy_solar is not None:
+                args_dict['tmy_solar'] = tmy_solar
+            if mre_params is not None:
+                args_dict['mre_params'] = mre_params
+            if tmy_mre is not None:
+                args_dict['tmy_mre'] = tmy_mre                
             if electricity_rate is not None:
                 args_dict['electricity_rate'] = electricity_rate
             if net_metering_rate is not None:
@@ -623,8 +626,8 @@ class GridSearchOptimizer(Optimizer):
                         self.mre_params['num_generators'], 
                         self.mre_params['generator_capacity'],
                         self.mre_params['depth'],
-                        self.mre_params['blade diameter'],
-                        self.mre_params['blade type'],
+                        self.mre_params['blade_diameter'],
+                        self.mre_params['blade_type'],
                         validate=False)
                 component_list += [mre]
                 system_name_list += ['tidal_{:.1f}kW'.format(mre_size)]
@@ -1910,9 +1913,7 @@ def get_electricity_rate(location, validate=True):
         print('Reverse Geocoding fail, using median U.S. electricity rate')
         return rates['Average retail price (cents/kWh)'].median() / 100
 
-# %%
 if __name__ == "__main__":
-    # %%
     # Used for testing
     multiprocessing.freeze_support()
 
@@ -1948,8 +1949,8 @@ if __name__ == "__main__":
                   'num_generators': 1,
                   'generator_capacity': 100,
                   'depth': 10,
-                  'blade diameter': 2,
-                  'blade type': 'foo'
+                  'blade_diameter': 2,
+                  'blade_type': 'foo'
     }
     battery_params = {'battery_power_to_energy': 0.25, 'initial_soc': 1,
                       'one_way_battery_efficiency': 0.9,
@@ -1987,5 +1988,3 @@ if __name__ == "__main__":
     ranking_criteria = [{'parameter': 'simple_payback_yr',
                          'order_type': 'ascending'}]
     optim.rank_results(ranking_criteria)
-
-# %%

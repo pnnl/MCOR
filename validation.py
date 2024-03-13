@@ -476,12 +476,23 @@ def check_grouped_load(grouped_load):
     return not len({'num_hours', 'binned_load'} - set(grouped_load.columns))
 
 
-def check_power_profiles(power_profiles):
+def check_power_profiles(power_profiles, renewable_resources):
     """ Check that each power profile conforms to standards. """
 
-    for profile in power_profiles:
-        validate_parameter('power_profile', profile, custom_args={},
-                           **CONSTRAINTS_DICT['power_profile'])
+    for key, profiles in power_profiles.items():
+        for profile in profiles:
+            validate_parameter('power_profile', profile, custom_args={},
+                            **CONSTRAINTS_DICT['power_profile'])
+        
+    # Check that the keys match the items from the renewable_resources list
+    if len(set(renewable_resources) - set(power_profiles.keys())):
+        return False
+    
+    # Check that a night profile is included if pv is included
+    if 'pv' in power_profiles.keys():
+        if 'night' not in power_profiles.keys():
+            return False
+        
     return True
 
 
@@ -946,6 +957,21 @@ def check_solar_source(solar_source, start_year, end_year):
     return True
 
 
+def check_renewable_resources(renewable_resources):
+    """ Checks that renewables resources contains one or more of the following strings: 
+        'pv', 'mre' """
+    
+    if not len(renewable_resources):
+        return False
+    if len(set(renewable_resources) - set(['pv', 'mre'])):
+        return False
+    return True
+
+
+def check_mre_params(mre_params):
+    return True
+
+
 # Parameter warning functions
 def annual_load_profile_warnings(annual_load_profile):
     """ Checks to make sure the annual load profile looks realistic and outputs a warning if
@@ -1179,4 +1205,6 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_off_grid_load_profile': check_off_grid_load_profile,
                     'check_demand_rate_list': check_demand_rate_list,
                     'check_initial_soc': check_initial_soc,
-                    'check_solar_source': check_solar_source}
+                    'check_solar_source': check_solar_source,
+                    'check_renewable_resources': check_renewable_resources,
+                    'check_mre_params': check_mre_params}

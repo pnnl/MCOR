@@ -15,7 +15,7 @@ capital_cost,"int,float",0,,,,,,
 category,string,,,"pv,battery,generator",,,,
 cld_hours,tuple,,,,2,check_cld_hours,,each element in cld_hours must be between 0 and 23
 component,microgrid_system.Component,,,,,,,
-dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt",,,,
+dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt,available_capacity",,,,
 duration,int,1,86400,,,,,
 net_metering_rate,"int,float",0,1,,,,,
 electricity_rate,"int,float",0,1,,,,,
@@ -51,6 +51,7 @@ location,dict,,,,,check_location,,"Location must be a dictionary with the follow
 longitude,"int,float",-180,180,,,,,
 module_area_in2,"int,float",0,,,,,,
 module_capacity,"int,float",0,1,,,,,
+mre_params,dict,,,,,check_mre_params,,
 net_load,float,,,,,,,
 net_metering_limits,dict,,,,,check_net_metering_limits,,"Net metering limits must have the form: {type: ['capacity_cap' or 'percent_of_load'], value: [<kW value> or <percentage>]}."
 new_system,microgrid_system.MicrogridSystem,,,,,,,
@@ -73,8 +74,8 @@ perc,"int, float",0,100,,,,,
 percent_at_night,"int,float",0,1,,,,,
 plot_per_fig,int,1,9,,,,,
 power,"int,float",0,,,,,,
-power_profile,pandas.core.series.Series,,,,,check_power_profile,,"The power profile does not have the necessary columns or index, make sure you are using a DataFrame produced by calc_pv_prod."
-power_profiles,list,,,,,check_power_profiles,,"One or more of the power profiles does not have the necessary columns or index, make sure you are using a list produced by get_power_profiles."
+power_profile,"pandas.core.series.Series,pandas.core.frame.DataFrame",,,,,check_power_profile,,"The power profile does not have the necessary columns or index, make sure you are using a DataFrame produced by calc_pv_prod."
+power_profiles,dict,,,,,check_power_profiles,renewable_resources,One or more of the power profiles does not have the necessary columns or index. The profile keys must also match the resources in the renewable_resources list. 
 pv_capacity,"int,float",0,,,,,,
 pv_cost_per_W,"int,float",0,10,,,,,
 pv_params,dict,,,,,check_pv_params,,"pv_params must be a dictionary with the following keys and value datatypes: {'tilt': float, 'azimuth': float, 'module_capacity': float, 'module_area': float (in square inches),'spacing_buffer': float, 'advanced_inputs': dict, 'pv_tracking': string, 'pv_racking': string}."
@@ -83,6 +84,7 @@ racking,str,,,"open_rack_cell_glassback,roof_mount_cell_glassback,open_rack_cell
 ranking_criteria,list,,,,,check_ranking_criteria,,"The ranking_criteria list must include dictionaries with the format: {parameter, order_type} where parameter can be any of the following: capital_cost_usd, annual_benefits_usd, simple_payback_yr, fuel_used_gal mean, or fuel_used_gal most-conservative and order_type can be [ascending, descending]."
 rated_power,"int,float",0,,,,,,
 read_from_file,bool,,,,,,,
+renewable_resources,list,,,,,check_renewable_resources,,"Renewable resources must be a list containing one or more of the following strings: 'pv', 'mre'"
 resilience_percent,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
@@ -101,6 +103,7 @@ temp_profiles,list,,,,,check_temp_profiles,,"One or more of the temperature prof
 tilt,"int,float",0,90,,,,,
 timezone,str,,,,,check_timezone,,The timezone must be a valid pytz timezone. For all options type: pytz.all_timezones.
 TMY,bool,,,,,,,
+tmy_mre,pandas.core.series.Series,,,,8760,,,
 tmy_solar,pandas.core.series.Series,,,,8760,,,
 unmet_load,pandas.core.frame.DataFrame,,,,,check_unmet_load,,Unmet load must be a DataFrame with a DateTimeIndex
 wind_speed,"int,float",0,,,,,,
