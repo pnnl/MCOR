@@ -625,9 +625,6 @@ class GridSearchOptimizer(Optimizer):
                 mre = Tidal('mre' in self.existing_components, mre_size,
                         self.mre_params['num_generators'], 
                         self.mre_params['generator_capacity'],
-                        self.mre_params['depth'],
-                        self.mre_params['blade_diameter'],
-                        self.mre_params['blade_type'],
                         validate=False)
                 component_list += [mre]
                 system_name_list += ['tidal_{:.1f}kW'.format(mre_size)]

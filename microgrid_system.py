@@ -205,13 +205,13 @@ class MRE(Component):
 
         existing: whether or not the component already exists on site
 
-        num_generators: the number of marine energy generators
+        num_generators: the number of marine energy generators/turbines
 
-        capacity: total_capacity in kW
+        mre_capacity: total_capacity in kW
 
         generator_type: type of marine energy generator: 'tidal' or 'wave'
 
-        generator_capacity: the capacity per generator, in kW
+        generator_capacity: the capacity per generator/turbine, in kW
 
     Methods
     ----------
@@ -245,16 +245,6 @@ class Tidal(MRE):
 
         generator_type: type of marine energy generator: 'tidal'
 
-        generator_capacity: the capacity per generator, in kW
-
-        depth: depth of generator in meters
-
-        blade_diameter: diameter of blade in meters
-
-        blade_type: type of blade: 'axial' or ????
-
-        other inputs???
-
     Methods
     ----------
 
@@ -262,25 +252,14 @@ class Tidal(MRE):
 
     """
 
-    def __init__(self, existing, mre_capacity, num_generators, generator_capacity, depth,
-                 blade_diameter, blade_type, validate=True):
-        super().__init__(existing, mre_capacity, num_generators, 'tidal',
-                         generator_capacity)
-        # Assign parameters
-        self.depth = depth
-        self.blade_diameter = blade_diameter
-        self.blade_type = blade_type
-        # Other inputs
-        # TODO
+    def __init__(self, existing, mre_capacity, num_generators, generator_capacity, validate=True):
+        super().__init__(existing, mre_capacity, num_generators, 'tidal', generator_capacity)
 
         if validate:
             # List of initialized parameters to validate
             args_dict = {'existing': existing, 'mre_capacity': mre_capacity,
-                         'num_generators': num_generators,
-                         'generator_capacity': generator_capacity,
-                         'depth': depth,
-                         'blade_diameter': blade_diameter,
-                         'blade_type': blade_type}
+                         'tidal_turbine_number': num_generators,
+                         'tidal_turbine_rated_power': generator_capacity}
 
             # Validate input parameters
             validate_all_parameters(args_dict)
@@ -1537,8 +1516,8 @@ if __name__ == "__main__":
             pv_tracking='fixed', pv_racking='ground', validate=False)
     
     # Create a MRE object
-    tidal = Tidal(existing=False, mre_capacity=500, num_generators=1, generator_capacity=500, depth=10,
-                  blade_diameter=5, blade_type='foo', validate=False)
+    tidal = Tidal(existing=False, mre_capacity=500, num_generators=1, generator_capacity=500, 
+                  validate=False)
 
     # Create a battery object
     batt = SimpleLiIonBattery(existing=False, power=500, batt_capacity=2000,

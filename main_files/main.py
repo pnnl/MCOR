@@ -12,9 +12,9 @@ import os
 import pickle
 import pandas as pd
 from generate_solar_profile import SolarProfileGenerator
+from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, SimpleLiIonBattery, Generator, FuelTank
-
 
 
 def run_mcor(input_dict):
@@ -73,18 +73,18 @@ def run_mcor(input_dict):
         # Run get_tidal_profile
         # Set MRE params
         # TODO - update to run functions
-        tpg = None
-        tidal_profiles = [pd.Series([200]*len(pv_profile),
-                               index=pv_profile.index)
-                               for pv_profile in spg.power_profiles]
-        tmy_mre = pd.Series([200]*8760, index=tmy_solar.index)
+        tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
+                                    float(system_inputs['num_trials']), float(system_inputs['length_trials']),
+                                    advanced_inputs=mre_inputs)
+        tpg.get_tidal_data_from_upload()
+        tpg.extrapolate_tidal_epoch()
+        tpg.generate_tidal_profiles()
+        tpg.get_power_profiles()
+        tmy_mre = tpg.tmy_tidal
         mre_params = {'generator_type': 'tidal', 
-                      'num_generators': mre_inputs['num_generators'],
-                      'generator_capacity': mre_inputs['generator_capacity'],
-                      'depth': mre_inputs['depth'],
-                      'blade_diameter': mre_inputs['blade_diameter'],
-                      'blade_type': mre_inputs['blade_type']}
-        power_profiles['mre'] = tidal_profiles
+                      'num_generators': mre_inputs['tidal_turbine_number'],
+                      'generator_capacity': mre_inputs['tidal_turbine_rated_power']}
+        power_profiles['mre'] = tpg.power_profiles
     else:
         tmy_mre = None
         mre_params = None
@@ -95,6 +95,11 @@ def run_mcor(input_dict):
         # Set MRE params
         # TODO
         pass
+
+    # TODO - temporary solution, overwrite mre profile index to match pv index
+    if 'pv' in system_inputs['renewable_resources'] and 'mre' in system_inputs['renewable_resources']:
+        for mre_profile, pv_profile in zip(power_profiles['mre'], power_profiles['pv']):
+            mre_profile.index = pv_profile.index
 
     # Set up parameter dictionaries
     location = {'longitude': system_inputs['longitude'], 'latitude': system_inputs['latitude'],
@@ -177,18 +182,22 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2021,
-        'get_solar_data': True,
-        'get_solar_profiles': True
+        'get_solar_data': False,
+        'get_solar_profiles': False
     }
 
     # MRE dictionary
     input_dict['mre_inputs'] =  {
         'generator_type': 'tidal',
-        'num_generators': 1,
-        'generator_capacity': 100,
-        'depth': 10,
-        'blade_diameter': 2,
-        'blade_type': 'foo'
+        'tidal_turbine_rated_power': 550,
+        'tidal_rotor_radius': 10,
+        'tidal_rotor_number': 2,
+        'tidal_turbine_number': 1,
+        'maximum_cp': 0.42,
+        'tidal_cut_in_velocity': 0.5,
+        'tidal_cut_out_velocity': 3,
+        'tidal_inverter_efficiency': 0.9,
+        'tidal_turbine_losses': 10
     }
 
     # Battery dictionary
@@ -277,8 +286,11 @@ if __name__ == "__main__":
     # call run_mcor()
     optim, spg, tpg = run_mcor(input_dict)
 
-    # Check pv profiles for calculation errors
-    spg.pv_checks()
+    # Check resource profiles for calculation errors
+    if 'pv' in input_dict['system_inputs']['renewable_resources']:
+        spg.pv_checks()
+    if 'mre' in input_dict['system_inputs']['renewable_resources']:
+        tpg.tidal_checks()
 
     # Plot dispatch graphs
     # keep scenario_criteria and scenario_num defined

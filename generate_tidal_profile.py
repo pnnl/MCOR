@@ -95,6 +95,7 @@ class TidalProfileGenerator:
         self.advanced_inputs = advanced_inputs
         self.tidal_profiles = []
         self.power_profiles = []
+        self.tmy_tidal = None
 
         # Add TIDAL_DEFAULTS to advanced inputs if not already included
         for key in TIDAL_DEFAULTS:
@@ -133,14 +134,14 @@ class TidalProfileGenerator:
             start='1/1/2017', end='1/1/2036', freq='H')[:-1]
         tide = reconstruct(epoch_index, coef, verbose=False)
         self.tidal_epoch = pd.DataFrame()
-        self.tidal_epoch['v'] = (tide.u**2 + tide.v**2)**(0.5)
+        self.tidal_epoch['v_mag'] = (tide.u**2 + tide.v**2)**(0.5)
         self.tidal_epoch.index = epoch_index
 
     def generate_tidal_profiles(self):
         """Generate tidal profiles from tidal epoch data"""
 
         # Randomly create start dates
-        start_datetimes = self.tidal_epoch.iloc[:-self.length_trials].sample(
+        start_datetimes = self.tidal_epoch.iloc[:-int(self.length_trials)].sample(
             int(self.num_trials)).index.values
 
         date_ranges = [pd.date_range(start=start_date,
@@ -202,27 +203,28 @@ class TidalProfileGenerator:
         """
 
         # For each tidal profile, calculate production
-        # Load the tidal data from csv
-        for i in range(int(self.num_trials)):
-            try:
-                tidal = pd.read_csv(os.path.join(
-                    TIDAL_DATA_DIR, 'tidal_profiles', '{}_{}_{}d_{}t'.format(
-                        self.latitude, self.longitude, int(self.length_trials/24),
-                        int(self.num_trials)),
-                    '{}_{}_tidal_trial_{}.csv'.format(self.latitude, self.longitude, i)),
-                    index_col=0, parse_dates=[0])
+        # Load the tidal data from csv if not already in the self.tidal_profiles list
+        if not len(self.tidal_profiles):
+            for i in range(int(self.num_trials)):
+                try:
+                    tidal = pd.read_csv(os.path.join(
+                        TIDAL_DATA_DIR, 'tidal_profiles', '{}_{}_{}d_{}t'.format(
+                            self.latitude, self.longitude, int(self.length_trials/24),
+                            int(self.num_trials)),
+                        '{}_{}_tidal_trial_{}.csv'.format(self.latitude, self.longitude, i)),
+                        index_col=0, parse_dates=[0])
 
-            except FileNotFoundError:
-                message = 'Tidal profile csvs not found. Please check that you have entered' \
-                          ' the longitude, latitude, number, and length of trials for a ' \
-                          'site with previously generated tidal profiles.'
-                log_error(message)
-                raise Exception(message)
+                except FileNotFoundError:
+                    message = 'Tidal profile csvs not found. Please check that you have entered' \
+                            ' the longitude, latitude, number, and length of trials for a ' \
+                            'site with previously generated tidal profiles.'
+                    log_error(message)
+                    raise Exception(message)
 
-            # Localize timezone
-            tidal.index = tidal.index.tz_localize(self.timezone)
+                # Localize timezone
+                tidal.index = tidal.index.tz_localize(self.timezone, ambiguous='infer')
 
-            self.tidal_profiles += [tidal]
+                self.tidal_profiles += [tidal]
 
         # Calculate production for each tidal profile
         for tidal in self.tidal_profiles:
@@ -239,6 +241,22 @@ class TidalProfileGenerator:
                 self.advanced_inputs['tidal_turbine_losses'],
                 self.advanced_inputs['tidal_cut_in_velocity'],
                 self.advanced_inputs['tidal_cut_out_velocity'])]
+            
+        # Calculate power production for initial 1-year profile
+        self.tidal_current['v_mag'] = self.tidal_current.apply(
+            lambda x: (x['u']**2 + x['v']**2)**(0.5), axis=1)
+        self.tmy_tidal = calc_tidal_prod(self.tidal_current, 
+                self.latitude,
+                self.longitude,
+                self.advanced_inputs['tidal_turbine_rated_power'],
+                self.advanced_inputs['tidal_rotor_radius'],
+                self.advanced_inputs['tidal_rotor_number'],
+                self.advanced_inputs['tidal_turbine_number'],
+                self.advanced_inputs['tidal_inverter_efficiency'],
+                self.advanced_inputs['maximum_cp'],
+                self.advanced_inputs['tidal_turbine_losses'],
+                self.advanced_inputs['tidal_cut_in_velocity'],
+                self.advanced_inputs['tidal_cut_out_velocity'])
 
     def tidal_checks(self):
         """ Several checks to  make sure the tidal profiles look OK. """
@@ -286,7 +304,7 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
     # Calculate DC power
     dc_power = pd.DataFrame()
     for index, row in tidal_profile.iterrows():
-        u = row['v']
+        u = row['v_mag']
         if u >= tidal_cut_in_velocity and u <= tidal_cut_out_velocity:
             dc_power.at[
                 index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * tidal_rotor_radius ** 2 * tidal_rotor_number * tidal_turbine_number
