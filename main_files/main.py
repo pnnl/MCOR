@@ -72,7 +72,6 @@ def run_mcor(input_dict):
     if 'mre' in system_inputs['renewable_resources'] and mre_inputs['generator_type'] == 'tidal':
         # Run get_tidal_profile
         # Set MRE params
-        # TODO - update to run functions
         tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
                                     advanced_inputs=mre_inputs)
@@ -182,8 +181,8 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2021,
-        'get_solar_data': False,
-        'get_solar_profiles': False
+        'get_solar_data': True,
+        'get_solar_profiles': True
     }
 
     # MRE dictionary

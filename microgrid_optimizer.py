@@ -27,6 +27,7 @@ import tabulate
 from geopy.geocoders import Nominatim
 
 from generate_solar_profile import SolarProfileGenerator
+from generate_tidal_profile import TidalProfileGenerator
 from microgrid_simulator import REBattGenSimulator
 from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem
 from validation import validate_all_parameters, log_error, annual_load_profile_warnings
@@ -1918,15 +1919,25 @@ if __name__ == "__main__":
     system_costs = pd.read_excel('data/MCOR Prices.xlsx', sheet_name=None, index_col=0)
 
     # Set up solar profiles
+    num_trials = 2.
+    length_trials = 14. * 24
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
     spg = SolarProfileGenerator(latitude, longitude, timezone, 265.176, 20, -180,
-                                2., 14. * 24, validate=False)
+                                num_trials, length_trials, validate=False)
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.1, validate=False)
     module_params = spg.get_pv_params()
     tmy_solar = spg.tmy_power_profile
+
+    # Set up tidal profiles
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials)
+    tpg.get_tidal_data_from_upload()
+    tpg.extrapolate_tidal_epoch()
+    tpg.generate_tidal_profiles()
+    tpg.get_power_profiles()
+    tmy_mre = tpg.tmy_tidal
 
     # Set up load profile
     annual_load_profile = pd.read_csv(os.path.join('data', 'sample_load_profile.csv'),
@@ -1944,27 +1955,21 @@ if __name__ == "__main__":
                  'advanced_inputs': {}}
     mre_params = {'generator_type': 'tidal',
                   'num_generators': 1,
-                  'generator_capacity': 100,
-                  'depth': 10,
-                  'blade_diameter': 2,
-                  'blade_type': 'foo'
-    }
+                  'generator_capacity': 100}
     battery_params = {'battery_power_to_energy': 0.25, 'initial_soc': 1,
                       'one_way_battery_efficiency': 0.9,
                       'one_way_inverter_efficiency': 0.95,
                       'soc_upper_limit': 1, 'soc_lower_limit': 0.1}
 
     # Create optimization object
-    # TODO: update for MRE
     renewable_resources = ['pv', 'mre']
-    tidal_profiles = [pd.Series([200]*len(spg.power_profiles[0]),
-                               index=spg.power_profiles[0].index),
-                      pd.Series([200]*len(spg.power_profiles[1]),
-                               index=spg.power_profiles[1].index)]
-    tmy_mre = pd.Series([200]*8760, index=tmy_solar.index)
     power_profiles = {'pv': spg.power_profiles,
-                      'mre': tidal_profiles,
+                      'mre': tpg.power_profiles,
                       'night': spg.night_profiles}
+    # TODO - temporary solution, overwrite mre profile index to match pv index
+    for mre_profile, pv_profile in zip(power_profiles['mre'], power_profiles['pv']):
+        mre_profile.index = pv_profile.index
+
     optim = GridSearchOptimizer(renewable_resources, power_profiles, annual_load_profile,
                                 location, battery_params, system_costs, 
                                 tmy_solar=tmy_solar, pv_params=pv_params, mre_params=mre_params,

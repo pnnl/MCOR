@@ -21,6 +21,7 @@ from copy import deepcopy
 from microgrid_system import Generator
 from microgrid_system import PV, Tidal, Wave, SimpleLiIonBattery, SimpleMicrogridSystem
 from generate_solar_profile import SolarProfileGenerator
+from generate_tidal_profile import TidalProfileGenerator
 from validation import validate_all_parameters, log_error
 
 # Suppress pandas warnings
@@ -634,18 +635,23 @@ def calculate_load_duration(grouped_load, validate=True):
 
 if __name__ == "__main__":
     # Used for testing    
-    # Get solar and power profiles
+    # Get solar and tidal profiles
     # System level
     import os
-    spg = SolarProfileGenerator(46.34, -119.28, 'US/Pacific', 0, 0, 0, 200, 14*24,
+    latitude = 46.34
+    longitude = -119.28
+    timezone = 'US/Pacific'
+    num_trials = 200.
+    length_trials = 14. * 24
+    spg = SolarProfileGenerator(latitude, longitude, timezone, 0, 0, 0, num_trials, length_trials,
                                 validate=False)
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.2, validate=False)
-
-    # Temporary MRE generation info
-    # TODO - udpate later
-    tidal_profiles = pd.Series([1]*len(spg.power_profiles[95]),
-                               index=spg.power_profiles[95].index)
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials)
+    tpg.get_tidal_data_from_upload()
+    tpg.extrapolate_tidal_epoch()
+    tpg.generate_tidal_profiles()
+    tpg.get_power_profiles()
 
     # Sample generator options
     generator_options = pd.read_excel('data/MCOR Prices.xlsx', sheet_name='generator_costs',
@@ -655,7 +661,7 @@ if __name__ == "__main__":
     batt = SimpleLiIonBattery(False, 50, 200, validate=False)
     pv = PV(False, 50, 0, 0, 0.360, 3, 2, validate=False, pv_tracking=False,
             pv_racking='ground')
-    tidal = Tidal(False, 50, 1, 50, 10, 5, 'foo', validate=False)
+    tidal = Tidal(False, 50, 1, 50, validate=False)
     gen = Generator(True, 50, 1, {'1/4 Load (gal/hr)': 1.8, '1/2 Load (gal/hr)': 2.9,
                                   '3/4 Load (gal/hr)': 3.8, 'Full Load (gal/hr)': 4.8},
                     5000, validate=False)
@@ -674,7 +680,10 @@ if __name__ == "__main__":
     renewable_resources = ['mre', 'pv']
     base_power_profiles = {'pv': spg.power_profiles[95],
                            'night': spg.night_profiles[95],
-                           'mre': tidal_profiles}
+                           'mre': tpg.power_profiles[95]}
+    # TODO - temporary solution, overwrite mre profile index to match pv index
+    base_power_profiles['mre'].index = base_power_profiles['pv'].index
+
     sim = REBattGenSimulator('pv_50_tidal_50_batt_50kW_200kWh',
                              renewable_resources,
                              base_power_profiles,
