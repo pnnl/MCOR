@@ -78,19 +78,11 @@ class GridSearchOptimizer(Optimizer):
              'pv_tracking': string (options: [fixed, single_axis]),
              'advanced_inputs': dict (currently does nothing)}
 
-        # TODO
-        tidal_params: dictionary with the following keys and value 
+        # TODO - update once determining num_gens in sizing function
+        mre_params: dictionary with the following keys and value 
             datatypes:
-            {
-            
-            }
-
-        # TODO
-        wave_params: dictionary with the following keys and value 
-            datatypes:
-            {
-            
-            }
+            {'generator_type': str, 'num_generators': int,
+            'generator_capacity': float}
 
         battery_params: dictionary with the following keys and value
             datatypes:
@@ -362,12 +354,25 @@ class GridSearchOptimizer(Optimizer):
             # Validate input parameters
             validate_all_parameters(args_dict)
 
+            # Ensure that pv_params, mre_params, tmy_solar, and tmy_mre are not none if the
+            #   corresponding resource is included in renewable_resources
+            if 'pv' in renewable_resources:
+                if pv_params is None or tmy_solar is None:
+                    message = 'If a pv system is included in the considered resources, then both ' \
+                              'pv_params and tmy_solar must be included as non-null inputs.'
+                    log_error(message)
+                    raise Exception(message)
+            if 'mre' in renewable_resources:
+                if mre_params is None or tmy_mre is None:
+                    message = 'If an mre system is included in the considered resources, then both ' \
+                              'mre_params and tmy_mre must be included as non-null inputs.'
+                    log_error(message)
+                    raise Exception(message)
+
         # De-localize timezones from profiles
         for re_resource, profiles in self.power_profiles.items():
             for profile in profiles:
                 profile.index = profile.index.map(lambda x: x.tz_localize(None))
-            # TODO check if this line is needed
-            # self.power_profiles[re_resource] = profiles
         if tmy_solar is not None:
             tmy_solar.index = tmy_solar.index.map(lambda x: x.tz_localize(None))
         if tmy_mre is not None:
@@ -1027,15 +1032,6 @@ class GridSearchOptimizer(Optimizer):
                            'mre_avg_load': [], 'mre_peak_load': [],
                            'gen_avg_load': [], 'gen_peak_load': [],
                            'batt_avg_load': [], 'batt_peak_load': []}
-
-
-        # Create empty load duration dictionaries to hold hours, kWh, and
-        #   kW not met at each generator size
-        # TODO - this isn't being used, remove or fix
-        if self.off_grid_load_profile is None:
-            load_profile = self.annual_load_profile
-        else:
-            load_profile = self.off_grid_load_profile
 
         # For each resource profile, create a simulator object
         for i in range(len(self.load_profiles)):
