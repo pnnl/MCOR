@@ -143,6 +143,7 @@ class GridSearchOptimizer(Optimizer):
                 night_const_batt (constant discharge at night)
                 night_dynamic_batt (updates the discharge rate based on
                     remaining available capacity)
+                available_capacity (does not reserve any battery during specific times)
             Default: night_dynamic_batt
 
         # TODO: May want to develop an alternative strategy when using tidal 
@@ -389,6 +390,10 @@ class GridSearchOptimizer(Optimizer):
         if self.electricity_rate is None:
             self.electricity_rate = get_electricity_rate(self.location,
                                                          validate=False)
+            
+        # If no PV is included, ensure that dispatch strategy is set to 'available_capacity'
+        if 'pv' not in self.renewable_resources:
+            self.dispatch_strategy = 'available_capacity'
 
     # TODO - update with a more sophisticated methodology that includes more options
     def size_RE_system(self):
@@ -1925,9 +1930,9 @@ if __name__ == "__main__":
     longitude = -119.28
     timezone = 'US/Pacific'
     spg = SolarProfileGenerator(latitude, longitude, timezone, 265.176, 20, -180,
-                                num_trials, length_trials, validate=False)
+                                num_trials, length_trials, validate=True)
     spg.get_power_profiles()
-    spg.get_night_duration(percent_at_night=0.1, validate=False)
+    spg.get_night_duration(percent_at_night=0.1, validate=True)
     module_params = spg.get_pv_params()
     tmy_solar = spg.tmy_power_profile
 
@@ -1976,7 +1981,7 @@ if __name__ == "__main__":
                                 tmy_mre=tmy_mre, dispatch_strategy='available_capacity',
                                 electricity_rate=None, net_metering_limits=None, 
                                 generator_buffer=1.1, existing_components={}, output_tmy=False,
-                                validate=False)
+                                validate=True)
 
     # Create a grid of systems
     optim.define_grid()

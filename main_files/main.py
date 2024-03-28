@@ -117,7 +117,8 @@ def run_mcor(input_dict):
                                 load_inputs['annual_load_profile'],
                                 location, battery_params, financial_inputs['system_costs'],
                                 tmy_solar=tmy_solar, pv_params=pv_params, tmy_mre=tmy_mre,
-                                mre_params=mre_params, dispatch_strategy='available_capacity',
+                                mre_params=mre_params, 
+                                dispatch_strategy=input_dict['system_inputs']['dispatch_strategy'],
                                 electricity_rate=financial_inputs['utility_rate'],
                                 net_metering_rate=net_metering_inputs['net_metering_rate'],
                                 demand_rate=financial_inputs['demand_rate'],
@@ -168,7 +169,8 @@ if __name__ == "__main__":
         'altitude': 0,
         'num_trials': 200,
         'length_trials': 14 * days_to_hours,
-        'renewable_resources': ['mre', 'pv'] # Can include 'pv' and/or 'mre', in order of dispatch'
+        'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
+        'dispatch_strategy': 'available_capacity'
     }
 
     # PV dictionary

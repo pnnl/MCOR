@@ -7,7 +7,6 @@ annual_load_profile,pandas.core.series.Series,,,,,check_annual_load_profile,dura
 annual_production,pandas.core.series.Series,,,,,check_annual_production,,"The annual production profile must have a datetime index, contain values for each day and hour of the year, and have non-negative values."
 availability,"int,float",0,100,,,,,
 azimuth,"int,float",-180,180,,,,,
-base_power_profile,pandas.core.series.Series,,,,,,,
 batt_capacity,"int,float",0,,,,,,
 batt_cost_per_Wh,"int,float",0,10,,,,,
 batt_percent,"int,float",,,,,,,
@@ -71,6 +70,7 @@ module_area_in2,"int,float",0,,,,,,
 module_capacity,"int,float",0,1,,,,,
 module_database,str,,,"CECMod,SandiaMod",,,,
 module_name,str,,,,,check_module_name,,PV module not in database. Please check pvlib module options in pvlib/data/.
+mre_capacity,"int,float",0,,,,,,
 mre_params,dict,,,,,check_mre_params,,
 multithreading,bool,,,,,,,
 nameplate_rating,"int,float",0,100,,,,,

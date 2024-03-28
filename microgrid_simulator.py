@@ -202,7 +202,7 @@ class REBattGenSimulator(Simulator):
         # Validate input parameters
         if validate:
             args_dict = {'renewable_resources': renewable_resources,
-                         'base_power_profiles': base_power_profiles,
+                         'power_profiles': base_power_profiles,
                          'load_profile': load_profile,
                          'system': system,
                          'location': location, 'duration': duration,
@@ -217,7 +217,7 @@ class REBattGenSimulator(Simulator):
                       (self.load_profile.index[0].month,
                        self.load_profile.index[0].day,
                        self.load_profile.index[0].hour)) 
-                       for base_power_profile in base_power_profiles.values]):
+                       for base_power_profile in base_power_profiles.values()]):
                 message = 'The RE power, load, and night ' \
                           'profiles must all have the same index.'
                 log_error(message)
@@ -644,9 +644,9 @@ if __name__ == "__main__":
     num_trials = 200.
     length_trials = 14. * 24
     spg = SolarProfileGenerator(latitude, longitude, timezone, 0, 0, 0, num_trials, length_trials,
-                                validate=False)
+                                validate=True)
     spg.get_power_profiles()
-    spg.get_night_duration(percent_at_night=0.2, validate=False)
+    spg.get_night_duration(percent_at_night=0.2, validate=True)
     tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials)
     tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
@@ -658,24 +658,22 @@ if __name__ == "__main__":
                                       index_col=0)
 
     # Create a sample system
-    batt = SimpleLiIonBattery(False, 50, 200, validate=False)
-    pv = PV(False, 50, 0, 0, 0.360, 3, 2, validate=False, pv_tracking=False,
+    batt = SimpleLiIonBattery(False, 50, 200, validate=True)
+    pv = PV(False, 50, 0, 0, 0.360, 3, 2, validate=True, pv_tracking='fixed',
             pv_racking='ground')
-    tidal = Tidal(False, 50, 1, 50, validate=False)
+    tidal = Tidal(False, 50, 1, 50, validate=True)
     gen = Generator(True, 50, 1, {'1/4 Load (gal/hr)': 1.8, '1/2 Load (gal/hr)': 2.9,
                                   '3/4 Load (gal/hr)': 3.8, 'Full Load (gal/hr)': 4.8},
-                    5000, validate=False)
+                    5000, validate=True)
     system = SimpleMicrogridSystem('pv_50_tidal_50_batt_50kW_200kWh')
-    system.add_component(batt, validate=False)
-    system.add_component(pv, validate=False)
-    system.add_component(tidal, validate=False)
-    system.add_component(gen, validate=False)
+    system.add_component(batt, validate=True)
+    system.add_component(pv, validate=True)
+    system.add_component(tidal, validate=True)
+    system.add_component(gen, validate=True)
 
     # Create a simulation object
     load_profile = pd.read_csv(os.path.join('data', 'sample_load_profile.csv'),
                                index_col=0)['Load']
-    load_profile.index = pd.date_range(start='1/1/2017', end='1/1/2018',
-                                       freq='{}S'.format(int(3600)))[:-1]
     load_profile = load_profile.iloc[4951:4951+336]
     renewable_resources = ['mre', 'pv']
     base_power_profiles = {'pv': spg.power_profiles[95],
@@ -683,6 +681,7 @@ if __name__ == "__main__":
                            'mre': tpg.power_profiles[95]}
     # TODO - temporary solution, overwrite mre profile index to match pv index
     base_power_profiles['mre'].index = base_power_profiles['pv'].index
+    load_profile.index = base_power_profiles['pv'].index
 
     sim = REBattGenSimulator('pv_50_tidal_50_batt_50kW_200kWh',
                              renewable_resources,
@@ -691,12 +690,12 @@ if __name__ == "__main__":
                              system,
                              {'longitude': -119.28, 'latitude': 46.34,
                               'timezone': 'US/Pacific', 'altitude': 0}, 3600,
-                             'night_const_batt', validate=False)
+                             'night_const_batt', validate=True)
 
     # Run the simulation
     sim.scale_power_profiles()
     sim.calc_dispatch()
-    sim.size_single_generator(generator_options, validate=False)
+    sim.size_single_generator(generator_options, validate=True)
 
     # Plot dispatch
     sim.dispatch_df[['load', 'pv_power', 'mre_power', 'delta_battery_power', 'load_not_met']].plot()

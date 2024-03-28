@@ -480,9 +480,13 @@ def check_power_profiles(power_profiles, renewable_resources):
     """ Check that each power profile conforms to standards. """
 
     for key, profiles in power_profiles.items():
-        for profile in profiles:
-            validate_parameter('power_profile', profile, custom_args={},
-                            **CONSTRAINTS_DICT['power_profile'])
+        if isinstance(profiles, list):
+            for profile in profiles:
+                validate_parameter('power_profile', profile, custom_args={},
+                                **CONSTRAINTS_DICT['power_profile'])
+        else:
+            validate_parameter('power_profile', profiles, custom_args={},
+                                **CONSTRAINTS_DICT['power_profile'])
         
     # Check that the keys match the items from the renewable_resources list
     if len(set(renewable_resources) - set(power_profiles.keys())):

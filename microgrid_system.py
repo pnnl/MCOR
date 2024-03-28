@@ -131,7 +131,7 @@ class PV(Component):
 
         if validate:
             # List of initialized parameters to validate
-            args_dict = {'existing': existing, 'capacity': pv_capacity,
+            args_dict = {'existing': existing, 'pv_capacity': pv_capacity,
                          'tilt': tilt, 'azimuth': azimuth,
                          'module_capacity': module_capacity,
                          'module_area_in2': module_area,
@@ -1513,17 +1513,17 @@ if __name__ == "__main__":
     # Create a PV object
     pv = PV(existing=False, pv_capacity=500, tilt=0, azimuth=-180,
             module_capacity=0.360, module_area=3, spacing_buffer=2,
-            pv_tracking='fixed', pv_racking='ground', validate=False)
+            pv_tracking='fixed', pv_racking='ground', validate=True)
     
     # Create a MRE object
     tidal = Tidal(existing=False, mre_capacity=500, num_generators=1, generator_capacity=500, 
-                  validate=False)
+                  validate=True)
 
     # Create a battery object
     batt = SimpleLiIonBattery(existing=False, power=500, batt_capacity=2000,
                               initial_soc=1, one_way_battery_efficiency=0.9,
                               one_way_inverter_efficiency=0.95,
-                              soc_upper_limit=1, soc_lower_limit=0.1, validate=False)
+                              soc_upper_limit=1, soc_lower_limit=0.1, validate=True)
 
     gen = Generator(existing=False, rated_power=500, num_units=1,
                     fuel_curve_model={'1/4 Load (gal/hr)': 11, '1/2 Load (gal/hr)': 18.5,
