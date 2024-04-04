@@ -24,7 +24,7 @@ demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges mus
 dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt,available_capacity",,,,
 duration,int,1,86400,,,,,
 electricity_rate,"int,float",0,1,,,,,
-end_year,int,1998,2021,,,,,
+end_year,int,,,,,,,
 existing,bool,,,,,,,
 existing_components,dict,,,,,check_existing_components,,"Existing components can only include PV, Battery, Generator, or FuelTank objects, and have keys 'pv', 'batt',  'gen', or 'fuel_tank'."
 filter_constraints,list,,,,,check_filter_constraints,,"The filter_constraints list must contain dictionaries with the format:  {parameter, type, value} where parameter can be any of the following: capital_cost_usd, pv_area_ft2, annual_benefits_usd, simple_payback_yr,  fuel_used_gal mean, fuel_used_gal most-conservative, pv_capacity, or pv_percent mean and type can be [max, min] and value is the maximum or minimum allowable value."
@@ -129,7 +129,7 @@ solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",Th
 spacing_buffer,"int,float",0,10,,,,,
 spg_advanced_inputs,dict,,,,,check_spg_advanced_inputs,,
 start_datetimes,list,,,,,check_start_datetimes,"num_trials,start_year,end_year","start_datetimes must have length num_trials, consist of datetime objects, and be within the range of the start and end years"
-start_year,int,1998,2020,,,,,
+start_year,int,,,,,,,
 storage_recovery_percent,"int,float",,,,,,,
 strings,dict,,,,,check_strings,,The strings parameter much include both mods_per_string and strings_per_inv.
 strings_per_inv,int,1,,,,,,

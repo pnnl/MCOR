@@ -313,7 +313,7 @@ class SolarProfileGenerator:
 
         self.wind_speed = self.tmy_solar_profile['Wind Speed'].median()
 
-    def get_solar_profiles(self, validate=True):
+    def get_solar_profiles(self, start_datetimes=None, validate=True):
         """ Calculates simulated solar profiles based on a solar state probability matrix. """
 
         # Create AlternativeSolarProfiles object
@@ -328,7 +328,7 @@ class SolarProfileGenerator:
         asp.create_state_transition_matrices()
 
         # Generate trials
-        asp.create_trial_data()
+        asp.create_trial_data(start_datetimes)
 
         # Create directory to hold data
         if '{}_{}_{}d_{}t'.format(

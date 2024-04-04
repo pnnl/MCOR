@@ -83,8 +83,8 @@ class TidalProfileGenerator:
 
     """
 
-    def __init__(self, latitude, longitude, timezone, num_trials,
-                 length_trials, validate=True,advanced_inputs={}):
+    def __init__(self, latitude, longitude, timezone, num_trials, length_trials, 
+                 start_year=None, end_year=None, validate=True, advanced_inputs={}):
 
         # Assign parameters
         self.latitude = latitude
@@ -92,6 +92,8 @@ class TidalProfileGenerator:
         self.timezone = timezone
         self.num_trials = num_trials
         self.length_trials = length_trials
+        self.start_year = start_year
+        self.end_year = end_year
         self.advanced_inputs = advanced_inputs
         self.tidal_profiles = []
         self.power_profiles = []
@@ -110,9 +112,19 @@ class TidalProfileGenerator:
                          'num_trials': self.num_trials,
                          'length_trials': self.length_trials,
                          'tpg_advanced_inputs': self.advanced_inputs}
+            if start_year is not None:
+                args_dict['start_year'] = start_year
+            if end_year is not None:
+                args_dict['end_year'] = end_year
 
             # Validate input parameters
             validate_all_parameters(args_dict)
+
+        # Set default start and end years is not specified
+        if self.start_year is None:
+            self.start_year = 2017
+        if self.end_year is None:
+            self.end_year = self.start_year + 19
 
     def get_tidal_data_from_upload(self):
         """Load tidal_current-specified tidal data"""
@@ -124,30 +136,53 @@ class TidalProfileGenerator:
         self.tidal_current.set_index('date', inplace=True)
         self.tidal_current.index = pd.to_datetime(self.tidal_current.index)
 
-    def extrapolate_tidal_epoch(self):
+    def extrapolate_tidal_epoch(self, validate=True):
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
 
         # TODO: modify this in the future to extrapolate any amount of data
         coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
 
         epoch_index = pd.date_range(
-            start='1/1/2017', end='1/1/2036', freq='H')[:-1]
+            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year}', freq='H', tz=self.timezone)[:-1]
         tide = reconstruct(epoch_index, coef, verbose=False)
         self.tidal_epoch = pd.DataFrame()
         self.tidal_epoch['v_mag'] = (tide.u**2 + tide.v**2)**(0.5)
         self.tidal_epoch.index = epoch_index
 
-    def generate_tidal_profiles(self):
+    def generate_tidal_profiles(self, start_datetimes=None, validate=True):
         """Generate tidal profiles from tidal epoch data"""
 
+        # Validate input arguments
+        if validate and start_datetimes is not None:
+            # List of initialized parameters to validate
+            args_dict = {'num_trials': self.num_trials,
+                         'start_year': self.start_year,
+                         'end_year': self.end_year,
+                         'start_datetimes': start_datetimes}
+            
+            # Validate input parameters
+            validate_all_parameters(args_dict)
+
         # Randomly create start dates
-        start_datetimes = self.tidal_epoch.iloc[:-int(self.length_trials)].sample(
-            int(self.num_trials)).index.values
+        if start_datetimes is None:
+            start_datetimes = self.tidal_epoch.iloc[:-int(self.length_trials)].sample(
+                int(self.num_trials)).index.values
 
         date_ranges = [pd.date_range(start=start_date,
                                      periods=self.length_trials,
-                                     freq='H')
+                                     freq='H', tz=self.timezone)
                        for start_date in start_datetimes]
+        
+        # Add an extra year to the annual profile to allow for profiles with year-end overlap
+        twentyyear_profile = pd.concat([self.tidal_epoch, self.tidal_epoch.head(8760)])
+        twentyyear_profile_index = pd.date_range(
+            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year+1}', freq='H', tz=self.timezone)[:-1]
+
+        # Remove leap days and reassign index
+        twentyyear_profile = twentyyear_profile[~((twentyyear_profile.index.month == 2) & 
+                                                  (twentyyear_profile.index.day == 29))]
+        twentyyear_profile_index = twentyyear_profile_index[~((twentyyear_profile_index.month == 2) & 
+                                                  (twentyyear_profile_index.day == 29))]
 
         for i, date_range in enumerate(date_ranges):
             replace_timesteps = len(date_range[(date_range.month == 2) &
@@ -160,12 +195,7 @@ class TidalProfileGenerator:
                 date_ranges[i] = date_range.append(pd.date_range(
                     date_range[-1] + datetime.timedelta(hours=1),
                     periods=replace_timesteps, freq='H'))
-
-            # Create 20-year annual profile to allow for profiles with year-end overlap
-            twentyyear_profile = pd.concat([self.tidal_epoch, self.tidal_epoch.head(8760)])
-            twentyyear_profile.index = pd.date_range(
-                start='1/1/2017', end='1/1/2037', freq='H')[:-25]
-
+                
         # Loop over each date range and sample profile data
         for date_range in date_ranges:
             self.tidal_profiles += [twentyyear_profile.loc[date_range]]
@@ -221,9 +251,6 @@ class TidalProfileGenerator:
                     log_error(message)
                     raise Exception(message)
 
-                # Localize timezone
-                tidal.index = tidal.index.tz_localize(self.timezone, ambiguous='infer')
-
                 self.tidal_profiles += [tidal]
 
         # Calculate production for each tidal profile
@@ -232,6 +259,7 @@ class TidalProfileGenerator:
                 tidal,
                 self.latitude,
                 self.longitude,
+                self.timezone,
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
@@ -248,6 +276,7 @@ class TidalProfileGenerator:
         self.tmy_tidal = calc_tidal_prod(self.tidal_current, 
                 self.latitude,
                 self.longitude,
+                self.timezone,
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
@@ -277,7 +306,7 @@ class TidalProfileGenerator:
             ax=ax2, title='Profile with min energy generation')
         ax2.set_ylabel('Power (kW)')
 
-def calc_tidal_prod(tidal_profile, latitude, longitude,
+def calc_tidal_prod(tidal_profile, latitude, longitude, timezone,
                     tidal_turbine_rated_power, tidal_rotor_radius, tidal_rotor_number, tidal_turbine_number,
                     tidal_inverter_efficiency, maximum_cp, tidal_turbine_losses,
                     tidal_cut_in_velocity, tidal_cut_out_velocity, validate=False):
@@ -314,6 +343,12 @@ def calc_tidal_prod(tidal_profile, latitude, longitude,
             dc_power.at[index, 'power'] = tidal_turbine_rated_power * tidal_turbine_number
         else:
             dc_power.at[index, 'power'] = np.nan
+
+    # Fix timezone
+    try:
+        dc_power.index = dc_power.index.tz_convert(timezone)
+    except TypeError:
+        dc_power.index = pd.to_datetime(dc_power.index, utc=True).tz_convert(timezone)
 
     # Normalize DC power generation to turbine size. i.e. per 1kW of tidal
     dc_power['power'] = dc_power['power'] / (tidal_turbine_rated_power * tidal_turbine_number)

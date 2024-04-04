@@ -647,10 +647,12 @@ if __name__ == "__main__":
                                 validate=True)
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.2, validate=True)
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials)
+    start_datetimes = [profile.index[0] for profile in spg.power_profiles]
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials, 
+                                start_year=1998, end_year=2022)
     tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
-    tpg.generate_tidal_profiles()
+    tpg.generate_tidal_profiles(start_datetimes)
     tpg.get_power_profiles()
 
     # Sample generator options
@@ -679,8 +681,6 @@ if __name__ == "__main__":
     base_power_profiles = {'pv': spg.power_profiles[95],
                            'night': spg.night_profiles[95],
                            'mre': tpg.power_profiles[95]}
-    # TODO - temporary solution, overwrite mre profile index to match pv index
-    base_power_profiles['mre'].index = base_power_profiles['pv'].index
     load_profile.index = base_power_profiles['pv'].index
 
     sim = REBattGenSimulator('pv_50_tidal_50_batt_50kW_200kWh',

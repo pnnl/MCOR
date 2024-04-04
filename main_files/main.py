@@ -48,7 +48,7 @@ def run_mcor(input_dict):
             spg.get_solar_data()
 
         if pv_inputs['get_solar_profiles']:
-            spg.get_solar_profiles()
+            spg.get_solar_profiles(system_inputs['start_datetimes'])
 
         print('Calculating power profiles...')
         spg.get_power_profiles()
@@ -58,15 +58,22 @@ def run_mcor(input_dict):
         power_profiles['pv'] = spg.power_profiles
         power_profiles['night'] = spg.night_profiles
 
+        # Set start_datetimes to solar profile start datetimes
+        system_inputs['start_datetimes'] = [profile.index[0] for profile in spg.power_profiles]
+
         pv_params = {'tilt': pv_inputs['tilt'], 'azimuth': pv_inputs['azimuth'],
                  'module_capacity': module_params['capacity'],
                  'module_area': module_params['area_in2'],
                  'spacing_buffer': pv_inputs['spacing_buffer'], 'advanced_inputs': {},
                  'pv_racking': pv_inputs['pv_racking'], 'pv_tracking': pv_inputs['pv_tracking']}
+        mre_data_start_year = pv_inputs['solar_data_start_year']
+        mre_data_end_year = pv_inputs['solar_data_end_year']
     else:
         spg = None
         tmy_solar=None
         pv_params = None
+        mre_data_start_year = None
+        mre_data_end_year = None
 
     # Get marine renewable power profiles
     if 'mre' in system_inputs['renewable_resources'] and mre_inputs['generator_type'] == 'tidal':
@@ -74,10 +81,12 @@ def run_mcor(input_dict):
         # Set MRE params
         tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
+                                    mre_data_start_year, mre_data_end_year,
                                     advanced_inputs=mre_inputs)
         tpg.get_tidal_data_from_upload()
         tpg.extrapolate_tidal_epoch()
-        tpg.generate_tidal_profiles()
+        if mre_inputs['get_tidal_profiles']:
+            tpg.generate_tidal_profiles(system_inputs['start_datetimes'])
         tpg.get_power_profiles()
         tmy_mre = tpg.tmy_tidal
         mre_params = {'generator_type': 'tidal', 
@@ -94,11 +103,6 @@ def run_mcor(input_dict):
         # Set MRE params
         # TODO
         pass
-
-    # TODO - temporary solution, overwrite mre profile index to match pv index
-    if 'pv' in system_inputs['renewable_resources'] and 'mre' in system_inputs['renewable_resources']:
-        for mre_profile, pv_profile in zip(power_profiles['mre'], power_profiles['pv']):
-            mre_profile.index = pv_profile.index
 
     # Set up parameter dictionaries
     location = {'longitude': system_inputs['longitude'], 'latitude': system_inputs['latitude'],
@@ -170,7 +174,8 @@ if __name__ == "__main__":
         'num_trials': 200,
         'length_trials': 14 * days_to_hours,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
-        'dispatch_strategy': 'available_capacity'
+        'dispatch_strategy': 'available_capacity',
+        'start_datetimes': None  # If you want to specify specific times to start the scenarios
     }
 
     # PV dictionary
@@ -182,7 +187,7 @@ if __name__ == "__main__":
         'pv_tracking': 'fixed',
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
-        'solar_data_end_year': 2021,
+        'solar_data_end_year': 2022,
         'get_solar_data': True,
         'get_solar_profiles': True
     }
@@ -198,7 +203,8 @@ if __name__ == "__main__":
         'tidal_cut_in_velocity': 0.5,
         'tidal_cut_out_velocity': 3,
         'tidal_inverter_efficiency': 0.9,
-        'tidal_turbine_losses': 10
+        'tidal_turbine_losses': 10,
+        'get_tidal_profiles': True
     }
 
     # Battery dictionary

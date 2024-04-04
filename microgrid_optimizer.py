@@ -1931,12 +1931,14 @@ if __name__ == "__main__":
     spg.get_night_duration(percent_at_night=0.1, validate=True)
     module_params = spg.get_pv_params()
     tmy_solar = spg.tmy_power_profile
+    start_datetimes = [profile.index[0] for profile in spg.power_profiles]
 
     # Set up tidal profiles
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials)
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials,
+        start_year=1998, end_year=2022)
     tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
-    tpg.generate_tidal_profiles()
+    tpg.generate_tidal_profiles(start_datetimes)
     tpg.get_power_profiles()
     tmy_mre = tpg.tmy_tidal
 
@@ -1967,9 +1969,6 @@ if __name__ == "__main__":
     power_profiles = {'pv': spg.power_profiles,
                       'mre': tpg.power_profiles,
                       'night': spg.night_profiles}
-    # TODO - temporary solution, overwrite mre profile index to match pv index
-    for mre_profile, pv_profile in zip(power_profiles['mre'], power_profiles['pv']):
-        mre_profile.index = pv_profile.index
 
     optim = GridSearchOptimizer(renewable_resources, power_profiles, annual_load_profile,
                                 location, battery_params, system_costs, 

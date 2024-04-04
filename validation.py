@@ -979,8 +979,8 @@ def check_solar_source(solar_source, start_year, end_year):
         return False
 
     if (solar_source == 'nsrdb') and \
-            (not {start_year, end_year}.issubset(set(range(1998, 2022)))):
-        message = "NREL's NSRDB dataset only covers years 1998-2021. "\
+            (not {start_year, end_year}.issubset(set(range(1998, 2023)))):
+        message = "NREL's NSRDB dataset only covers years 1998-2022. "\
                   'Please check the start/end years.'
         log_error(message)
         return False
