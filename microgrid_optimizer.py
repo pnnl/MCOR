@@ -18,6 +18,7 @@ import json
 import multiprocessing
 import os
 import urllib
+import copy
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -238,9 +239,6 @@ class GridSearchOptimizer(Optimizer):
 
         print_systems_results: Returns info about each of the systems
             from the results grid
-
-        plot_system_dispatch: Displays dispatch plots for each of the
-            systems in the results grid
 
         plot_best_system: Displays dispatch and load duration plots for
             3 systems (best in terms of ranking, best with battery,
@@ -1162,8 +1160,10 @@ class GridSearchOptimizer(Optimizer):
                 static_outputs += ['pv_area_ft2']
             if self.mre_params:
                 static_outputs += ['mre_area_ft2']
-            system_row = pd.concat([system_row,
-                                    pd.Series(system.get_outputs(static_outputs))])
+            # Add up values from dictionary-based static outputs
+            static_output_vals = {key: sum(val.values()) if isinstance(val, dict) else val 
+                                  for key, val in system.get_outputs(static_outputs).items()}
+            system_row = pd.concat([system_row, pd.Series(static_output_vals)])
 
             # Get component sizes and costs
             row_dict = {'battery_capacity':
@@ -1299,8 +1299,8 @@ class GridSearchOptimizer(Optimizer):
             # Print results info
             print(tabulate.tabulate(row.to_frame(), floatfmt='.1f'))
 
-    # TODO - update for MRE
-    def plot_best_system(self, scenario_criteria='pv', scenario_num=None, validate=True):
+    def plot_best_system(self, scenario_criteria='pv', scenario_num=None, stacked_graphs=True,
+                         validate=True):
         """
         Displays dispatch and load duration plots for three systems:
             (1) The top system (as ranked)
@@ -1309,8 +1309,9 @@ class GridSearchOptimizer(Optimizer):
 
         Parameters
             scenario_criteria: the criteria for identifying the best and worst scenarios,
-                options=['pv', 'gen'] with 'pv' showing the scenarios with the least and most
-                solar irradiance and 'gen' showing the scenarios with the least and most
+                options=['pv', 'mre', 'gen'] with 'pv' showing the scenarios with the least 
+                and most solar irradiance, 'mre' showing the resources with the least and most 
+                mre resources and 'gen' showing the scenarios with the least and most
                 generator fuel use
             scenario_num: the number of a specific scenario to plot
         """
@@ -1346,8 +1347,13 @@ class GridSearchOptimizer(Optimizer):
             if scenario_criteria == 'pv':
                 # Find the outage periods with the max and min PV
                 criteria_dict = {key: val.sum() for key, val
-                          in enumerate(self.power_profiles)}
+                          in enumerate(self.power_profiles['pv'])}
                 scenario_label = 'Solar Irradiance Scenario'
+            elif scenario_criteria == 'mre':
+                # Find the outage periods with the max and min MRE
+                criteria_dict = {key: val.sum() for key, val
+                          in enumerate(self.power_profiles['mre'])}
+                scenario_label = 'MRE Generation Scenario'
             else:
                 # Find the outage periods with the max and min generator runtime
                 criteria_dict = {key: val for key, val
@@ -1355,6 +1361,7 @@ class GridSearchOptimizer(Optimizer):
                 scenario_label = 'Fuel Consumption Scenario'
             max_scenario = max(criteria_dict, key=criteria_dict.get)
             min_scenario = min(criteria_dict, key=criteria_dict.get)
+            title_string, legend_list, dispatch_list = system.get_components_for_figure()
 
             if scenario_num is None:
                 # Create figure
@@ -1362,18 +1369,20 @@ class GridSearchOptimizer(Optimizer):
 
                 # Plot the maximum PV outage dispatch
                 ax = fig.add_subplot(121)
-                system.plot_dispatch(max_scenario, ax=ax)
-                ax.legend(['Load', 'PV', 'Battery', 'Generator'], loc=1,
-                          fontsize=8)
+                if stacked_graphs:
+                    system.plot_stacked_dispatch(max_scenario, ax=ax)
+                else:
+                    system.plot_dispatch(max_scenario, ax=ax)
                 ax.set_title('{} Max {}\n {} generator {}kW'.format(
                     system_name, scenario_label, system.get_name().replace('_', ' '),
                     system.components['generator'].rated_power))
 
                 # Plot the minimum PV outage dispatch
                 ax = fig.add_subplot(122)
-                system.plot_dispatch(min_scenario, ax=ax)
-                ax.legend(['Load', 'PV', 'Battery', 'Generator'], loc=1,
-                          fontsize=8)
+                if stacked_graphs:
+                    system.plot_stacked_dispatch(min_scenario, ax=ax)
+                else:
+                    system.plot_dispatch(min_scenario, ax=ax)
                 ax.set_title('{} Min {}\n {} generator {}kW'.format(
                     system_name, scenario_label, system.get_name().replace('_', ' '),
                     system.components['generator'].rated_power))
@@ -1383,89 +1392,14 @@ class GridSearchOptimizer(Optimizer):
                 # Plot individual scenario
                 fig = plt.figure(figsize=[8, 10])
                 ax = fig.add_subplot(111)
-                system.plot_dispatch(scenario_num, ax=ax)
-                ax.legend(['Load', 'PV', 'Battery', 'Generator'], loc=1,
-                          fontsize=8)
+                if stacked_graphs:
+                    system.plot_stacked_dispatch(scenario_num, ax=ax)
+                else:
+                    system.plot_dispatch(scenario_num, ax=ax)
                 ax.set_title('{} \n {} generator {}kW'.format(
                     system_name, system.get_name().replace('_', ' '),
                     system.components['generator'].rated_power))
                 plt.tight_layout()
-
-            # Plot load duration curve
-            fig = plt.figure(figsize=[12, 10])
-            ax = fig.add_subplot(111)
-            system.load_duration[['hours_not_met_max',
-                                  'hours_not_met_average']].plot(ax=ax)
-            ax.set_xlabel('Generator Power (kW)')
-            ax.set_ylabel('Number of Hours Not Met')
-            ax.legend(['Maximum of Scenarios', 'Average of Scenarios'])
-            ax.set_title('{} Load Duration\n {} generator {}kW'.format(
-                system_name, system.get_name().replace('_', ' '),
-                system.components['generator'].rated_power))
-
-    # TODO - update for MRE
-    def plot_system_dispatch(self, num_systems=None, plot_per_fig=3,
-                             validate=True):
-        """
-        Displays dispatch plots for each of the systems in the results
-            grid. If num_systems is specified, only plots up to that
-            many systems.
-
-        Includes plots for the outage periods with the most and least
-            pv.
-
-        """
-
-        if validate:
-            # List of initialized parameters to validate
-            args_dict = {'plot_per_fig': plot_per_fig}
-            if num_systems is not None:
-                args_dict['num_systems'] = num_systems
-
-            # Validate input parameters
-            validate_all_parameters(args_dict)
-
-        # Set the number of systems if not specified
-        if num_systems is None or num_systems > len(self.results_grid):
-            num_systems = len(self.results_grid)
-
-        # Find the outage periods with the max and min PV
-        sim_pv = {key: val.sum() for key, val
-                  in enumerate(self.power_profiles)}
-        max_pv = max(sim_pv, key=sim_pv.get)
-        min_pv = min(sim_pv, key=sim_pv.get)
-
-        # Create figures to hold plots
-        # Only include plot_per_fig systems per figure
-        for fig_num in range(int(np.ceil(num_systems / plot_per_fig))):
-
-            # Get the number of subplots in this figure
-            num_plots = min(num_systems - fig_num * plot_per_fig,
-                            plot_per_fig)
-
-            # Create figure 
-            fig = plt.figure(figsize=[12, 10])
-
-            # Iterate through each system 
-            for plot_num, (system_name, _) in enumerate(
-                    self.results_grid.iloc[
-                    fig_num * plot_per_fig:fig_num * plot_per_fig + num_plots].
-                    iterrows()):
-                # Plot the maximum PV outage dispatch
-                ax = fig.add_subplot(num_plots, 2, plot_num * 2 + 1)
-                self.get_system(system_name).plot_dispatch(max_pv, ax=ax)
-                ax.legend(['Load', 'PV', 'Battery', 'Generator'], loc=1,
-                          fontsize=8)
-                ax.set_title('{} max PV'.format(system_name))
-
-                # Plot the minimum PV outage dispatch
-                ax = fig.add_subplot(num_plots, 2, plot_num * 2 + 2)
-                self.get_system(system_name).plot_dispatch(min_pv, ax=ax)
-                ax.legend(['Load', 'PV', 'Battery', 'Generator'], loc=1,
-                          fontsize=8)
-                ax.set_title('{} min PV'.format(system_name))
-
-            plt.tight_layout()
 
     def add_system(self, new_system, validate=True):
         """  Add a specific system to the input list """
@@ -1494,14 +1428,14 @@ class GridSearchOptimizer(Optimizer):
     def get_output_systems(self):
         return self.output_system_grid
 
-    # TODO - update for MRE when params known
-    def format_inputs(self, spg):
+    def format_inputs(self, spg, tpg):
         """
             Formats the inputs into dicts for writing to file.
 
             Parameters
             ----------
             spg: SolarProfileGenerator object
+            tpg: TidalProfileGenerator object
 
             Returns
             ----------
@@ -1518,8 +1452,8 @@ class GridSearchOptimizer(Optimizer):
             '{}m'.format(inputs['Location'].loc['altitude'].values[0])
         inputs['Simulation Info'] = \
             pd.DataFrame.from_dict({
-                '# scenarios': int(spg.num_trials),
-                'scenario length': spg.length_trials,
+                '# scenarios': int(len(self.power_profiles[self.renewable_resources[0]])),
+                'scenario length': len(self.power_profiles[self.renewable_resources[0]][0]),
                 'scenario filters': 'None', 'scenario ranking': 'None'},
                 orient='index')
         if self.filter is not None:
@@ -1538,6 +1472,13 @@ class GridSearchOptimizer(Optimizer):
                     'pv_tracking': self.pv_params['pv_tracking'],
                     'pv_racking': self.pv_params['pv_racking']},
                     orient='index')
+        if self.mre_params and self.mre_params['generator_type'] == 'tidal':
+            inputs['MRE System'] = \
+                pd.DataFrame.from_dict({
+                    'tidal_turbine_rated_power': tpg.advanced_inputs['tidal_turbine_rated_power'],
+                    'tidal_rotor_radius': tpg.advanced_inputs['tidal_rotor_radius'],
+                    'tidal_rotor_number': tpg.advanced_inputs['tidal_rotor_number']
+                }, orient='index')
         inputs['Battery System'] = pd.DataFrame.from_dict({
             key.replace('_', ' '): val for key, val in
             self.battery_params.items()}, orient='index')
@@ -1548,6 +1489,9 @@ class GridSearchOptimizer(Optimizer):
         if 'pv' in self.existing_components:
             inputs['Existing Equipment'].loc['PV'] = \
                 '{}kW'.format(self.existing_components['pv'].capacity)
+        if 'mre' in self.existing_components:
+            inputs['Existing Equipment'].loc['MRE'] = \
+                '{}kW'.format(self.existing_components['mre'].capacity)
         if 'generator' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
                 '{} units of {}kW'.format(
@@ -1568,20 +1512,31 @@ class GridSearchOptimizer(Optimizer):
             assumptions['PV System'] = pd.DataFrame.from_dict(
                 {'albedo': spg.advanced_inputs['albedo'],
                 'dc to ac ratio': spg.get_dc_to_ac(),
-                'losses': spg.get_losses(), 'net-metering limits': 'None'},
+                'losses': spg.get_losses()},
                 orient='index')
-        if self.net_metering_limits is not None:
-            if self.net_metering_limits['type'] == 'capacity_cap':
-                assumptions['PV System'].loc['net-metering limits'] = \
-                    '{}kW capacity cap'.format(self.net_metering_limits['value'])
-            elif self.net_metering_limits['type'] == 'percent_of_load':
-                assumptions['PV System'].loc['net-metering limits'] = \
-                    '{}% of annual load'.format(self.net_metering_limits['value'])
+        if self.mre_params and self.mre_params['generator_type'] == 'tidal':
+            assumptions['MRE System'] = \
+                pd.DataFrame.from_dict({
+                    'maximum_cp': tpg.advanced_inputs['maximum_cp'],
+                    'tidal_cut_in_velocity': tpg.advanced_inputs['tidal_cut_in_velocity'],
+                    'tidal_cut_out_velocity': tpg.advanced_inputs['tidal_cut_out_velocity'],
+                    'tidal_inverter_efficiency': tpg.advanced_inputs['tidal_inverter_efficiency'],
+                    'tidal_turbine_losses': tpg.advanced_inputs['tidal_turbine_losses']
+                }, orient='index')
 
         assumptions['Cost'] = pd.DataFrame.from_dict(
             {'utility rate': '${}/kWh'.format(self.electricity_rate),
-             'net-metering rate': '${}/kWh'.format(self.net_metering_rate)},
+             'net-metering rate': '${}/kWh'.format(self.net_metering_rate),
+             'net-metering limits': 'None'},
             orient='index')
+        
+        if self.net_metering_limits is not None:
+            if self.net_metering_limits['type'] == 'capacity_cap':
+                assumptions['Cost'].loc['net-metering limits'] = \
+                    '{}kW capacity cap'.format(self.net_metering_limits['value'])
+            elif self.net_metering_limits['type'] == 'percent_of_load':
+                assumptions['Cost'].loc['net-metering limits'] = \
+                    '{}% of annual load'.format(self.net_metering_limits['value'])
 
         assumptions['Generator'] = pd.DataFrame.from_dict(
             {'sizing buffer': '{:.0f}%'.format(
@@ -1589,24 +1544,22 @@ class GridSearchOptimizer(Optimizer):
 
         return inputs, assumptions
 
-
-    # TODO: Add marine profile generator object and inputs
-    def save_results_to_file(self, spg, filename='simulation_results'):
+    def save_results_to_file(self, spg, tpg, filename='simulation_results'):
         """
             Saves inputs, assumptions and results to an excel file.
 
             Parameters
             ----------
             spg: SolarProfileGenerator object
+            tpg: TidalProfileGenerator object
 
             filename: filename for results spreadsheet, without an
                 extension
 
         """
 
-        # TODO: Add marine profile generator object and inputs
         # Get dictionaries of inputs and assumptions
-        inputs, assumptions = self.format_inputs(spg)
+        inputs, assumptions = self.format_inputs(spg, tpg)
 
         # Parse results if not already done
         if self.results_grid is None:
@@ -1616,30 +1569,18 @@ class GridSearchOptimizer(Optimizer):
         format_results = self.results_grid.copy(deep=True)
 
         # Re-order columns
+        metric_order_local = copy.deepcopy(metric_order)
         if not self.pv_params:
-            metric_order = [elem for elem in metric_order if 'pv' not in elem]
+            metric_order_local = [elem for elem in metric_order_local if 'pv' not in elem]
         if not self.mre_params:
-            metric_order = [elem for elem in metric_order if 'mre' not in elem]
-        format_results = format_results[metric_order]
-
-        # Rename columns
-        merged_metric_dict = {**system_metrics, **re_metrics, **pv_metrics, **battery_metrics, **mre_metrics, 
-                              **generator_metrics}        
-        format_results.rename(columns=
-            {col_name: merged_metric_dict[col_name]['display_name'] 
-             for col_name in format_results.columns},
-             inplace=True)
+            metric_order_local = [elem for elem in metric_order_local if 'mre' not in elem]
+        format_results = format_results[metric_order_local]
 
         # Add units
+        merged_metric_dict = {**system_metrics, **re_metrics, **pv_metrics,  **mre_metrics, **battery_metrics,
+                              **generator_metrics}   
         format_results.loc['units'] = [merged_metric_dict[col_name]['units'] for col_name in format_results.columns]
-
-        format_results.columns = [col.replace('_', ' ').capitalize()
-                                  for col in format_results.columns]
-        format_results["temp"] = range(1, len(format_results) + 1)
-        format_results.loc['units', 'temp'] = 0
-        format_results = format_results.sort_values("temp").drop('temp',
-                                                                 axis=1)
-
+        
         # Create workbook
         writer = pd.ExcelWriter('output/{}.xlsx'.format(filename),
                                 engine='xlsxwriter')
@@ -1659,6 +1600,17 @@ class GridSearchOptimizer(Optimizer):
 
         # Determine format for each column
         formats = [data_formats[merged_metric_dict[col_name]['format']] for col_name in format_results.columns]
+
+        # Rename columns
+        format_results.rename(columns=
+            {col_name: merged_metric_dict[col_name]['display_name'] 
+             for col_name in format_results.columns},
+             inplace=True)
+        format_results.columns = [col.replace('_', ' ').capitalize()
+                                  for col in format_results.columns]
+        format_results["temp"] = range(1, len(format_results) + 1)
+        format_results.loc['units', 'temp'] = 0
+        format_results = format_results.sort_values("temp").drop('temp', axis=1)
 
         # Write results sheet
         format_results.reset_index(drop=True).to_excel(writer,
@@ -1698,7 +1650,6 @@ class GridSearchOptimizer(Optimizer):
                 sp.to_excel(writer, sheet_name='TMY PV Profile', index=False)
                 load_sheet = writer.sheets['TMY PV Profile']
                 load_sheet.set_column(0, 1, 25, None)
-            # TODO - does it make sense to output tmy_mre? Is this even a thing?
             if self.mre_params:
                 mp = self.tmy_mre.reset_index()
                 mp.columns = ['Datetime', 'MRE Power for a 1kW array (kW)']
@@ -1730,45 +1681,53 @@ class GridSearchOptimizer(Optimizer):
             inputs_sheet.write(12, 1, '', bold_bottomborder)
 
         # MRE variables
-        # TODO - will need to update
         if self.mre_params:
             inputs['MRE System'].reset_index().to_excel(
-                writer, sheet_name='Input Variables', startrow=12, index=False)
-            inputs_sheet.write(12, 0, 'MRE System', bold_bottomborder)
-            inputs_sheet.write(12, 1, '', bold_bottomborder)
+                writer, sheet_name='Input Variables', startrow=19, index=False)
+            inputs_sheet.write(19, 0, 'MRE System', bold_bottomborder)
+            inputs_sheet.write(19, 1, '', bold_bottomborder)
 
         # Battery variables
         inputs['Battery System'].reset_index().to_excel(
-            writer, sheet_name='Input Variables', startrow=19, index=False)
-        inputs_sheet.write(19, 0, 'Battery System', bold_bottomborder)
-        inputs_sheet.write(19, 1, '', bold_bottomborder)
+            writer, sheet_name='Input Variables', startrow=24, index=False)
+        inputs_sheet.write(24, 0, 'Battery System', bold_bottomborder)
+        inputs_sheet.write(24, 1, '', bold_bottomborder)
 
         # Existing equipment variables
         inputs['Existing Equipment'].reset_index().to_excel(
-            writer, sheet_name='Input Variables', startrow=28, index=False)
-        inputs_sheet.write(28, 0, 'Existing Equipment', bold_bottomborder)
-        inputs_sheet.write(28, 1, '', bold_bottomborder)
+            writer, sheet_name='Input Variables', startrow=33, index=False)
+        inputs_sheet.write(33, 0, 'Existing Equipment', bold_bottomborder)
+        inputs_sheet.write(33, 1, '', bold_bottomborder)
         inputs_sheet.set_column(0, 1, 30, index_format)
 
         # Write assumptions sheet
-        # TODO - will need to update MRE
+        assumptions['Cost'].reset_index().to_excel(
+            writer, sheet_name='Assumptions', index=False)
+        assumptions_sheet = writer.sheets['Assumptions']
+        assumptions_sheet.write(0, 0, 'Costs', bold_bottomborder)
+        assumptions_sheet.write(0, 1, '', bold_bottomborder)
         if self.pv_params:
             assumptions['PV System'].reset_index().to_excel(
-                writer, sheet_name='Assumptions', index=False)
-            assumptions_sheet = writer.sheets['Assumptions']
-            assumptions_sheet.write(0, 0, 'PV System', bold_bottomborder)
-            assumptions_sheet.write(0, 1, '', bold_bottomborder)
-        assumptions['Cost'].reset_index().to_excel(
-            writer, sheet_name='Assumptions', startrow=7, index=False)
-        assumptions_sheet.write(7, 0, 'Costs', bold_bottomborder)
-        assumptions_sheet.write(7, 1, '', bold_bottomborder)
+                writer, sheet_name='Assumptions', startrow=5, index=False)
+            assumptions_sheet.write(5, 0, 'PV System', bold_bottomborder)
+            assumptions_sheet.write(5, 1, '', bold_bottomborder)
+        if self.mre_params:
+            assumptions['MRE System'].reset_index().to_excel(
+                writer, sheet_name='Assumptions', startrow=10, index=False)
+            assumptions_sheet = writer.sheets['Assumptions']      
+            assumptions_sheet.write(10, 0, 'MRE System', bold_bottomborder)
+            assumptions_sheet.write(10, 1, '', bold_bottomborder)
         assumptions['Generator'].reset_index().to_excel(
-            writer, sheet_name='Assumptions', startrow=12, index=False)
-        assumptions_sheet.write(12, 0, 'Generator', bold_bottomborder)
-        assumptions_sheet.write(12, 1, '', bold_bottomborder)
+            writer, sheet_name='Assumptions', startrow=17, index=False)
+        assumptions_sheet.write(17, 0, 'Generator', bold_bottomborder)
+        assumptions_sheet.write(17, 1, '', bold_bottomborder)
         assumptions_sheet.set_column(0, 1, 30, index_format)
 
         writer.close()
+
+        # Also output results to json
+        with open('output/{}_scalar_outputs.json'.format(filename), 'w') as f:
+            json.dump(self.results_grid.to_dict(orient='index'), f, indent=2)
 
     def save_timeseries_to_json(self, filename='simulation_results'):
         # Parse time series outputs from dispatch dataframes
@@ -1792,13 +1751,13 @@ class GridSearchOptimizer(Optimizer):
         with open('output/{}_timeseries.json'.format(filename), 'w') as f:
             json.dump(ts_outputs, f, indent=2)
 
-    # TODO - update for MRE
     def plot_compare_metrics(self, x_var='simple_payback_yr',
                              y_var='capital_cost_usd', cmap='BuGn_r'):
         """
         Compares different systems by plotting metrics against each
             other. Default x and y parameters are payback and total
             capital cost, respectively.
+        Note, this only works for systems with PV. 
 
         """
 
@@ -1839,12 +1798,12 @@ class GridSearchOptimizer(Optimizer):
                   format(x_var, y_var), position=(0.5, 1.05))
         plt.tight_layout()
 
-    # TODO - update for MRE
     def plot_compare_sizes(self, var='simple_payback_yr', cmap='BuGn_r'):
         """
         Compares different systems by plotting sizes against each other
             with color determined by an output metric.
         Default metric is payback.
+        Note, this only works for systems with PV. 
 
         """
 

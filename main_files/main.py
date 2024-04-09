@@ -277,14 +277,14 @@ if __name__ == "__main__":
 
     # Output / Inputs dictionary
     input_dict['output_inputs'] = {
-        'save_timeseries_json': False,
+        'save_timeseries_json': True,
         'save_filename': 'project_name'
     }
 
     # Settings for dispatch plots
-    # To plot the scenarios with min/max pv, set 'scenario_criteria' to 'pv', to plot
-    #   scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', or to plot
-    #   a specific scenario number, set the scenario_num parameter
+    # To plot the scenarios with min/max pv or mre, set 'scenario_criteria' to 'pv' or 'mre', 
+    #   to plot scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', 
+    #   or to plot a specific scenario number, set the scenario_num parameter
     scenario_criteria = 'pv'
     scenario_num = None
 
@@ -300,12 +300,12 @@ if __name__ == "__main__":
         tpg.tidal_checks()
 
     # Plot dispatch graphs
-    # keep scenario_criteria and scenario_num defined
-    # optim.plot_best_system(scenario_criteria=scenario_criteria, scenario_num=scenario_num)
+    optim.plot_best_system(scenario_criteria=scenario_criteria, 
+                           scenario_num=scenario_num, stacked_graphs=True)
 
     # Save results
-    # optim.save_results_to_file(spg, save_filename)
-    # pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
+    optim.save_results_to_file(spg, tpg, save_filename)
+    pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
 
-    # if input_dict['output_inputs']['save_timeseries_json']:
-    #     optim.save_timeseries_to_json(save_filename)
+    if input_dict['output_inputs']['save_timeseries_json']:
+        optim.save_timeseries_to_json(save_filename)

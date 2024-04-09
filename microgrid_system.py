@@ -1098,6 +1098,31 @@ class MicrogridSystem:
             log_error(message)
             print(message)
             
+    def get_components_for_figure(self):
+        title_string = ''
+        legend_list = ['Load']
+        dispatch_list = ['load']
+        if 'pv' in self.components:
+            title_string += '{:.0f}kW PV, '.format(self.components['pv'].capacity)
+            legend_list += ['PV']
+            dispatch_list += ['pv_power']
+        if 'mre' in self.components:
+            title_string += '{:.0f}kW MRE, '.format(self.components['mre'].capacity)
+            legend_list += ['MRE']
+            dispatch_list += ['mre_power']
+        if 'battery' in self.components:
+            title_string += '{:.0f}kW/{:.0f}kWh Battery, '.format(
+                self.components['battery'].power, self.components['battery'].batt_capacity)
+            legend_list += ['Battery']
+            dispatch_list += ['delta_battery_power']
+        if 'generator' in self.components:
+            title_string += '{:.0f}kW Generator System'.format(self.components['generator'].rated_power)
+            legend_list += ['Generator']
+            dispatch_list += ['load_not_met']
+
+        return title_string, legend_list, dispatch_list
+
+
     def plot_dispatch(self, sim_name, ax=None):
         """ 
         Plot the dispatch graph for the selected system. 
@@ -1106,9 +1131,11 @@ class MicrogridSystem:
             PV
         """
         
+        title_string, legend_list, dispatch_list = self.get_components_for_figure()
+
         if sim_name in self.simulations.keys():
             sim = self.simulations[sim_name]
-        else:
+        elif 'pv' in self.components:
             # Calculate the total PV for each simulation
             sim_pv = {key: val.dispatch_df['pv_power'].sum() for key, val
                       in self.simulations.items()}
@@ -1124,26 +1151,16 @@ class MicrogridSystem:
                 fig = plt.figure(figsize=[16, 10])
                 ax1 = fig.add_subplot(121)
                 self.plot_dispatch('max', ax=ax1)
-                ax1.set_title('Maximum PV Scenario for {:.0f}kW PV, \n'
-                              '{:.0f}kW/{:.0f}kWh Battery, {:.0f}kW Generator '
-                              'System'.format(
-                                self.components['pv'].capacity,
-                                self.components['battery'].power,
-                                self.components['battery'].batt_capacity,
-                                self.components['generator'].rated_power))
-                ax1.legend(['Load', 'PV', 'Battery', 'Generator'], fontsize=12)
+                ax1.set_title(f'Maximum PV Scenario for {title_string}')
+                ax1.legend(legend_list, fontsize=12)
                 ax2 = fig.add_subplot(122)
                 self.plot_dispatch('min', ax=ax2)
-                ax2.set_title('Minimum PV Scenario for {:.0f}kW PV, \n'
-                              '{:.0f}kW/{:.0f}kWh Battery, {:.0f}kW Generator '
-                              'System'.format(
-                                self.components['pv'].capacity,
-                                self.components['battery'].power,
-                                self.components['battery'].batt_capacity,
-                                self.components['generator'].rated_power))
-                ax2.legend(['Load', 'PV', 'Battery', 'Generator'], fontsize=12)
+                ax2.set_title(f'Minimum PV Scenario for {title_string}')
+                ax2.legend(legend_list, fontsize=12)
                 ax2.set_ylim(ax1.get_ylim())
                 return
+        else:
+            print('Please supply a simulation number to plot.')
 
         # Plot the dispatch graph
         if ax is None:
@@ -1151,13 +1168,14 @@ class MicrogridSystem:
             ax = fig.add_subplot(111)
         else:
             fig = ax.get_figure()
-        sim.dispatch_df[['load', 'pv_power', 'delta_battery_power',
-                         'load_not_met']].plot(ax=ax)
+        sim.dispatch_df[dispatch_list].plot(ax=ax)
         ax.set_xlabel('Time')
         ax.set_ylabel('Power (kW)')
+        ax.set_title(f'{title_string}')
+        ax.legend(legend_list, fontsize=12)
 
         # Add battery charging/discharging labels if there's room
-        if ax.get_window_extent().transformed(
+        if 'battery' in self.components and ax.get_window_extent().transformed(
                 fig.dpi_scale_trans.inverted()).height > 3 \
                 and self.components['battery'].power > 0:
             ax.text(1.01, 0, '(charging)', color='red', rotation='vertical',
@@ -1166,6 +1184,76 @@ class MicrogridSystem:
                     va='top', transform=ax.transAxes)
             ax.text(1.01, 0.5, 'Battery Power (kW)', color='red',
                     rotation='vertical', va='center', transform=ax.transAxes)
+
+    def plot_stacked_dispatch(self, sim_name, ax=None):
+        """ 
+        Plot the stacked dispatch graph for the selected system. 
+        sim_name can either be a simulation name, 'max' to plot dispatch for the simulation
+            with the maximum PV or 'min' to plot dispatch for the simulation with the minimum
+            PV
+        """
+        
+        # Define colors
+        color_dict = {
+            'PV': '#ff7f00',
+            'MRE': '#a6cee3',
+            'Battery': '#33a02c',
+            'Generator': '#e31a1c',
+            'Load': '#737373'
+        }
+        title_string, legend_list, dispatch_list = self.get_components_for_figure()
+        resource_color_list = [color_dict[resource] for resource in legend_list
+                               if resource != 'Load']
+        
+        if sim_name in self.simulations.keys():
+            sim = self.simulations[sim_name]
+        elif 'pv' in self.components:
+            # Calculate the total PV for each simulation
+            sim_pv = {key: val.dispatch_df['pv_power'].sum() for key, val
+                      in self.simulations.items()}
+            max_pv = max(sim_pv, key=sim_pv.get)
+            min_pv = min(sim_pv, key=sim_pv.get)
+            
+            # Get the system with either the max or min PV
+            if sim_name == 'max':
+                sim = self.simulations[max_pv]
+            elif sim_name == 'min':
+                sim = self.simulations[min_pv]
+            else:
+                fig = plt.figure(figsize=[16, 10])
+                ax1 = fig.add_subplot(121)
+                self.plot_stacked_dispatch('max', ax=ax1)
+                ax1.set_title(f'Maximum PV Scenario for {title_string}')
+                ax2 = fig.add_subplot(122)
+                self.plot_stacked_dispatch('min', ax=ax2)
+                ax2.set_title(f'Minimum PV Scenario for {title_string}')
+                return
+        else:
+            print('Please supply a simulation number to plot.')
+
+        # Zero out battery when charging
+        df_plot = sim.dispatch_df[dispatch_list].copy(deep=True)
+        df_plot.loc[df_plot['delta_battery_power'] < 0, 'delta_battery_power'] = 0
+
+        # Plot the dispatch graph
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        else:
+            fig = ax.get_figure()
+        df_plot.rename(columns={
+            'pv_power': 'PV',
+            'mre_power': 'MRE',
+            'delta_battery_power': 'Battery', 
+            'load': 'Load',
+            'load_not_met': 'Generator'}, inplace=True)
+        df_plot.drop(columns='Load').plot.area(ax=ax, color=resource_color_list, linewidth=0)
+        df_plot['Load'].plot(ax=ax, color=color_dict['Load'], lw=2)
+        plt.legend(loc=1, numpoints=1)
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Power (kW)')
+        ax.set_title(f'{title_string}')
+        ax.set_xlim([df_plot.index[0], df_plot.index[-1]])
 
     def plot_generator_histograms(self):
         """

@@ -87,6 +87,5 @@ metric_order = ['pv_capacity', 'mre_capacity', 'battery_capacity', 'battery_powe
                 'mre_avg_load mean', 'mre_peak_load mean', 'mre_peak_load max',
                 'gen_avg_load mean', 'gen_peak_load mean', 'gen_peak_load max',
                 'batt_avg_load mean', 'batt_peak_load mean', 'batt_peak_load max',
-                'pv_percent mean', 'batt_percent mean', 'gen_percent mean', 'fuel_used_gal mean',
-                'fuel_used_gal max']
-
+                'pv_percent mean', 'mre_percent mean', 'batt_percent mean', 
+                'gen_percent mean', 'fuel_used_gal mean', 'fuel_used_gal max']
