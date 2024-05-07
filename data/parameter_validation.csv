@@ -26,7 +26,7 @@ duration,int,1,86400,,,,,
 electricity_rate,"int,float",0,1,,,,,
 end_year,int,,,,,,,
 existing,bool,,,,,,,
-existing_components,dict,,,,,check_existing_components,,"Existing components can only include PV, Battery, Generator, or FuelTank objects, and have keys 'pv', 'batt',  'gen', or 'fuel_tank'."
+existing_components,dict,,,,,check_existing_components,,"Existing components can only include PV, Tidal, Battery, Generator, or FuelTank objects, and have keys 'pv', 'mre', 'batt',  'gen', or 'fuel_tank'."
 filter_constraints,list,,,,,check_filter_constraints,,"The filter_constraints list must contain dictionaries with the format:  {parameter, type, value} where parameter can be any of the following: capital_cost_usd, pv_area_ft2, annual_benefits_usd, simple_payback_yr,  fuel_used_gal mean, fuel_used_gal most-conservative, pv_capacity, or pv_percent mean and type can be [max, min] and value is the maximum or minimum allowable value."
 fuel_curve_degree,int,1,3,,,,,
 fuel_curve_model,dict,,,,,check_fuel_curve_model,,"The generator fuel curve model must be of the form {'1/4 Load (gal/hr)': val, '1/2 Load (gal/hr)': val, '3/4 Load (gal/hr)': val,
@@ -45,6 +45,7 @@ generator_power_kW,"int,float",0,,,,,,
 grouped_load,pandas.core.frame.DataFrame,,,,,check_grouped_load,,Grouped load must be a DataFrame with the columns 'num_hours' and 'binned_load'.
 ideal_minimum_load,"int,float",0,1,,,,,
 include_batt,tuple,,,,,check_include_batt,,"Include batt must be a list of tuples of the form (battery capacity, battery power)"
+include_mre,tuple,,,,,check_include_mre,,Include mre must be a list of number of mre turbines
 include_pv,tuple,,,,,check_include_pv,,Include pv must be a list of pv sizes in kW
 initial_soc,"int,float",0,1,,,check_initial_soc,"soc_upper_limit,soc_lower_limit",The initial SOC must be within the specified SOC upper and lower limits.
 inverter,dict,,,,,check_inverter,,"Inverter must be a dictionary with the following keys and value datatypes: {'database': string, 'model': string}."
@@ -88,7 +89,7 @@ num_ghi_states,"int,float",1,100,,,,,
 num_seconds,int,1,86400,,,,,
 num_systems,int,1,,,,,,
 num_trials,"int,float",1,1000,,,,,
-num_units,int,1,,,,,,
+num_units,int,0,,,,,,
 off_grid_load_profile,pandas.core.series.Series,,,,,check_off_grid_load_profile,duration,"The off grid load profile must have a datetime index, contain values for each day and hour (or the corresponding interval if duration is not 1 hour) of the year, and have non-negative values."
 om_cost,"int,float",0,500,,,,,
 om_costs,pandas.core.frame.DataFrame,,,,,check_om_costs,,"O&M must include the following columns: 'Generator', 'Battery', 'PV_ground;fixed', 'PV_ground;single_axis ', 'PV_roof;fixed', 'PV_carport;fixed'"
@@ -119,6 +120,7 @@ scenario_criteria,str,,,"pv,gen,mre",,,,
 shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
+size_resources_based_on_tmy,bool,,,,,,,
 snow,"int,float",0,100,,,,,
 soc_at_initial_hour_of_night,"int,float",0,1,,,,,
 soc_lower_limit,"int,float",0,1,,,,,

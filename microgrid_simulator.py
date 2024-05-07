@@ -661,9 +661,9 @@ if __name__ == "__main__":
 
     # Create a sample system
     batt = SimpleLiIonBattery(False, 50, 200, validate=True)
-    pv = PV(False, 50, 0, 0, 0.360, 3, 2, validate=True, pv_tracking='fixed',
+    pv = PV(False, 200, 0, 0, 0.360, 3, 2, validate=True, pv_tracking='fixed',
             pv_racking='ground')
-    tidal = Tidal(False, 50, 1, 50, validate=True)
+    tidal = Tidal(False, 200, 200, validate=True)
     gen = Generator(True, 50, 1, {'1/4 Load (gal/hr)': 1.8, '1/2 Load (gal/hr)': 2.9,
                                   '3/4 Load (gal/hr)': 3.8, 'Full Load (gal/hr)': 4.8},
                     5000, validate=True)

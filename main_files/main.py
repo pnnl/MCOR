@@ -14,7 +14,7 @@ import pandas as pd
 from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
-from microgrid_system import PV, SimpleLiIonBattery, Generator, FuelTank
+from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank
 
 
 def run_mcor(input_dict):
@@ -90,7 +90,6 @@ def run_mcor(input_dict):
         tpg.get_power_profiles()
         tmy_mre = tpg.tmy_tidal
         mre_params = {'generator_type': 'tidal', 
-                      'num_generators': mre_inputs['tidal_turbine_number'],
                       'generator_capacity': mre_inputs['tidal_turbine_rated_power']}
         power_profiles['mre'] = tpg.power_profiles
     else:
@@ -120,8 +119,10 @@ def run_mcor(input_dict):
     optim = GridSearchOptimizer(system_inputs['renewable_resources'], power_profiles, 
                                 load_inputs['annual_load_profile'],
                                 location, battery_params, financial_inputs['system_costs'],
+                                system_inputs['re_constraints'],
                                 tmy_solar=tmy_solar, pv_params=pv_params, tmy_mre=tmy_mre,
                                 mre_params=mre_params, 
+                                size_resources_based_on_tmy=input_dict['system_inputs']['size_resources_based_on_tmy'],
                                 dispatch_strategy=input_dict['system_inputs']['dispatch_strategy'],
                                 electricity_rate=financial_inputs['utility_rate'],
                                 net_metering_rate=net_metering_inputs['net_metering_rate'],
@@ -132,13 +133,13 @@ def run_mcor(input_dict):
                                 off_grid_load_profile=load_inputs['off_grid_load_profile'],
                                 batt_sizing_method=battery_inputs['batt_sizing_method'])
 
+    # Get load profiles for the corresponding solar profile periods
+    optim.get_load_profiles()
+
     # Create a grid of systems
     optim.define_grid(include_pv=sizing_inputs['include_pv'],
                       include_batt=sizing_inputs['include_batt'],
                       include_mre=sizing_inputs['include_mre'])
-
-    # Get load profiles for the corresponding solar profile periods
-    optim.get_load_profiles()
 
     # Run all simulations
     optim.run_sims_par()
@@ -175,7 +176,9 @@ if __name__ == "__main__":
         'length_trials': 14 * days_to_hours,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
-        'start_datetimes': None  # If you want to specify specific times to start the scenarios
+        'size_resources_based_on_tmy': True,
+        'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
+        're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
     }
 
     # PV dictionary
@@ -198,7 +201,6 @@ if __name__ == "__main__":
         'tidal_turbine_rated_power': 550,
         'tidal_rotor_radius': 10,
         'tidal_rotor_number': 2,
-        'tidal_turbine_number': 1,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
         'tidal_cut_out_velocity': 3,
@@ -248,9 +250,9 @@ if __name__ == "__main__":
     # Sizing info dictionary
     input_dict['sizing_inputs'] = {
         'existing_components': {},
-        'include_pv': (),
-        'include_mre': (),
-        'include_batt': ()
+        'include_pv': (),  # units of kW
+        'include_mre': (),  # units of number of turbines
+        'include_batt': ()  # units of (kWh, kW)
     }
 
     # Uncomment the following to specify existing components

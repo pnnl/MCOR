@@ -79,10 +79,9 @@ class GridSearchOptimizer(Optimizer):
              'pv_tracking': string (options: [fixed, single_axis]),
              'advanced_inputs': dict (currently does nothing)}
 
-        # TODO - update once determining num_gens in sizing function
         mre_params: dictionary with the following keys and value 
             datatypes:
-            {'generator_type': str, 'num_generators': int,
+            {'generator_type': str,
             'generator_capacity': float}
 
         battery_params: dictionary with the following keys and value
@@ -130,7 +129,6 @@ class GridSearchOptimizer(Optimizer):
         duration: Timestep duration in seconds.
             Default: 3600 (1 hour)
 
-        # TODO: May want to develop an alternative strategy when using tidal 
         dispatch_strategy: determines the battery dispatch strategy.
             Options include:
                 night_const_batt (constant discharge at night)
@@ -139,11 +137,12 @@ class GridSearchOptimizer(Optimizer):
                 available_capacity (does not reserve any battery during specific times)
             Default: night_dynamic_batt
 
-        # TODO: May want to develop an alternative strategy when using tidal 
         batt_sizing_method: method for sizing the battery. Options are:
                 - longest_night
-                - no_RE_export
+                - no_pv_export
                 Default = longest_night
+            Note: when a marine-renewable system is included, this is overriden and automatically
+            sizes for no RE export.
 
         electricity_rate: Local electricity rate in $/kWh. If it is set
             to None, the rate is determined by looking up the average
@@ -184,10 +183,9 @@ class GridSearchOptimizer(Optimizer):
             results.
             Default = None
 
-        # TODO - may need to update when non-PV RE types 
         off_grid_load_profile: load profile to be used for off-grid
             operation. If this parameter is not set to None, the
-            annual_load_profile is used to size the PV system and
+            annual_load_profile is used to size the RE system and
             calculate annual revenue, and this profile is used to size
             the battery and generator and calculate resilience metrics.
             Default = None
@@ -195,7 +193,9 @@ class GridSearchOptimizer(Optimizer):
     Methods
     ----------
 
-        # TODO - may need to update when non-PV RE types 
+        size_RE_system: Sizes RE system with at least MRE and potentially
+            PV as well. 
+        
         size_PV_for_netzero: Sizes PV system according to net zero and
             incrementally smaller sizes
 
@@ -277,9 +277,10 @@ class GridSearchOptimizer(Optimizer):
         """
 
     def __init__(self, renewable_resources, power_profiles, annual_load_profile, location, 
-                 battery_params, system_costs, duration=3600,
+                 battery_params, system_costs, re_constraints, duration=3600,
                  pv_params=None, mre_params=None, 
                  tmy_solar=None, tmy_mre=None,
+                 size_resources_based_on_tmy=True,
                  dispatch_strategy='night_dynamic_batt',
                  batt_sizing_method='longest_night', electricity_rate=None,
                  net_metering_rate=None, demand_rate=None,
@@ -297,8 +298,10 @@ class GridSearchOptimizer(Optimizer):
         self.tmy_mre = tmy_mre
         self.pv_params = pv_params
         self.mre_params = mre_params
+        self.size_resources_based_on_tmy = size_resources_based_on_tmy
         self.battery_params = battery_params
         self.system_costs = system_costs
+        self.re_constraints = re_constraints
         self.duration = duration
         self.dispatch_strategy = dispatch_strategy
         self.batt_sizing_method = batt_sizing_method
@@ -327,7 +330,8 @@ class GridSearchOptimizer(Optimizer):
                          'duration': duration,
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
-                         'system_costs': system_costs}
+                         'system_costs': system_costs,
+                         'size_resources_based_on_tmy': size_resources_based_on_tmy}
             if pv_params is not None:
                 args_dict['pv_params'] = pv_params
             if tmy_solar is not None:
@@ -398,52 +402,124 @@ class GridSearchOptimizer(Optimizer):
         if 'pv' not in self.renewable_resources:
             self.dispatch_strategy = 'available_capacity'
 
-    # TODO - update with a more sophisticated methodology that includes more options
-    def size_RE_system(self):
+    def size_RE_system(self, include_pv, include_mre):
         """
-        Sizes Renewable Energy components. If only one type of RE is included, returns the 
-            net-zero capacity for that resource, if multiple types are present, then returns
-            the net-zero capacity for each resource as well as a system where half of the 
-            load is met by each resource (based on the TMY profiles). 
-
+        Sizes Renewable Energy components. Assumes there is an included MRE system and potentially
+            PV as well. The components are sized according to the following methodology:
+            1. Add MRE to the system in increments of 1 turbine up to either the max capacity of
+                MRE allowed, the max total RE capacity allowed, or the net-zero capacity.
+            2. Add PV (if included) to each MRE configuration such that it meets all of the 
+                remaining load or reaches the max PV capacity or total RE capacity allowed. 
         """
 
         # Set up dictionary with sizes
         re_sizes = {}
 
-        # Get the total annual load
-        total_annual_load = self.annual_load_profile.sum()
+        # Determine if sizing is based on TMY or profiles
+        if self.size_resources_based_on_tmy:
+            # Get the total annual load, mre production and pv production
+            total_load = self.annual_load_profile.sum()
+            total_mre = self.tmy_mre.sum()
+            if self.pv_params:
+                total_pv = self.tmy_solar.sum()
+        else:
+            # Get the total load, mre and pv production from the profiles
+            total_load = np.sum([profile.sum() for profile in self.load_profiles])
+            total_mre = np.sum([profile.sum() for profile in self.power_profiles['mre']])
+            if self.pv_params:
+                total_pv = np.sum([profile.sum() for profile in self.power_profiles['pv']])
 
-        # If PV is included, get the total solar energy produced and net-zero capacity
+        # Calculate the total annual energy generated by one MRE turbine
+        total_annual_mre_per_turbine = total_mre * self.mre_params['generator_capacity']
+
+        # Add systems with increasing number of turbines up to max (set by load or constraints)
+        num_turbines = 1
+        while True:
+            mre_capacity = self.mre_params['generator_capacity'] * num_turbines
+            # Check if exceeded max mre or total re capacity
+            if ('mre' in self.re_constraints and mre_capacity > self.re_constraints['mre']) or \
+                    ('total' in self.re_constraints 
+                     and mre_capacity > self.re_constraints['total']):
+                break
+            
+            # Add a system with current turbine number
+            re_sizes[f'{num_turbines}_mre_turbine'] = {'mre': mre_capacity}
+            
+            # Check if total energy generated exceeds annual load and if so, stop adding new 
+            #   systems
+            if total_annual_mre_per_turbine * num_turbines > total_load:
+                break
+
+            # Add another turbine
+            num_turbines += 1
+
+        # Check include_mre and add another system if not already included
+        mre_nums = [mre_name.split('_')[0] for mre_name in re_sizes]
+        for mre_num in include_mre:
+            if mre_num not in mre_nums:
+                re_sizes[f'{mre_num}_mre_turbine'] = \
+                    {'mre': mre_num * self.mre_params['generator_capacity']}
+
+        # Check existing components for mre and if included, use this as the minimum number of turbines
+        if 'mre' in self.existing_components:
+            existing_mre_num = self.existing_components['mre'].num_generators
+            mre_nums = [int(mre_name.split('_')[0]) for mre_name in re_sizes]
+            re_size_names = list(re_sizes.keys())
+            for re_size_name in re_size_names: 
+                mre_num = int(re_size_name.split('_')[0])
+                # If less than existing mre_num then remove system
+                if mre_num < existing_mre_num:
+                    re_sizes.pop(re_size_name)
+
+                # Add existing mre_num if not included
+                if existing_mre_num not in mre_nums:
+                    re_sizes[f'{existing_mre_num}_mre_turbine'] = \
+                        {'mre': existing_mre_num * self.mre_params['generator_capacity']}
+
+        # If PV is included, add one system with all PV and for the other systems, calculate the 
+        #   required capacity to reach NZ
         if self.pv_params:
-            total_annual_solar = self.tmy_solar.sum()
-            net_zero_pv = total_annual_load / total_annual_solar
+            # Add PV to each MRE system
+            for system_name, system_sizes in re_sizes.items():
+                remaining_load = np.max([total_load - total_mre * system_sizes['mre'], 0])
+                pv_capacity = remaining_load / total_pv
+
+                # Check that pv size is less than PV constraint and total RE capacity is less 
+                #   than total RE constraint
+                if 'pv' in self.re_constraints and pv_capacity > self.re_constraints['pv']:
+                    pv_capacity = self.re_constraints['pv']
+                if 'total' in self.re_constraints \
+                        and pv_capacity + system_sizes['mre'] > self.re_constraints['total']:
+                    pv_capacity = self.re_constraints['total'] - system_sizes['mre']
+
+                # Add pv capacity to system sizes
+                re_sizes[system_name]['pv'] = pv_capacity
+
+            # Check that net-zero pv size is less than PV and RE capacity constraint
+            net_zero_pv = total_load / total_pv
+            if 'pv' in self.re_constraints and net_zero_pv > self.re_constraints['pv']:
+                net_zero_pv = self.re_constraints['pv']
+            if 'total' in self.re_constraints and net_zero_pv > self.re_constraints['total']:
+                net_zero_pv = self.re_constraints['total']
+
+            # Add a system with only PV
             re_sizes['nz_pv'] = {'pv': net_zero_pv, 'mre': 0}
 
-        # If marine renewable energy is included, get the total solar energy produced and net-zero
-        #   capacity
-        if self.mre_params:
-            total_annual_mre = self.tmy_mre.sum()
-            net_zero_mre = total_annual_load / total_annual_mre
-            re_sizes['nz_mre'] = {'mre': net_zero_mre, 'pv': 0}
+            # If include pv is set, add pv sizes to each mre size
+            for pv_size in include_pv:
+                re_size_names = list(re_sizes.keys())
+                for re_size_name in re_size_names:
+                    re_sizes[f'{re_size_name}_{pv_size}pv'] = \
+                        {'pv': pv_size, 'mre': re_sizes[re_size_name]['mre']}
 
-        # If both PV and marine resources are included, get the capacities required for each
-        #   resource to supply half of the net-zero load
-        if self.pv_params and self.mre_params:
-            # Take MRE as baseload
-            total_annual_mre = self.tmy_mre.sum()
-            half_net_zero_mre = 0.5 * total_annual_load / total_annual_mre
-
-            # Find the PV capacity required to meet the remaining load
-            remaining_load = self.annual_load_profile.values - self.tmy_mre.values * half_net_zero_mre
-            remaining_load[remaining_load < 0] = 0
-            total_annual_solar = self.tmy_solar.sum()
-            half_net_zero_pv = remaining_load.sum() / total_annual_solar
-            re_sizes['nz_pv_mre'] = {'pv': half_net_zero_pv, 'mre': half_net_zero_mre}
+            # If pv size in existing components, set pv size as minimum for each system
+            if 'pv' in self.existing_components:
+                for re_size_name, re_size in re_sizes.items():
+                    if re_size['pv'] < self.existing_components['pv'].capacity:
+                        re_sizes[re_size_name]['pv'] = self.existing_components['pv'].capacity
 
         return re_sizes
     
-    # TODO - need to update for different types of RE
     def size_PV_for_netzero(self):
         """
         Sizes PV system according to net zero and incrementally smaller
@@ -460,10 +536,16 @@ class GridSearchOptimizer(Optimizer):
             - 0 PV
         """
 
-        # Get the total annual load and solar energy produced
-        total_annual_load = self.annual_load_profile.sum()
-        total_annual_solar = self.tmy_solar.sum()
-        net_zero = total_annual_load / total_annual_solar
+        # Determine if sizing is based on TMY or profiles
+        if self.size_resources_based_on_tmy:
+            # Get the total annual load and pv production
+            total_load = self.annual_load_profile.sum()
+            total_pv = self.tmy_solar.sum()
+        else:
+            # Get the total load and pv production from the profiles
+            total_load = np.sum([profile.sum() for profile in self.load_profiles])
+            total_pv = np.sum([profile.sum() for profile in self.power_profiles['pv']])
+        net_zero = total_load / total_pv
 
         # Calculate round-trip efficiency based on battery and inverter
         #   efficiency
@@ -479,12 +561,11 @@ class GridSearchOptimizer(Optimizer):
 
         # Maximum (net-zero) solar size is based on scaling total annual
         #   solar to equal annual load plus losses
-        max_cap = (total_annual_load + total_lost) / total_annual_solar
+        max_cap = (total_load + total_lost) / total_pv
 
         # Create grid based on max, min and standard intervals
         return [max_cap, net_zero, net_zero * 0.5, net_zero * 0.25]
 
-    # TODO - Update for different types of RE
     def size_batt_by_longest_night(self, load_profile):
         """
         Sizes the battery system according to the longest night of the
@@ -502,7 +583,6 @@ class GridSearchOptimizer(Optimizer):
             - O ES
             """
 
-        # TODO - Update for different types of RE
         # Get nighttime load based on TMY pv power
         night_df = load_profile.to_frame(name='load')
         night_df['pv_power'] = self.tmy_solar.values
@@ -532,8 +612,7 @@ class GridSearchOptimizer(Optimizer):
                 (max_cap * 0.25, max_pow * 0.25),
                 (0, 0)]
 
-    # TODO - update with a more sophisticated methodology that includes more options
-    def size_batt_for_no_RE_export(self, re_sizes, load_profile):
+    def size_batt_for_no_RE_export(self, re_sizes):
         """
         Sizes the battery such that no excess renewable energy is exported to the grid during
         normal operation. 
@@ -545,7 +624,7 @@ class GridSearchOptimizer(Optimizer):
         """
         
         # Calculate excess RE production for each system
-        excess_re = load_profile.to_frame(name='load')
+        excess_re = self.annual_load_profile.copy(deep=True).to_frame(name='load')
         if self.pv_params:
             excess_re['pv_base'] = self.tmy_solar.values
         else:
@@ -575,14 +654,12 @@ class GridSearchOptimizer(Optimizer):
                                     self.battery_params['one_way_inverter_efficiency'], 2))
                 for system_name in re_sizes.keys()}
 
-    # TODO - Update for different types of RE
     def size_batt_for_no_pv_export(self, pv_sizes, load_profile):
         """
         Sizes the battery such that no excess PV is exported to the grid
             during normal operation.
         """
 
-        # TODO - Update for different types of RE
         # Calculate excess PV production for each PV size
         excess_pv = load_profile.to_frame(name='load')
         excess_pv['pv_base'] = self.tmy_solar.values
@@ -632,7 +709,6 @@ class GridSearchOptimizer(Optimizer):
         if self.mre_params:
             if self.mre_params['generator_type'] == 'tidal':
                 mre = Tidal('mre' in self.existing_components, mre_size,
-                        self.mre_params['num_generators'], 
                         self.mre_params['generator_capacity'],
                         validate=False)
                 component_list += [mre]
@@ -669,7 +745,6 @@ class GridSearchOptimizer(Optimizer):
 
         return system_name, system
 
-    # TODO - update for new algorithm 
     def define_grid(self, include_pv=(), include_batt=(), include_mre=(), validate=True):
         """
         Defines the grid of system sizes to consider.
@@ -678,7 +753,7 @@ class GridSearchOptimizer(Optimizer):
 
             include_pv: list of pv sizes to be added to the grid (in kW)
 
-            include_mre: list of mre sizes to be added to the grid (in kW)
+            include_mre: list of mre sizes to be added to the grid (in number of turbines)
 
             include_batt: list of battery sizes to be added to the grid
                 in the form of a tuple:
@@ -686,7 +761,6 @@ class GridSearchOptimizer(Optimizer):
 
         """
 
-        # TODO - Update for different types of RE
         if validate:
             # List of initialized parameters to validate
             args_dict = {}
@@ -703,7 +777,7 @@ class GridSearchOptimizer(Optimizer):
 
         # If marine renewables are included, use method that can accept different types of RE
         if self.mre_params:
-            re_sizes = self.size_RE_system()
+            re_sizes = self.size_RE_system(include_pv, include_mre)
         else:
             # Size the pv system based on load and pv power
             pv_range = self.size_PV_for_netzero()
@@ -730,9 +804,31 @@ class GridSearchOptimizer(Optimizer):
         # Determine which method to use for sizing the battery
         if self.mre_params:
             # Size battery to capture all excess RE generation
-            batt_range = self.size_batt_for_no_RE_export(
-                re_sizes, self.annual_load_profile.copy(deep=True))
+            batt_range = self.size_batt_for_no_RE_export(re_sizes)
             
+            # Add add'l systems for battery to capture 75% and 50% of excess energy
+            re_sizes_new = {}
+            batt_range_new = {}
+            for system_name, re_size in re_sizes.items():
+                batt_size = batt_range[system_name]
+                for batt_percent in [1, .75, .50]:
+                    re_sizes_new[f'{system_name}_{batt_percent}batt'] = re_size
+                    batt_range_new[f'{system_name}_{batt_percent}batt'] = \
+                        tuple(b_size * batt_percent for b_size in batt_size)
+                # Add and any battery sizes from include_batt list
+                for batt_size in include_batt:
+                    re_sizes_new[f'{system_name}_{batt_size}batt'] = re_size
+                    batt_range_new[f'{system_name}_{batt_size}batt'] = batt_size                        
+            re_sizes = re_sizes_new
+            batt_range = batt_range_new
+
+            # If batteries are included in existing components, make this size the minimum
+            if 'batt' in self.existing_components:
+                for re_size_name, batt_size in batt_range.items():
+                    if batt_size[0] < self.existing_components['batt'].batt_capacity:
+                        batt_range[re_size_name] = (self.existing_components['batt'].batt_capacity, 
+                                                    self.existing_components['batt'].power)
+
         elif self.batt_sizing_method == 'longest_night':
             # Determine which load profile to use for sizing the battery
             if self.off_grid_load_profile is None:
@@ -758,9 +854,9 @@ class GridSearchOptimizer(Optimizer):
         # Add any sizes in include_batt
         # Note: this will not have an effect for the no pv export battery
         #   sizing methodology
-        # TODO: This will throw an error currently if mre is included
-        for size in include_batt:
-            batt_range += [size]
+        if self.mre_params is None:
+            for size in include_batt:
+                batt_range += [size]
 
         # Create MicrogridSystem objects for each system
         if self.mre_params:
@@ -1497,11 +1593,11 @@ class GridSearchOptimizer(Optimizer):
                 '{} units of {}kW'.format(
                 self.existing_components['generator'].num_units,
                 self.existing_components['generator'].rated_power)
-        if 'battery' in self.existing_components:
+        if 'batt' in self.existing_components:
             inputs['Existing Equipment'].loc['Battery'] = \
                 '{}kW, {}kWh'.format(
-                self.existing_components['battery'].power,
-                self.existing_components['battery'].batt_capacity)
+                self.existing_components['batt'].power,
+                self.existing_components['batt'].batt_capacity)
         if 'fuel_tank' in self.existing_components:
             inputs['Existing Equipment'].loc['FuelTank'] = \
                 '{}gal'.format(self.existing_components['fuel_tank'].tank_size)
@@ -1925,12 +2021,13 @@ if __name__ == "__main__":
 
     # Create optimization object
     renewable_resources = ['pv', 'mre']
+    re_constraints = {}
     power_profiles = {'pv': spg.power_profiles,
                       'mre': tpg.power_profiles,
                       'night': spg.night_profiles}
 
     optim = GridSearchOptimizer(renewable_resources, power_profiles, annual_load_profile,
-                                location, battery_params, system_costs, 
+                                location, battery_params, system_costs, re_constraints,
                                 tmy_solar=tmy_solar, pv_params=pv_params, mre_params=mre_params,
                                 tmy_mre=tmy_mre, dispatch_strategy='available_capacity',
                                 electricity_rate=None, net_metering_limits=None, 

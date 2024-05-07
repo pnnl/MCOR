@@ -22,7 +22,6 @@ from config import TIDAL_DATA_DIR, ROOT_DIR
 TIDAL_DEFAULTS = {'tidal_turbine_rated_power': 550,
                   'tidal_rotor_radius': 10,
                   'tidal_rotor_number': 2,
-                  'tidal_turbine_number': 1,
                   'maximum_cp': 0.42,
                   'tidal_cut_in_velocity': 0.5,
                   'tidal_cut_out_velocity': 3,
@@ -175,26 +174,6 @@ class TidalProfileGenerator:
         
         # Add an extra year to the annual profile to allow for profiles with year-end overlap
         twentyyear_profile = pd.concat([self.tidal_epoch, self.tidal_epoch.head(8760)])
-        twentyyear_profile_index = pd.date_range(
-            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year+1}', freq='H', tz=self.timezone)[:-1]
-
-        # Remove leap days and reassign index
-        twentyyear_profile = twentyyear_profile[~((twentyyear_profile.index.month == 2) & 
-                                                  (twentyyear_profile.index.day == 29))]
-        twentyyear_profile_index = twentyyear_profile_index[~((twentyyear_profile_index.month == 2) & 
-                                                  (twentyyear_profile_index.day == 29))]
-
-        for i, date_range in enumerate(date_ranges):
-            replace_timesteps = len(date_range[(date_range.month == 2) &
-                                               (date_range.day == 29)])
-            if replace_timesteps:
-                # Remove 2/29
-                date_range = date_range[date_range.date != datetime.date(date_range[0].year, 2, 29)]
-
-                # Add more timesteps
-                date_ranges[i] = date_range.append(pd.date_range(
-                    date_range[-1] + datetime.timedelta(hours=1),
-                    periods=replace_timesteps, freq='H'))
                 
         # Loop over each date range and sample profile data
         for date_range in date_ranges:
@@ -257,13 +236,10 @@ class TidalProfileGenerator:
         for tidal in self.tidal_profiles:
             self.power_profiles += [calc_tidal_prod(
                 tidal,
-                self.latitude,
-                self.longitude,
                 self.timezone,
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_turbine_number'],
                 self.advanced_inputs['tidal_inverter_efficiency'],
                 self.advanced_inputs['maximum_cp'],
                 self.advanced_inputs['tidal_turbine_losses'],
@@ -274,13 +250,10 @@ class TidalProfileGenerator:
         self.tidal_current['v_mag'] = self.tidal_current.apply(
             lambda x: (x['u']**2 + x['v']**2)**(0.5), axis=1)
         self.tmy_tidal = calc_tidal_prod(self.tidal_current, 
-                self.latitude,
-                self.longitude,
                 self.timezone,
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_turbine_number'],
                 self.advanced_inputs['tidal_inverter_efficiency'],
                 self.advanced_inputs['maximum_cp'],
                 self.advanced_inputs['tidal_turbine_losses'],
@@ -306,8 +279,8 @@ class TidalProfileGenerator:
             ax=ax2, title='Profile with min energy generation')
         ax2.set_ylabel('Power (kW)')
 
-def calc_tidal_prod(tidal_profile, latitude, longitude, timezone,
-                    tidal_turbine_rated_power, tidal_rotor_radius, tidal_rotor_number, tidal_turbine_number,
+def calc_tidal_prod(tidal_profile, timezone,
+                    tidal_turbine_rated_power, tidal_rotor_radius, tidal_rotor_number,
                     tidal_inverter_efficiency, maximum_cp, tidal_turbine_losses,
                     tidal_cut_in_velocity, tidal_cut_out_velocity, validate=False):
     """ Calculates the production from a tidal profile. """
@@ -315,12 +288,9 @@ def calc_tidal_prod(tidal_profile, latitude, longitude, timezone,
     if validate:
         # Put arguments in a dict
         args_dict = {'tidal_profile': tidal_profile,
-                     'latitude': latitude,
-                     'longitude': longitude,
                      'tidal_turbine_rated_power': tidal_turbine_rated_power,
                      'tidal_rotor_radius': tidal_rotor_radius,
                      'tidal_rotor_number': tidal_rotor_number,
-                     'tidal_turbine_number': tidal_turbine_number,
                      'tidal_inverter_efficiency': tidal_inverter_efficiency,
                      'maximum_cp': maximum_cp,
                      'tidal_turbine_losses': tidal_turbine_losses,
@@ -336,11 +306,13 @@ def calc_tidal_prod(tidal_profile, latitude, longitude, timezone,
         u = row['v_mag']
         if u >= tidal_cut_in_velocity and u <= tidal_cut_out_velocity:
             dc_power.at[
-                index, 'power'] = 0.5 * maximum_cp * u ** 3 * np.pi * tidal_rotor_radius ** 2 * tidal_rotor_number * tidal_turbine_number
+                index, 'power'] = np.min([0.5 * maximum_cp * 1.03 * u ** 3 * np.pi
+                                           * tidal_rotor_radius ** 2 * tidal_rotor_number, 
+                                          tidal_turbine_rated_power])
         elif u < tidal_cut_in_velocity:
             dc_power.at[index, 'power'] = 0
         elif u > tidal_cut_out_velocity:
-            dc_power.at[index, 'power'] = tidal_turbine_rated_power * tidal_turbine_number
+            dc_power.at[index, 'power'] = 0 
         else:
             dc_power.at[index, 'power'] = np.nan
 
@@ -351,7 +323,7 @@ def calc_tidal_prod(tidal_profile, latitude, longitude, timezone,
         dc_power.index = pd.to_datetime(dc_power.index, utc=True).tz_convert(timezone)
 
     # Normalize DC power generation to turbine size. i.e. per 1kW of tidal
-    dc_power['power'] = dc_power['power'] / (tidal_turbine_rated_power * tidal_turbine_number)
+    dc_power['power'] = dc_power['power'] / (tidal_turbine_rated_power)
 
     # Calculate turbine losses
     dc_power['power'] = dc_power['power'] * (1 - tidal_turbine_losses / 100)

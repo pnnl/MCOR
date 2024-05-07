@@ -313,12 +313,13 @@ def check_existing_components(existing_components):
     """
 
     # Check that keys are allowable
-    if len(set(existing_components.keys()) - {'pv', 'batt', 'gen', 'fuel_tank'}) > 0:
+    if len(set(existing_components.keys()) - {'pv', 'mre', 'batt', 'gen', 'fuel_tank'}) > 0:
         return False
 
     # Check the datatype for each elem
     type_key = {'pv': 'microgrid_system.PV',
                 'batt': 'microgrid_system.Battery',
+                'mre': 'microgrid_system.MRE',
                 'gen': 'microgrid_system.Generator',
                 'fuel_tank': 'microgrid_system.FuelTank'}
     for key, val in existing_components.items():
@@ -636,6 +637,14 @@ def check_include_pv(include_pv):
 
     for elem in include_pv:
         validate_parameter('pv_capacity', elem, data_type=('int', 'float'), min_val=0)
+    return True
+
+
+def check_include_mre(include_mre):
+    """ Check that each element of include_mre is valid. """
+
+    for elem in include_mre:
+        validate_parameter('num_turbines', elem, data_type=('int',), min_val=0)
     return True
 
 
@@ -1217,6 +1226,7 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_ranking_criteria': check_ranking_criteria,
                     'check_include_pv': check_include_pv,
                     'check_include_batt': check_include_batt,
+                    'check_include_mre': check_include_mre,
                     'check_load_profile': check_load_profile,
                     'check_spg_advanced_inputs': check_spg_advanced_inputs,
                     'check_tpg_advanced_inputs': check_tpg_advanced_inputs,

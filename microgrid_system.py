@@ -220,15 +220,15 @@ class MRE(Component):
 
     """
 
-    def __init__(self, existing, mre_capacity, num_generators, generator_type,
+    def __init__(self, existing, mre_capacity, generator_type,
                  generator_capacity):
         # Assign parameters
         self.category = 'mre'
         self.existing = existing
-        self.num_generators = num_generators
         self.capacity = mre_capacity  # in kW
         self.generator_type = generator_type
         self.generator_capacity = generator_capacity # in kW
+        self.num_generators = int(mre_capacity / generator_capacity)
 
     def get_capacity(self):
         return self.capacity
@@ -252,13 +252,12 @@ class Tidal(MRE):
 
     """
 
-    def __init__(self, existing, mre_capacity, num_generators, generator_capacity, validate=True):
-        super().__init__(existing, mre_capacity, num_generators, 'tidal', generator_capacity)
+    def __init__(self, existing, mre_capacity, generator_capacity, validate=True):
+        super().__init__(existing, mre_capacity, 'tidal', generator_capacity)
 
         if validate:
             # List of initialized parameters to validate
             args_dict = {'existing': existing, 'mre_capacity': mre_capacity,
-                         'tidal_turbine_number': num_generators,
                          'tidal_turbine_rated_power': generator_capacity}
 
             # Validate input parameters
@@ -274,15 +273,15 @@ class Tidal(MRE):
         # TODO - update this to consider # of turbines instead of capacity
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
-            adjusted_mre_capacity = max(
-                self.capacity - existing_components['mre'].capacity, 0)
+            adjusted_mre_num = max(
+                self.num_generators - existing_components['mre'].num_generators, 0)
         else:
-            adjusted_mre_capacity = self.capacity
+            adjusted_mre_num = self.num_generators
 
         # Set costs
         tidal_cost_per_turbine = cost_df.reset_index().iloc[0]['Tidal']
 
-        return adjusted_mre_capacity * tidal_cost_per_turbine
+        return adjusted_mre_num * tidal_cost_per_turbine
 
     def calc_om_cost(self, cost_df, existing_components):
         """ Calculates O&M costs of a Tidal array """
@@ -290,14 +289,14 @@ class Tidal(MRE):
         # Adjust total mre_capacity to consider existing pv
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
-            adjusted_mre_capacity = max(
-                self.capacity - existing_components['mre'].capacity, 0)
+            adjusted_mre_num = max(
+                self.num_generators - existing_components['mre'].num_generators, 0)
         else:
-            adjusted_mre_capacity = self.capacity
+            adjusted_mre_num = self.num_generators
 
         # Set O&M cost
         tidal_om_cost_per_turbine = cost_df['Tidal'].values[1]
-        return adjusted_mre_capacity * tidal_om_cost_per_turbine
+        return adjusted_mre_num * tidal_om_cost_per_turbine
 
 
 class Wave(MRE):
@@ -322,9 +321,9 @@ class Wave(MRE):
 
     """
 
-    def __init__(self, existing, mre_capacity, num_generators, generator_capacity,
+    def __init__(self, existing, mre_capacity, generator_capacity,
                  wave_inputs, validate=True):
-        super().__init__(existing, mre_capacity, num_generators, 'wave',
+        super().__init__(existing, mre_capacity, 'wave',
                          generator_capacity)
         # Assign parameters
         self.wave_inputs = wave_inputs
@@ -333,7 +332,6 @@ class Wave(MRE):
         if validate:
             # List of initialized parameters to validate
             args_dict = {'existing': existing, 'mre_capacity': mre_capacity,
-                         'num_generators': num_generators,
                          'generator_capacity': generator_capacity,
                          'wave_inputs': wave_inputs}
 
@@ -1531,7 +1529,6 @@ class SimpleMicrogridSystem(MicrogridSystem):
                 (power_df['power_not_imported'].sum() +
                  power_df['power_exported'].sum() * rte) * electricity_rate
 
-            # TODO - update when have new batt sizing methods
             # Check that battery sizing method is 'no_pv_export'
             if batt_sizing_method != 'no_pv_export':
                 print('Warning: the "no_nm_use_battery" option should only be used with a '
@@ -1604,7 +1601,7 @@ if __name__ == "__main__":
             pv_tracking='fixed', pv_racking='ground', validate=True)
     
     # Create a MRE object
-    tidal = Tidal(existing=False, mre_capacity=500, num_generators=1, generator_capacity=500, 
+    tidal = Tidal(existing=False, mre_capacity=500, generator_capacity=500, 
                   validate=True)
 
     # Create a battery object
