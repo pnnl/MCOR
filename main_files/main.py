@@ -83,7 +83,7 @@ def run_mcor(input_dict):
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
                                     mre_data_start_year, mre_data_end_year,
                                     advanced_inputs=mre_inputs)
-        tpg.get_tidal_data_from_upload()
+        tpg.get_tidal_data_from_upload(mre_inputs['depth'])
         tpg.extrapolate_tidal_epoch()
         if mre_inputs['get_tidal_profiles']:
             tpg.generate_tidal_profiles(system_inputs['start_datetimes'])
@@ -198,6 +198,7 @@ if __name__ == "__main__":
     # MRE dictionary
     input_dict['mre_inputs'] =  {
         'generator_type': 'tidal',
+        'depth': 9.24,
         'tidal_turbine_rated_power': 550,
         'tidal_rotor_radius': 10,
         'tidal_rotor_number': 2,

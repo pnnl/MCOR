@@ -20,6 +20,7 @@ from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
 TIDAL_DEFAULTS = {'tidal_turbine_rated_power': 550,
+                  'depth': 9.24,
                   'tidal_rotor_radius': 10,
                   'tidal_rotor_number': 2,
                   'maximum_cp': 0.42,
@@ -125,15 +126,29 @@ class TidalProfileGenerator:
         if self.end_year is None:
             self.end_year = self.start_year + 19
 
-    def get_tidal_data_from_upload(self):
+    def get_tidal_data_from_upload(self,depth):
         """Load tidal_current-specified tidal data"""
 
         filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
         file = os.listdir(filedir)
-        # read first (and only) file in directory, assign 'date' column to index
+        # read first (and only) file in directory
         self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
-        self.tidal_current.set_index('date', inplace=True)
+
+        # extract depth values
+        def extract_columns(df,depth):
+            depth_str = str(depth)
+            u_col = f'u_{depth_str}'
+            v_col = f'v_{depth_str}'
+
+            if u_col in df.columns and v_col in df.columns:
+                extracted_df = df[['time', u_col, v_col]]
+                extracted_df.columns = ['time', 'u', 'v']
+                return extracted_df
+
+        self.tidal_current = extract_columns(self.tidal_current, depth)
+        self.tidal_current.set_index('time', inplace=True)
         self.tidal_current.index = pd.to_datetime(self.tidal_current.index)
+        self.tidal_current = self.tidal_current.resample('H').mean()
 
     def extrapolate_tidal_epoch(self, validate=True):
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
@@ -142,7 +157,7 @@ class TidalProfileGenerator:
         coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
 
         epoch_index = pd.date_range(
-            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year}', freq='H', tz=self.timezone)[:-1]
+            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year+1}', freq='H', tz=self.timezone)[:-1]
         tide = reconstruct(epoch_index, coef, verbose=False)
         self.tidal_epoch = pd.DataFrame()
         self.tidal_epoch['v_mag'] = (tide.u**2 + tide.v**2)**(0.5)
@@ -342,9 +357,10 @@ if __name__ == "__main__":
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
+    depth = 9.24
     tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, validate=True)
 
-    tpg.get_tidal_data_from_upload()
+    tpg.get_tidal_data_from_upload(depth)
     print('uploaded data')
 
     tpg.extrapolate_tidal_epoch()
