@@ -20,7 +20,7 @@ from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
 TIDAL_DEFAULTS = {'tidal_turbine_rated_power': 550,
-                  'depth': 9.24,
+                  'depth': 10,
                   'tidal_rotor_radius': 10,
                   'tidal_rotor_number': 2,
                   'maximum_cp': 0.42,
@@ -83,7 +83,7 @@ class TidalProfileGenerator:
 
     """
 
-    def __init__(self, latitude, longitude, timezone, num_trials, length_trials, 
+    def __init__(self, latitude, longitude, timezone, num_trials, length_trials, depth,
                  start_year=None, end_year=None, validate=True, advanced_inputs={}):
 
         # Assign parameters
@@ -92,6 +92,7 @@ class TidalProfileGenerator:
         self.timezone = timezone
         self.num_trials = num_trials
         self.length_trials = length_trials
+        self.depth = depth
         self.start_year = start_year
         self.end_year = end_year
         self.advanced_inputs = advanced_inputs
@@ -126,7 +127,7 @@ class TidalProfileGenerator:
         if self.end_year is None:
             self.end_year = self.start_year + 19
 
-    def get_tidal_data_from_upload(self,depth):
+    def get_tidal_data_from_upload(self):
         """Load tidal_current-specified tidal data"""
 
         filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
@@ -134,9 +135,23 @@ class TidalProfileGenerator:
         # read first (and only) file in directory
         self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
 
-        # extract depth values
+        # Find the closest depth
+        def find_closest_depth(df, depth):
+            depth_columns = [col for col in df.columns if col.startswith('u_') or col.startswith('v_')]
+            depth_values = sorted(set(float(col.split('_')[1]) for col in depth_columns))
+
+            if depth < min(depth_values):
+                raise ValueError('Specified depth is smaller than any available depth')
+            elif depth > max(depth_values):
+                raise ValueError('Specified depth is larger than any available depth')
+
+            closest_depth = min(depth_values, key=lambda x: abs(x - depth))
+            return closest_depth
+
+        # Extract depth values
         def extract_columns(df,depth):
-            depth_str = str(depth)
+            closest_depth = find_closest_depth(df, depth)
+            depth_str = str(closest_depth)
             u_col = f'u_{depth_str}'
             v_col = f'v_{depth_str}'
 
@@ -145,7 +160,7 @@ class TidalProfileGenerator:
                 extracted_df.columns = ['time', 'u', 'v']
                 return extracted_df
 
-        self.tidal_current = extract_columns(self.tidal_current, depth)
+        self.tidal_current = extract_columns(self.tidal_current, self.depth)
         self.tidal_current.set_index('time', inplace=True)
         self.tidal_current.index = pd.to_datetime(self.tidal_current.index)
         self.tidal_current = self.tidal_current.resample('H').mean()
@@ -357,10 +372,9 @@ if __name__ == "__main__":
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
-    depth = 9.24
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, validate=True)
+    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, depth = 10, validate=True)
 
-    tpg.get_tidal_data_from_upload(depth)
+    tpg.get_tidal_data_from_upload()
     print('uploaded data')
 
     tpg.extrapolate_tidal_epoch()

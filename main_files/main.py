@@ -198,7 +198,7 @@ if __name__ == "__main__":
     # MRE dictionary
     input_dict['mre_inputs'] =  {
         'generator_type': 'tidal',
-        'depth': 9.24,
+        'depth': 10,
         'tidal_turbine_rated_power': 550,
         'tidal_rotor_radius': 10,
         'tidal_rotor_number': 2,
