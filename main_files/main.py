@@ -80,10 +80,10 @@ def run_mcor(input_dict):
         # Run get_tidal_profile
         # Set MRE params
         tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
-                                    float(system_inputs['num_trials']), float(system_inputs['length_trials']),
+                                    float(system_inputs['num_trials']), float(system_inputs['length_trials']), float(mre_inputs['depth']),
                                     mre_data_start_year, mre_data_end_year,
                                     advanced_inputs=mre_inputs)
-        tpg.get_tidal_data_from_upload(mre_inputs['depth'])
+        tpg.get_tidal_data_from_upload()
         tpg.extrapolate_tidal_epoch()
         if mre_inputs['get_tidal_profiles']:
             tpg.generate_tidal_profiles(system_inputs['start_datetimes'])
