@@ -8,6 +8,7 @@ from main_files.main import run_mcor
 from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
+from config import DATA_DIR
 
 # Parameters that require re-running resource models
 GET_SOLAR_DATA_PARAMS = ['latitude', 'longitude']
@@ -136,13 +137,13 @@ if __name__ == "__main__":
     # Define varying parameter
     # TODO - should we constrain which parameters can be varying? how many params can be varied at a time?
     sensitivity_param = {
-        'param_category': 'system_inputs',
-        'param_name': 'length_trials',
-        'param_values': [3, 12, 24, 72]
+        'param_category': 'mre_inputs',
+        'param_name': 'tidal_turbine_losses',
+        'param_values': [10, 20, 30]
     }
 
     if sensitivity_param['param_name'] not in ALLOWED_SENSITIVITY_PARAMS:
-        raise Exception(f'{sensitivity_param['param_name']} is not an allowed sensitivity parameter!')
+        raise Exception(f'{sensitivity_param["param_name"]} is not an allowed sensitivity parameter!')
     
     # Define static parameters
     # Note: to make it easy to swap out the sensitivity param, the static params can include the
@@ -155,11 +156,13 @@ if __name__ == "__main__":
         'longitude': -119.28,
         'timezone': 'US/Pacific',
         'altitude': 0,
-        'num_trials': 200,
+        'num_trials': 5,
         'length_trials': 14 * 24,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
-        'start_datetimes': None  # If you want to specify specific times to start the scenarios
+        'size_resources_based_on_tmy': True,
+        'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
+        're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
     }
 
     # PV dictionary
@@ -172,8 +175,8 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
-        'get_solar_data': True,
-        'get_solar_profiles': True
+        'get_solar_data': False,
+        'get_solar_profiles': False
     }
 
     # MRE dictionary
@@ -182,7 +185,6 @@ if __name__ == "__main__":
         'tidal_turbine_rated_power': 550,
         'tidal_rotor_radius': 10,
         'tidal_rotor_number': 2,
-        'tidal_turbine_number': 1,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
         'tidal_cut_out_velocity': 3,
@@ -205,7 +207,7 @@ if __name__ == "__main__":
 
     # Load (in kW) dictionary
     input_dict['load_inputs'] = {
-        'annual_load_profile': pd.read_csv(os.path.join('data', 'sample_load_profile.csv'), 
+        'annual_load_profile': pd.read_csv(os.path.join(DATA_DIR, 'sample_load_profile.csv'), 
                                            index_col=0)['Load'],
         'off_grid_load_profile': None
     }
@@ -214,7 +216,8 @@ if __name__ == "__main__":
     input_dict['financial_inputs'] = {
         'utility_rate': 0.03263,                 # Utility rate in $/kWh dictionary
         'demand_rate': None,                     # Demand rate in $/kW (optional) dictionary
-        'system_costs': pd.read_excel('data/MCOR Prices.xlsx', sheet_name=None, index_col=0)
+        'system_costs': pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), 
+                                      sheet_name=None, index_col=0)
     }
 
     # Determine if asp multithreading should be used dictionary
@@ -232,9 +235,9 @@ if __name__ == "__main__":
     # Sizing info dictionary
     input_dict['sizing_inputs'] = {
         'existing_components': {},
-        'include_pv': (),
-        'include_mre': (),
-        'include_batt': ()
+        'include_pv': (),  # units of kW
+        'include_mre': (),  # units of number of turbines
+        'include_batt': ()  # units of (kWh, kW)
     }
 
     # Net-metering options dictionary
@@ -258,8 +261,8 @@ if __name__ == "__main__":
     # Run MCOR iteratively
     for i, param_value in enumerate(sensitivity_param['param_values']):
         # Print out iteration info
-        print(f'Iteration: {i} of {len(sensitivity_param['param_values'])}, \
-              {sensitivity_param['param_name']} = {param_value}')
+        print(f'Iteration: {i} of {len(sensitivity_param["param_values"])}, \
+              {sensitivity_param["param_name"]} = {param_value}')
         
         # Set value for sensitivity param
         input_dict[sensitivity_param['param_category']][sensitivity_param['param_name']] = \
@@ -281,18 +284,22 @@ if __name__ == "__main__":
                 tpg = create_tpg_object(input_dict['system_inputs'], data_start_year, 
                                         data_end_year, input_dict['mre_inputs'])
 
-        # If it's the first iteration or the sensitivity param requires re-running resource 
-        #   models, then run those now
+        # If it's the first iteration and get_solar_data/get_solar_profiles/get_tidal_profiles
+        #   is set to true or the sensitivity param requires re-running resource models, 
+        #   then run those now
         if 'pv' in input_dict['system_inputs']['renewable_resources'] and \
-                (i == 0 or sensitivity_param['param_name'] in GET_SOLAR_DATA_PARAMS):
+                ((i == 0 and input_dict['pv_inputs']['get_solar_data']) 
+                 or sensitivity_param['param_name'] in GET_SOLAR_DATA_PARAMS):
             spg.__setattr__(sensitivity_param['param_name'], param_value)
             spg = get_solar_data(spg)
         if 'pv' in input_dict['system_inputs']['renewable_resources'] and \
-                (i == 0 or sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS):
+                ((i == 0 and input_dict['pv_inputs']['get_solar_profiles']) 
+                 or sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS):
             spg.__setattr__(sensitivity_param['param_name'], param_value)
             spg = build_solar_model(spg, input_dict['system_inputs'])
         if 'mre' in input_dict['system_inputs']['renewable_resources'] and \
-                (i == 0 or sensitivity_param['param_name'] in GET_TIDAL_PROFILE_PARAMS):
+                ((i == 0 and input_dict['mre_inputs']['get_tidal_profiles'])
+                 or sensitivity_param['param_name'] in GET_TIDAL_PROFILE_PARAMS):
             tpg.__setattr__(sensitivity_param['param_name'], param_value)
             if 'pv' in input_dict['system_inputs']['renewable_resources']:
                 start_datetimes = [profile.index[0] for profile in spg.power_profiles]
@@ -304,5 +311,6 @@ if __name__ == "__main__":
         optim, spg, tpg = run_mcor_iteration(spg, tpg, input_dict)
 
         # Store outputs
+        output_dict[f'{sensitivity_param["param_name"]}_{param_value}'] = optim
 
     # Aggregate and compare outputs

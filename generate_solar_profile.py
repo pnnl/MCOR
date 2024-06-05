@@ -419,18 +419,19 @@ class SolarProfileGenerator:
                 solar.index = pd.to_datetime(solar.index, utc=True).tz_convert(self.timezone)
 
             # Check that the solar data and index are not misaligned (e.g. the sun is up
-            #   during the day)
-            # Get median solar start hour
-            solar['date'] = solar.index.date
-            median_hour = solar.groupby('date').apply(
-                lambda x: x[x['ghi'] > 0].iloc[0].name.hour
-                if len(x[x['ghi'] > 0]) else 0).median()
-            if not 4 < median_hour < 12:
-                message = 'The solar profiles are mismatched with the index (e.g. the sun ' \
-                          'is not shining at the expected times). Make sure your solar ' \
-                          'profiles are valid.'
-                log_error(message)
-                raise Exception(message)
+            #   during the day) - this only works if the profile is at least 24 hours long
+            if len(solar) >= 24 :
+                # Get median solar start hour
+                solar['date'] = solar.index.date
+                median_hour = solar.groupby('date').apply(
+                    lambda x: x[x['ghi'] > 0].iloc[0].name.hour
+                    if len(x[x['ghi'] > 0]) else 0).median()
+                if not 4 < median_hour < 12:
+                    message = 'The solar profiles are mismatched with the index (e.g. the sun ' \
+                            'is not shining at the expected times). Make sure your solar ' \
+                            'profiles are valid.'
+                    log_error(message)
+                    raise Exception(message)
 
             self.solar_profiles += [solar]
             self.temp_profiles += [solar['temp'].to_frame(name='temp_celcius')]
@@ -1087,24 +1088,27 @@ def calc_night_duration(power_profile, percent_at_night=0, validate=True):
     night_df['is_night'] = power_profile.values <= power_profile.max() * percent_at_night
 
     # Calculate duration for each night (or 0 PV period)
-    temp1 = night_df['is_night'].cumsum().value_counts()
-    temp2 = np.array(temp1[temp1 > 1].sort_index().index)
-    if night_df.iloc[-1, -1]:
-        temp2 = np.append(temp2, np.array(temp1.sort_index().index[-1]))
-    temp2 = temp2[np.where(temp2 > 0)]
-    night_lengths = [temp2[0]] + list(temp2[1:] - temp2[:-1])
+    # Check first if there are any nighttime timesteps in the data, which might not be the case
+    #   for shorter trial lengths
+    if night_df['is_night'].sum() > 0:
+        temp1 = night_df['is_night'].cumsum().value_counts()
+        temp2 = np.array(temp1[temp1 > 1].sort_index().index)
+        if night_df.iloc[-1, -1]:
+            temp2 = np.append(temp2, np.array(temp1.sort_index().index[-1]))
+        temp2 = temp2[np.where(temp2 > 0)]
+        night_lengths = [temp2[0]] + list(temp2[1:] - temp2[:-1])
 
-    # Find the first hour of each night (or 0 PV period)
-    night_df['is_first_hour_of_night'] = False
-    night_df['night_duration'] = np.nan
-    for i, _ in enumerate(night_df.iterrows()):
-        if (i == 0 and night_df.iloc[0, -3]) or \
-                (i > 0 and night_df.iloc[i, -3]
-                 and not night_df.iloc[i - 1, -3]):
-            night_df.iloc[i, -2] = True
-            night_df.iloc[i, -1] = night_lengths.pop(0)
-    night_df['night_duration'].ffill(inplace=True)
-    night_df.loc[night_df['is_night'] == False, 'night_duration'] = 0
+        # Find the first hour of each night (or 0 PV period)
+        night_df['is_first_hour_of_night'] = False
+        night_df['night_duration'] = np.nan
+        for i, _ in enumerate(night_df.iterrows()):
+            if (i == 0 and night_df.iloc[0, -3]) or \
+                    (i > 0 and night_df.iloc[i, -3]
+                    and not night_df.iloc[i - 1, -3]):
+                night_df.iloc[i, -2] = True
+                night_df.iloc[i, -1] = night_lengths.pop(0)
+        night_df['night_duration'].ffill(inplace=True)
+    night_df.loc[~night_df['is_night'], 'night_duration'] = 0
 
     return night_df
 
