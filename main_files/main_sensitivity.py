@@ -41,6 +41,7 @@ def create_tpg_object(system_inputs, data_start_year, data_end_year, mre_inputs)
     tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
                                     data_start_year, data_end_year, advanced_inputs=mre_inputs)
+    tpg.get_tidal_data_from_upload()
     return tpg
 
 
@@ -54,8 +55,8 @@ def build_solar_model(spg, system_inputs):
 
 
 def build_mre_model(tpg, start_datetimes):
-    tpg.get_tidal_data_from_upload()
-    tpg.extrapolate_tidal_epoch(start_datetimes)
+    tpg.extrapolate_tidal_epoch()
+    tpg.generate_tidal_profiles(start_datetimes)
     return tpg
 
 
@@ -302,7 +303,10 @@ if __name__ == "__main__":
                  or sensitivity_param['param_name'] in GET_TIDAL_PROFILE_PARAMS):
             tpg.__setattr__(sensitivity_param['param_name'], param_value)
             if 'pv' in input_dict['system_inputs']['renewable_resources']:
-                start_datetimes = [profile.index[0] for profile in spg.power_profiles]
+                # Check to see if spg start_datetimes list has been intialized
+                if not len(spg.start_datetimes):
+                    spg.get_power_profiles()
+                start_datetimes = spg.start_datetimes
             else:
                 start_datetimes = input_dict['system_inputs']['start_datetimes']
             tpg = build_mre_model(tpg, start_datetimes)
@@ -314,3 +318,13 @@ if __name__ == "__main__":
         output_dict[f'{sensitivity_param["param_name"]}_{param_value}'] = optim
 
     # Aggregate and compare outputs
+        
+    # Create output excel spreadsheet which includes sheets for each iteration
+        
+    # Save output_dict to a pickle file
+        
+    # Plot dispatch for largest system across iterations
+        
+    # See code from paper and mre work for aggregation analysis
+        
+    # Come up with comparison plots for key metrics (generator kWh can be a proxy for load not met without generator)

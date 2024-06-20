@@ -14,8 +14,11 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
+import warnings
 import matplotlib.pyplot as plt
-from utide import solve, reconstruct
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    from utide import solve, reconstruct
 from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
@@ -139,11 +142,13 @@ class TidalProfileGenerator:
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
 
         # TODO: modify this in the future to extrapolate any amount of data
-        coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
-
-        epoch_index = pd.date_range(
-            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year}', freq='H', tz=self.timezone)[:-1]
-        tide = reconstruct(epoch_index, coef, verbose=False)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            coef = solve(t = self.tidal_current.index, u = self.tidal_current['u'], v = self.tidal_current['v'], 
+                         lat=self.latitude, method="ols", conf_int="linear",verbose=False)
+            epoch_index = pd.date_range(
+                start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year}', freq='H', tz=self.timezone)[:-1]
+            tide = reconstruct(epoch_index, coef, verbose=False)
         self.tidal_epoch = pd.DataFrame()
         self.tidal_epoch['v_mag'] = (tide.u**2 + tide.v**2)**(0.5)
         self.tidal_epoch.index = epoch_index

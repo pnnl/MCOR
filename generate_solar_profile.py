@@ -223,6 +223,7 @@ class SolarProfileGenerator:
         self.advanced_inputs = advanced_inputs
         self.suppress_warnings = suppress_warnings
         self.wind_speed = None
+        self.start_datetimes = []
         self.solar_profiles = []
         self.temp_profiles = []
         self.power_profiles = []
@@ -341,6 +342,7 @@ class SolarProfileGenerator:
                     int(self.num_trials))))
 
         # Extract trial data
+        self.start_datetimes = []
         for i, solar_profile in enumerate(asp.solar_trials):
 
             # Recreate index with timezone
@@ -364,6 +366,9 @@ class SolarProfileGenerator:
                     start=solar_profile.index[0] + datetime.timedelta(hours=1),
                     periods=len(solar_profile), freq='H', tz=self.timezone)
 
+            # Add to start datetimes
+            self.start_datetimes += [solar_profile.index[0]]
+
             # Save to file
             solar_profile.to_csv(os.path.join(
                 SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
@@ -383,6 +388,7 @@ class SolarProfileGenerator:
 
         # For each solar and temperature profile, calculate PV production
         # Load the solar and temperature data from csv
+        self.start_datetimes = []
         for i in range(int(self.num_trials)):
             try:
                 solar = pd.read_csv(os.path.join(
@@ -435,6 +441,7 @@ class SolarProfileGenerator:
 
             self.solar_profiles += [solar]
             self.temp_profiles += [solar['temp'].to_frame(name='temp_celcius')]
+            self.start_datetimes += [solar.index[0]]
 
         # Read raw TMY file
         self.tmy_solar_profile = pd.read_csv(
