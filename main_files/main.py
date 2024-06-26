@@ -15,6 +15,7 @@ from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank
+from config import DATA_DIR
 
 
 def run_mcor(input_dict):
@@ -142,7 +143,7 @@ def run_mcor(input_dict):
                       include_mre=sizing_inputs['include_mre'])
 
     # Run all simulations
-    optim.run_sims_par()
+    optim.run_sims()
 
     # Filter and rank results
     optim.parse_results()
@@ -157,9 +158,6 @@ if __name__ == "__main__":
     ###########################################################################
     # Define simulation parameters here
     ###########################################################################
-
-    # Go back to main working directory
-    os.chdir('..')
 
     days_to_hours = 24
 
@@ -223,7 +221,7 @@ if __name__ == "__main__":
 
     # Load (in kW) dictionary
     input_dict['load_inputs'] = {
-        'annual_load_profile': pd.read_csv(os.path.join('data', 'sample_load_profile.csv'), 
+        'annual_load_profile': pd.read_csv(os.path.join(DATA_DIR, 'sample_load_profile.csv'), 
                                            index_col=0)['Load'],
         'off_grid_load_profile': None
     }
@@ -232,7 +230,8 @@ if __name__ == "__main__":
     input_dict['financial_inputs'] = {
         'utility_rate': 0.03263,                 # Utility rate in $/kWh dictionary
         'demand_rate': None,                     # Demand rate in $/kW (optional) dictionary
-        'system_costs': pd.read_excel('data/MCOR Prices.xlsx', sheet_name=None, index_col=0)
+        'system_costs': pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), 
+                                      sheet_name=None, index_col=0)
     }
 
     # Determine if asp multithreading should be used dictionary
