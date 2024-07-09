@@ -86,6 +86,7 @@ class TidalProfileGenerator:
     """
 
     def __init__(self, latitude, longitude, timezone, num_trials, length_trials, 
+                 tidal_inverter_efficiency, tidal_turbine_losses,
                  start_year=None, end_year=None, validate=True, advanced_inputs={}):
 
         # Assign parameters
@@ -94,6 +95,8 @@ class TidalProfileGenerator:
         self.timezone = timezone
         self.num_trials = num_trials
         self.length_trials = length_trials
+        self.tidal_inverter_efficiency = tidal_inverter_efficiency
+        self.tidal_turbine_losses = tidal_turbine_losses
         self.start_year = start_year
         self.end_year = end_year
         self.advanced_inputs = advanced_inputs
@@ -113,6 +116,8 @@ class TidalProfileGenerator:
                          'timezone': self.timezone,
                          'num_trials': self.num_trials,
                          'length_trials': self.length_trials,
+                         'tidal_inverter_efficiency': self.tidal_inverter_efficiency,
+                         'tidal_turbine_losses': self.tidal_turbine_losses,
                          'tpg_advanced_inputs': self.advanced_inputs}
             if start_year is not None:
                 args_dict['start_year'] = start_year
@@ -245,9 +250,9 @@ class TidalProfileGenerator:
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_inverter_efficiency'],
+                self.tidal_inverter_efficiency,
                 self.advanced_inputs['maximum_cp'],
-                self.advanced_inputs['tidal_turbine_losses'],
+                self.tidal_turbine_losses,
                 self.advanced_inputs['tidal_cut_in_velocity'],
                 self.advanced_inputs['tidal_cut_out_velocity'])]
             
@@ -259,9 +264,9 @@ class TidalProfileGenerator:
                 self.advanced_inputs['tidal_turbine_rated_power'],
                 self.advanced_inputs['tidal_rotor_radius'],
                 self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_inverter_efficiency'],
+                self.tidal_inverter_efficiency,
                 self.advanced_inputs['maximum_cp'],
-                self.advanced_inputs['tidal_turbine_losses'],
+                self.tidal_turbine_losses,
                 self.advanced_inputs['tidal_cut_in_velocity'],
                 self.advanced_inputs['tidal_cut_out_velocity'])
 

@@ -3,12 +3,17 @@
 Runs a sensitivity analysis with MCOR, varying one or more input parameters.
 """
 import os
+import pickle
+import json
 import pandas as pd
-from main_files.main import run_mcor
+import matplotlib.pyplot as plt
+import seaborn as sns
 from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
 from config import DATA_DIR
+from config import OUTPUT_DIR
+
 
 # Parameters that require re-running resource models
 GET_SOLAR_DATA_PARAMS = ['latitude', 'longitude']
@@ -19,7 +24,7 @@ GET_TIDAL_PROFILE_PARAMS = ['latitude', 'longitude', 'timezone', 'start_year', '
 ALLOWED_SENSITIVITY_PARAMS = ['latitude', 'longitude', 'timezone', 'num_trials', 'length_trials', 
                              'start_datetimes', 'dispatch_strategy', 'size_resources_based_on_tmy', 
                              're_constraints', 'tilt', 'azimuth', 'pv_racking', 'pv_tracking',
-                             'tidal_inverter_efficiency', 'tidal_turbine_losses', 
+                             'tidal_inverter_efficiency', 'tidal_turbine_losses', 'depth',
                              'battery_power_to_energy', 'initial_soc', 'one_way_battery_efficiency',
                              'one_way_inverter_efficiency', 'soc_upper_limit', 'soc_lower_limit',
                              'batt_sizing_method', 'percent_at_night']
@@ -40,6 +45,7 @@ def create_spg_object(system_inputs, pv_inputs, warning_inputs, multithreading_i
 def create_tpg_object(system_inputs, data_start_year, data_end_year, mre_inputs):
     tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
+                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'],
                                     data_start_year, data_end_year, advanced_inputs=mre_inputs)
     tpg.get_tidal_data_from_upload()
     return tpg
@@ -120,18 +126,58 @@ def run_mcor_iteration(spg, tpg, input_dict):
     optim.define_grid(include_pv=input_dict['sizing_inputs']['include_pv'],
                       include_batt=input_dict['sizing_inputs']['include_batt'],
                       include_mre=input_dict['sizing_inputs']['include_mre'])
-    optim.run_sims_par()
+    optim.run_sims()
     optim.parse_results()
     return optim, spg, tpg
 
-def plot_comparison_graphs():
-    pass
+def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, system_label, sim_label):
+    '''
+    Plot comparison graph across iterations and systems
 
-def save_comparison_table():
-    pass
+    Parameters
+    ----------
 
-def save_comparison_json():
-    pass
+    output_dict: dictionary of Optimizer objects
+    sensitivity_param: dictionary with info on sensitivity param
+    comparison_param: name of parameter to be compared across iterations. Must be the name of a column from the Optimizer results_grid.
+    system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+    sim_label: indicates which simulation to reference, options include: [avg, max, min, distribution]
+
+    '''
+
+    # Get comparison param across iterations
+    comparison_data = {}
+    for iter_name, iter_data in output_dict.items():
+        iter_val = iter_name.split('_')[-1]
+        comparison_data[iter_val] = iter_data.get_param_value(comparison_param, system_label, sim_label)
+        if comparison_data[iter_val] is None:
+            print('Not able to plot metrics, check inputs')
+            return
+
+    # Plot comparison param across iterations
+    plt.figure()
+    # If single value
+    if sim_label in ['avg', 'max', 'min']:
+        sns.scatterplot(comparison_data)
+        plt.xlabel(sensitivity_param['param_name'])
+        plt.ylabel(comparison_param)
+
+    # If distribution
+    if sim_label == 'distribution':
+        sns.boxplot(comparison_data)
+        plt.xlabel(sensitivity_param['param_name'])
+        plt.ylabel(comparison_param)
+
+def save_comparison_json(output_dict, sensitivity_param, comparison_param, system_label, sim_label):
+    # Get comparison param across iterations
+    comparison_data = {}
+    for iter_name, iter_data in output_dict.items():
+        comparison_data[iter_name] = iter_data.get_param_value(comparison_param, system_label, sim_label)
+        if comparison_data[iter_name] is None:
+            print('Not able to save metrics, check inputs')
+            return
+    with open(os.path.join(OUTPUT_DIR, f'{sensitivity_param["param_name"]}_{comparison_param}_{system_label}_system_{sim_label}_sim_comparison.json'), 'w') as f:
+        json.dump(comparison_data, f)
 
 
 if __name__ == "__main__":
@@ -311,6 +357,13 @@ if __name__ == "__main__":
                 start_datetimes = input_dict['system_inputs']['start_datetimes']
             tpg = build_mre_model(tpg, start_datetimes)
 
+        # Even if the resource models don't need to be re-generated, update with the new param if
+        #   applicable
+        if spg is not None and sensitivity_param['param_category'] == 'pv_inputs':
+            spg.__setattr__(sensitivity_param['param_name'], param_value)
+        if tpg is not None and sensitivity_param['param_category'] == 'mre_inputs':
+            tpg.__setattr__(sensitivity_param['param_name'], param_value)
+            
         # Run simulation
         optim, spg, tpg = run_mcor_iteration(spg, tpg, input_dict)
 
@@ -318,13 +371,29 @@ if __name__ == "__main__":
         output_dict[f'{sensitivity_param["param_name"]}_{param_value}'] = optim
 
     # Aggregate and compare outputs
-        
     # Create output excel spreadsheet which includes sheets for each iteration
+    save_filename = 'sensitivity_run'
+    optim.save_results_to_file(spg, tpg, filename=save_filename, sensitivity_data=output_dict)
         
     # Save output_dict to a pickle file
+    pickle.dump(output_dict, open(os.path.join(OUTPUT_DIR, f'{save_filename}.pkl'), 'wb'))
+
+    # Plot dispatch for across iterations
+    for iter_name, iter_optim in output_dict.items():
+        print(iter_name)
+        iter_optim.plot_best_system()
         
-    # Plot dispatch for largest system across iterations
-        
-    # See code from paper and mre work for aggregation analysis
-        
-    # Come up with comparison plots for key metrics (generator kWh can be a proxy for load not met without generator)
+    #   Plot comparison of specific params across iterations and systems, either avg of systems or specific ones, e.g. system with least fuel
+    #   Inputs: 
+    #   comparison metric: ['pv_capacity', 'mre_capacity', 'battery_capacity', 'battery_power', 
+    #   'generator_power_kW', 'fuel_tank_size_gal', 'pv_area_ft2', 'mre_area_ft2', 
+    #   'capital_cost_usd', 'pv_capital', 'mre_capital', 'battery_capital', 'generator_capital',
+    #   'fuel_tank_capital', 'pv_o&m', 'mre_o&m', 'battery_o&m', 'generator_o&m',
+    #   'annual_benefits_usd', 'demand_benefits_usd', 'simple_payback_yr', 'pv_avg_load', 
+    #   'pv_peak_load', 'mre_avg_load', 'mre_peak_load', 'gen_avg_load', 'gen_peak_load', 
+    #   'batt_avg_load', 'batt_peak_load', 'pv_percent', 'mre_percent', 'batt_percent', 
+    #   'gen_percent', 'fuel_used_gal']
+    #   system label: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+    #   sim label: [avg, min, max, distribution]
+    plot_comparison_graphs(output_dict, sensitivity_param, 'gen_total_load', 'least_fuel', 'avg')
+    save_comparison_json(output_dict, sensitivity_param, 'gen_total_load', 'least_fuel', 'avg')

@@ -17,6 +17,7 @@ File contents:
 import json
 import multiprocessing
 import os
+import sys
 import urllib
 import copy
 
@@ -34,6 +35,7 @@ from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogri
 from validation import validate_all_parameters, log_error, annual_load_profile_warnings
 from constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
     generator_metrics, re_metrics, metric_order
+from config import OUTPUT_DIR
 
 
 class Optimizer:
@@ -1124,7 +1126,7 @@ class GridSearchOptimizer(Optimizer):
                            'fuel_used_gal': [], 'generator_power_kW': [],
                            'pv_avg_load': [], 'pv_peak_load': [],
                            'mre_avg_load': [], 'mre_peak_load': [],
-                           'gen_avg_load': [], 'gen_peak_load': [],
+                           'gen_avg_load': [], 'gen_peak_load': [], 'gen_total_load': [],
                            'batt_avg_load': [], 'batt_peak_load': []}
 
         # For each resource profile, create a simulator object
@@ -1194,6 +1196,8 @@ class GridSearchOptimizer(Optimizer):
                 [simulation.get_gen_avg()]
             results_summary['gen_peak_load'] += \
                 [simulation.get_gen_peak()]
+            results_summary['gen_total_load'] += \
+                [simulation.get_gen_total()]
             results_summary['batt_avg_load'] += \
                 [simulation.get_batt_avg()]
             results_summary['batt_peak_load'] += \
@@ -1497,6 +1501,56 @@ class GridSearchOptimizer(Optimizer):
                     system.components['generator'].rated_power))
                 plt.tight_layout()
 
+    def get_param_value(self, comparison_param, system_label, sim_label):
+        """ Get a parameter value across systems and simulations for plotting or comparison. 
+
+        Parameters
+        ----------
+        comparison_param: name of parameter to be compared across iterations. Must be the name of a column from the Optimizer results_grid.
+        system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+        sim_label: indicates which simulation to reference, options include: [avg, max, min, distribution]
+
+        """
+
+        # Filter results grid to get appropriate system
+        if system_label == 'least_fuel':
+            system_row = self.results_grid.sort_values('fuel_used_gal mean').iloc[0]
+        elif system_label == 'least_cost':
+            system_row = self.results_grid.sort_values('capital_cost_usd').iloc[0]
+        elif system_label == 'pv_only':
+            system_row = self.results_grid[(self.results_grid['pv_capacity'] > 0) & (self.results_grid['mre_capacity'] == 0)].iloc[0]
+        elif system_label == 'mre_only':
+            system_row = self.results_grid[(self.results_grid['mre_capacity'] > 0) & (self.results_grid['pv_capacity'] == 0)].iloc[0]
+        elif system_label == 'most_diversified':
+            system_row = self.results_grid[(self.results_grid['pv_percent mean'] > 0 & self.results_grid['mre_percent mean'] > 0)].sort_values('gen_percent mean', ascending=True).iloc[0]
+        if not len(system_row):
+            print('A system with those requirements was not found.')
+            return
+        
+        # If param already in system row, grab from system row and return
+        if comparison_param in system_row:
+            return system_row[comparison_param]
+        elif sim_label == 'avg' and f'{comparison_param} mean' in system_row:
+            return system_row[f'{comparison_param} mean']
+        elif sim_label == 'max' and f'{comparison_param} max' in system_row:
+            return system_row[f'{comparison_param} max']
+            
+        # Get appropriate system object
+        system_name = 'pv_{:.1f}kW_tidal_{:.1f}kW_batt_{:.1f}kW_{:.1f}kWh'.format(
+            system_row['pv_capacity'], system_row['mre_capacity'], system_row['battery_power'], 
+            system_row['battery_capacity'])
+        s = self.get_system(system_name)
+
+        # Return avg, max, min or list across simulations
+        if sim_label == 'avg':
+            return np.mean(s.outputs[comparison_param])
+        elif sim_label == 'max':
+            return np.max(s.outputs[comparison_param])
+        elif sim_label == 'min':
+            return np.min(s.outputs[comparison_param])
+        elif sim_label == 'distribution':
+            return s.outputs[comparison_param]
+        
     def add_system(self, new_system, validate=True):
         """  Add a specific system to the input list """
 
@@ -1640,7 +1694,7 @@ class GridSearchOptimizer(Optimizer):
 
         return inputs, assumptions
 
-    def save_results_to_file(self, spg, tpg, filename='simulation_results'):
+    def save_results_to_file(self, spg, tpg, filename='simulation_results', sensitivity_data=None):
         """
             Saves inputs, assumptions and results to an excel file.
 
@@ -1648,9 +1702,10 @@ class GridSearchOptimizer(Optimizer):
             ----------
             spg: SolarProfileGenerator object
             tpg: TidalProfileGenerator object
-
             filename: filename for results spreadsheet, without an
                 extension
+            sensitivity_data: dictionary containing a set of Optimizer objects. If set to None, no sensitivity study will be performed
+
 
         """
 
@@ -1658,68 +1713,37 @@ class GridSearchOptimizer(Optimizer):
         inputs, assumptions = self.format_inputs(spg, tpg)
 
         # Parse results if not already done
-        if self.results_grid is None:
-            self.parse_results()
+        if sensitivity_data is None:
+            if self.results_grid is None:
+                self.parse_results()
 
-        # Re-format column and index names
-        format_results = self.results_grid.copy(deep=True)
-
-        # Re-order columns
-        metric_order_local = copy.deepcopy(metric_order)
-        if not self.pv_params:
-            metric_order_local = [elem for elem in metric_order_local if 'pv' not in elem]
-        if not self.mre_params:
-            metric_order_local = [elem for elem in metric_order_local if 'mre' not in elem]
-        format_results = format_results[metric_order_local]
-
-        # Add units
-        merged_metric_dict = {**system_metrics, **re_metrics, **pv_metrics,  **mre_metrics, **battery_metrics,
-                              **generator_metrics}   
-        format_results.loc['units'] = [merged_metric_dict[col_name]['units'] for col_name in format_results.columns]
-        
         # Create workbook
-        writer = pd.ExcelWriter('output/{}.xlsx'.format(filename),
+        writer = pd.ExcelWriter(os.path.join(OUTPUT_DIR, '{}.xlsx'.format(filename)),
                                 engine='xlsxwriter')
         workbook = writer.book
 
         # Create formatting
-        bold_bottomborder = workbook.add_format({'bold': True, 'bottom': True,
-                                                 'align': 'center'})
-        bold = workbook.add_format({'bold': True, 'border': 0})
-        index_format = workbook.add_format({'align': 'left', 'border': 0,
-                                            'bold': False})
         data_formats = {}
+        data_formats['bold_bottomborder'] = workbook.add_format({'bold': True, 'bottom': True,
+                                                 'align': 'center'})
+        data_formats['bold'] = workbook.add_format({'bold': True, 'border': 0})
+        data_formats['index_format'] = workbook.add_format({'align': 'left', 'border': 0,
+                                            'bold': False})
         data_formats['dollars'] = workbook.add_format({'num_format': '$#,##0'})
         data_formats['one_fp'] = workbook.add_format({'num_format': '0.0'})
         data_formats['no_fp'] = workbook.add_format({'num_format': 0x01})
         data_formats['perc'] = workbook.add_format({'num_format': 0x01})
 
-        # Determine format for each column
-        formats = [data_formats[merged_metric_dict[col_name]['format']] for col_name in format_results.columns]
-
-        # Rename columns
-        format_results.rename(columns=
-            {col_name: merged_metric_dict[col_name]['display_name'] 
-             for col_name in format_results.columns},
-             inplace=True)
-        format_results.columns = [col.replace('_', ' ').capitalize()
-                                  for col in format_results.columns]
-        format_results["temp"] = range(1, len(format_results) + 1)
-        format_results.loc['units', 'temp'] = 0
-        format_results = format_results.sort_values("temp").drop('temp', axis=1)
-
         # Write results sheet
-        format_results.reset_index(drop=True).to_excel(writer,
-                                                       sheet_name='Results',
-                                                       index=False)
-        results_sheet = writer.sheets['Results']
-
-        # Format results sheet
-        results_sheet.set_row(0, None, bold)
-        results_sheet.set_row(1, None, bold_bottomborder)
-        for i, formatting in enumerate(formats):
-            results_sheet.set_column(i, i, len(format_results.columns[i]),
-                                     formatting)
+        if sensitivity_data is not None:
+            for iter_name, iter in sensitivity_data.items():
+                format_results = iter.results_grid.copy(deep=True)
+                sheet_name = iter_name
+                self.write_results_sheet(format_results, data_formats, writer, sheet_name)
+        else:
+            format_results = self.results_grid.copy(deep=True)
+            sheet_name = 'Results'
+            self.write_results_sheet(format_results, data_formats, writer, sheet_name)
 
         # Write load profile sheet
         if self.off_grid_load_profile is None:
@@ -1760,70 +1784,117 @@ class GridSearchOptimizer(Optimizer):
                                                   sheet_name='Input Variables',
                                                   index=False)
         inputs_sheet = writer.sheets['Input Variables']
-        inputs_sheet.write(0, 0, 'Location', bold_bottomborder)
-        inputs_sheet.write(0, 1, '', bold_bottomborder)
+        inputs_sheet.write(0, 0, 'Location', data_formats['bold_bottomborder'])
+        inputs_sheet.write(0, 1, '', data_formats['bold_bottomborder'])
 
         # Simulation variables
         inputs['Simulation Info'].reset_index().to_excel(
             writer, sheet_name='Input Variables', startrow=6, index=False)
-        inputs_sheet.write(6, 0, 'Simulation Info', bold_bottomborder)
-        inputs_sheet.write(6, 1, '', bold_bottomborder)
+        inputs_sheet.write(6, 0, 'Simulation Info', data_formats['bold_bottomborder'])
+        inputs_sheet.write(6, 1, '', data_formats['bold_bottomborder'])
 
         # PV variables
         if self.pv_params:
             inputs['PV System'].reset_index().to_excel(
                 writer, sheet_name='Input Variables', startrow=12, index=False)
-            inputs_sheet.write(12, 0, 'PV System', bold_bottomborder)
-            inputs_sheet.write(12, 1, '', bold_bottomborder)
+            inputs_sheet.write(12, 0, 'PV System', data_formats['bold_bottomborder'])
+            inputs_sheet.write(12, 1, '', data_formats['bold_bottomborder'])
 
         # MRE variables
         if self.mre_params:
             inputs['MRE System'].reset_index().to_excel(
                 writer, sheet_name='Input Variables', startrow=19, index=False)
-            inputs_sheet.write(19, 0, 'MRE System', bold_bottomborder)
-            inputs_sheet.write(19, 1, '', bold_bottomborder)
+            inputs_sheet.write(19, 0, 'MRE System', data_formats['bold_bottomborder'])
+            inputs_sheet.write(19, 1, '', data_formats['bold_bottomborder'])
 
         # Battery variables
         inputs['Battery System'].reset_index().to_excel(
             writer, sheet_name='Input Variables', startrow=24, index=False)
-        inputs_sheet.write(24, 0, 'Battery System', bold_bottomborder)
-        inputs_sheet.write(24, 1, '', bold_bottomborder)
+        inputs_sheet.write(24, 0, 'Battery System', data_formats['bold_bottomborder'])
+        inputs_sheet.write(24, 1, '', data_formats['bold_bottomborder'])
 
         # Existing equipment variables
         inputs['Existing Equipment'].reset_index().to_excel(
             writer, sheet_name='Input Variables', startrow=33, index=False)
-        inputs_sheet.write(33, 0, 'Existing Equipment', bold_bottomborder)
-        inputs_sheet.write(33, 1, '', bold_bottomborder)
-        inputs_sheet.set_column(0, 1, 30, index_format)
+        inputs_sheet.write(33, 0, 'Existing Equipment', data_formats['bold_bottomborder'])
+        inputs_sheet.write(33, 1, '', data_formats['bold_bottomborder'])
+        inputs_sheet.set_column(0, 1, 30, data_formats['index_format'])
 
         # Write assumptions sheet
         assumptions['Cost'].reset_index().to_excel(
             writer, sheet_name='Assumptions', index=False)
         assumptions_sheet = writer.sheets['Assumptions']
-        assumptions_sheet.write(0, 0, 'Costs', bold_bottomborder)
-        assumptions_sheet.write(0, 1, '', bold_bottomborder)
+        assumptions_sheet.write(0, 0, 'Costs', data_formats['bold_bottomborder'])
+        assumptions_sheet.write(0, 1, '', data_formats['bold_bottomborder'])
         if self.pv_params:
             assumptions['PV System'].reset_index().to_excel(
                 writer, sheet_name='Assumptions', startrow=5, index=False)
-            assumptions_sheet.write(5, 0, 'PV System', bold_bottomborder)
-            assumptions_sheet.write(5, 1, '', bold_bottomborder)
+            assumptions_sheet.write(5, 0, 'PV System', data_formats['bold_bottomborder'])
+            assumptions_sheet.write(5, 1, '', data_formats['bold_bottomborder'])
         if self.mre_params:
             assumptions['MRE System'].reset_index().to_excel(
                 writer, sheet_name='Assumptions', startrow=10, index=False)
             assumptions_sheet = writer.sheets['Assumptions']      
-            assumptions_sheet.write(10, 0, 'MRE System', bold_bottomborder)
-            assumptions_sheet.write(10, 1, '', bold_bottomborder)
+            assumptions_sheet.write(10, 0, 'MRE System', data_formats['bold_bottomborder'])
+            assumptions_sheet.write(10, 1, '', data_formats['bold_bottomborder'])
         assumptions['Generator'].reset_index().to_excel(
             writer, sheet_name='Assumptions', startrow=17, index=False)
-        assumptions_sheet.write(17, 0, 'Generator', bold_bottomborder)
-        assumptions_sheet.write(17, 1, '', bold_bottomborder)
-        assumptions_sheet.set_column(0, 1, 30, index_format)
+        assumptions_sheet.write(17, 0, 'Generator', data_formats['bold_bottomborder'])
+        assumptions_sheet.write(17, 1, '', data_formats['bold_bottomborder'])
+        assumptions_sheet.set_column(0, 1, 30, data_formats['index_format'])
 
         writer.close()
 
         # Also output results to json
-        with open('output/{}_scalar_outputs.json'.format(filename), 'w') as f:
-            json.dump(self.results_grid.to_dict(orient='index'), f, indent=2)
+        if sensitivity_data is not None:
+            combined_dict = {iter_name: iter_data.results_grid.to_dict(orient='index')
+                             for iter_name, iter_data in sensitivity_data.items()}
+            with open(os.path.join(OUTPUT_DIR,'{}_scalar_outputs.json'.format(filename)), 'w') as f:
+                json.dump(combined_dict, f, indent=2)
+        else:
+            with open(os.path.join(OUTPUT_DIR,'{}_scalar_outputs.json'.format(filename)), 'w') as f:
+                json.dump(self.results_grid.to_dict(orient='index'), f, indent=2)
+
+    def write_results_sheet(self, format_results, data_formats, writer, sheet_name):
+        # Re-order columns
+        metric_order_local = copy.deepcopy(metric_order)
+        if not self.pv_params:
+            metric_order_local = [elem for elem in metric_order_local if 'pv' not in elem]
+        if not self.mre_params:
+            metric_order_local = [elem for elem in metric_order_local if 'mre' not in elem]
+        format_results = format_results[metric_order_local]
+
+        # Add units
+        merged_metric_dict = {**system_metrics, **re_metrics, **pv_metrics,  **mre_metrics, **battery_metrics,
+                              **generator_metrics}   
+        format_results.loc['units'] = [merged_metric_dict[col_name]['units'] for col_name in format_results.columns]
+        
+        # Determine format for each column
+        formats = [data_formats[merged_metric_dict[col_name]['format']] for col_name in format_results.columns]
+
+        # Rename columns
+        format_results.rename(columns=
+            {col_name: merged_metric_dict[col_name]['display_name'] 
+             for col_name in format_results.columns},
+             inplace=True)
+        format_results.columns = [col.replace('_', ' ').capitalize()
+                                  for col in format_results.columns]
+        format_results["temp"] = range(1, len(format_results) + 1)
+        format_results.loc['units', 'temp'] = 0
+        format_results = format_results.sort_values("temp").drop('temp', axis=1)
+
+        # Write results sheet
+        format_results.reset_index(drop=True).to_excel(writer,
+                                                       sheet_name=sheet_name,
+                                                       index=False)
+        results_sheet = writer.sheets[sheet_name]
+
+        # Format results sheet
+        results_sheet.set_row(0, None, data_formats['bold'])
+        results_sheet.set_row(1, None, data_formats['bold_bottomborder'])
+        for i, formatting in enumerate(formats):
+            results_sheet.set_column(i, i, len(format_results.columns[i]),
+                                     formatting)
 
     def save_timeseries_to_json(self, filename='simulation_results'):
         # Parse time series outputs from dispatch dataframes
@@ -1844,7 +1915,7 @@ class GridSearchOptimizer(Optimizer):
                 df_dict = df.to_dict(orient='list')
                 ts_outputs[system_name] += [df_dict]
 
-        with open('output/{}_timeseries.json'.format(filename), 'w') as f:
+        with open(os.path.join(OUTPUT_DIR, '{}_timeseries.json'.format(filename)), 'w') as f:
             json.dump(ts_outputs, f, indent=2)
 
     def plot_compare_metrics(self, x_var='simple_payback_yr',

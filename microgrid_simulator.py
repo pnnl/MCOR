@@ -143,6 +143,8 @@ class REBattGenSimulator(Simulator):
 
         get_gen_peak: Returns max power generator production
 
+        get_gen_total: Returns total generator production
+
         get_batt_avg: Returns mean power of battery power supplied to system (excluding 0's and negative values)
 
         get_batt_peak: Returns max power of battery power supplied to system
@@ -569,6 +571,13 @@ class REBattGenSimulator(Simulator):
 
     def get_gen_peak(self):
         return self.dispatch_df['load_not_met'].max()
+    
+    def get_gen_total(self):
+        non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_not_met'] != 0]
+        if len(non_zero_gen_power) > 0:
+            return non_zero_gen_power['load_not_met'].sum()
+        else:
+            return 0
 
     def get_batt_avg(self):
         greater_than_zero_batt_power = self.dispatch_df[self.dispatch_df['delta_battery_power'] > 0]

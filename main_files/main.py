@@ -16,6 +16,7 @@ from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank
 from config import DATA_DIR
+from config import OUTPUT_DIR
 
 
 def run_mcor(input_dict):
@@ -82,6 +83,7 @@ def run_mcor(input_dict):
         # Set MRE params
         tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
                                     float(system_inputs['num_trials']), float(system_inputs['length_trials']),
+                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'],
                                     mre_data_start_year, mre_data_end_year,
                                     advanced_inputs=mre_inputs)
         tpg.get_tidal_data_from_upload()
@@ -306,7 +308,7 @@ if __name__ == "__main__":
 
     # Save results
     optim.save_results_to_file(spg, tpg, save_filename)
-    pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
+    pickle.dump(optim, open(os.path.join(OUTPUT_DIR, '{}.pkl'.format(save_filename)), 'wb'))
 
     if input_dict['output_inputs']['save_timeseries_json']:
         optim.save_timeseries_to_json(save_filename)
