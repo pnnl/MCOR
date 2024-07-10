@@ -1501,7 +1501,7 @@ class GridSearchOptimizer(Optimizer):
                     system.components['generator'].rated_power))
                 plt.tight_layout()
 
-    def get_param_value(self, comparison_param, system_label, sim_label):
+    def get_param_value(self, comparison_param, system_label, sim_label, validate=True):
         """ Get a parameter value across systems and simulations for plotting or comparison. 
 
         Parameters
@@ -1512,18 +1512,29 @@ class GridSearchOptimizer(Optimizer):
 
         """
 
+        if validate:
+            # List of initialized parameters to validate
+            args_dict = {'comparison_param': comparison_param,
+                         'system_label': system_label,
+                         'sim_label': sim_label}
+
+            # Validate input parameters
+            validate_all_parameters(args_dict)
+
         # Filter results grid to get appropriate system
         if system_label == 'least_fuel':
-            system_row = self.results_grid.sort_values('fuel_used_gal mean').iloc[0]
+            system_row = self.results_grid.sort_values('fuel_used_gal mean')
         elif system_label == 'least_cost':
-            system_row = self.results_grid.sort_values('capital_cost_usd').iloc[0]
+            system_row = self.results_grid.sort_values('capital_cost_usd')
         elif system_label == 'pv_only':
-            system_row = self.results_grid[(self.results_grid['pv_capacity'] > 0) & (self.results_grid['mre_capacity'] == 0)].iloc[0]
+            system_row = self.results_grid[(self.results_grid['pv_capacity'] > 0) & (self.results_grid['mre_capacity'] == 0)]
         elif system_label == 'mre_only':
-            system_row = self.results_grid[(self.results_grid['mre_capacity'] > 0) & (self.results_grid['pv_capacity'] == 0)].iloc[0]
+            system_row = self.results_grid[(self.results_grid['mre_capacity'] > 0) & (self.results_grid['pv_capacity'] == 0)]
         elif system_label == 'most_diversified':
-            system_row = self.results_grid[(self.results_grid['pv_percent mean'] > 0 & self.results_grid['mre_percent mean'] > 0)].sort_values('gen_percent mean', ascending=True).iloc[0]
-        if not len(system_row):
+            system_row = self.results_grid[(self.results_grid['pv_percent mean'] > 0) & (self.results_grid['mre_percent mean'] > 0)].sort_values('gen_percent mean', ascending=True)
+        if len(system_row):
+            system_row = system_row.iloc[0]
+        else:
             print('A system with those requirements was not found.')
             return
         

@@ -6,6 +6,7 @@ import os
 import pickle
 import json
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from generate_solar_profile import SolarProfileGenerator
@@ -151,8 +152,7 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
         iter_val = iter_name.split('_')[-1]
         comparison_data[iter_val] = iter_data.get_param_value(comparison_param, system_label, sim_label)
         if comparison_data[iter_val] is None:
-            print('Not able to plot metrics, check inputs')
-            return
+            comparison_data[iter_val] = np.nan
 
     # Plot comparison param across iterations
     plt.figure()
@@ -379,9 +379,9 @@ if __name__ == "__main__":
     pickle.dump(output_dict, open(os.path.join(OUTPUT_DIR, f'{save_filename}.pkl'), 'wb'))
 
     # Plot dispatch for across iterations
-    for iter_name, iter_optim in output_dict.items():
-        print(iter_name)
-        iter_optim.plot_best_system()
+    # for iter_name, iter_optim in output_dict.items():
+    #     print(iter_name)
+    #     iter_optim.plot_best_system()
         
     #   Plot comparison of specific params across iterations and systems, either avg of systems or specific ones, e.g. system with least fuel
     #   Inputs: 
@@ -395,5 +395,5 @@ if __name__ == "__main__":
     #   'gen_percent', 'fuel_used_gal']
     #   system label: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
     #   sim label: [avg, min, max, distribution]
-    plot_comparison_graphs(output_dict, sensitivity_param, 'gen_total_load', 'least_fuel', 'avg')
+    plot_comparison_graphs(output_dict, sensitivity_param, 'gen_total_load', 'most_diversified', 'avg')
     save_comparison_json(output_dict, sensitivity_param, 'gen_total_load', 'least_fuel', 'avg')
