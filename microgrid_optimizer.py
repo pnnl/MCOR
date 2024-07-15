@@ -104,6 +104,15 @@ class GridSearchOptimizer(Optimizer):
                     roof;fixed: 2.65, 1.56, 0.83
                     carport;fixed: 3.15, 1.86, 0.83
 
+            tidal_costs: cost of tidal turbines per project/device, with the
+                following columns:
+                Project/Device Name
+                Rated Power (kW)
+                Turbine Count
+                Rotor Diameter (m)
+                Rotors per Turbine
+                Cost (USD)
+
             om_costs: operations and maintenance costs for the following
                 components:
                 Generator ($/kW-yr): scalar - 102.65, exponent - 0.669
@@ -710,6 +719,7 @@ class GridSearchOptimizer(Optimizer):
             if self.mre_params['generator_type'] == 'tidal':
                 mre = Tidal('mre' in self.existing_components, mre_size,
                         self.mre_params['generator_capacity'],
+                        self.mre_params['device_name'],
                         validate=False)
                 component_list += [mre]
                 system_name_list += ['tidal_{:.1f}kW'.format(mre_size)]
@@ -1989,8 +1999,9 @@ if __name__ == "__main__":
     start_datetimes = [profile.index[0] for profile in spg.power_profiles]
 
     # Set up tidal profiles
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials,
-        start_year=1998, end_year=2022)
+    tpg = TidalProfileGenerator(marine_data_filename='PortAngeles_2015_alldepths.csv', latitude = 46.34, longitude =-119.28, timezone = 'US/Pacific', num_trials = 5, length_trials = 14, tidal_turbine_rated_power = 550,
+                  depth = 10, tidal_rotor_radius = 10, tidal_rotor_number = 2, maximum_cp = 0.42, tidal_cut_in_velocity = 0.5,
+                  tidal_cut_out_velocity = 3, tidal_inverter_efficiency = 0.9, tidal_turbine_losses = 10, start_year=1998, end_year=2022)
     tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
     tpg.generate_tidal_profiles(start_datetimes)

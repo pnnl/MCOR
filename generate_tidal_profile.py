@@ -83,27 +83,36 @@ class TidalProfileGenerator:
 
     """
 
-    def __init__(self, latitude, longitude, timezone, num_trials, length_trials, depth,
-                 start_year=None, end_year=None, validate=True, advanced_inputs={}):
+    def __init__(self, marine_data_filename, latitude, longitude, timezone, num_trials, length_trials, tidal_turbine_rated_power, depth,
+                 tidal_rotor_radius, tidal_rotor_number, maximum_cp,tidal_cut_in_velocity, tidal_cut_out_velocity, tidal_inverter_efficiency,
+                 tidal_turbine_losses, start_year=None, end_year=None, validate=True):
 
         # Assign parameters
+        self.marine_data_filename = marine_data_filename
         self.latitude = latitude
         self.longitude = longitude
         self.timezone = timezone
         self.num_trials = num_trials
         self.length_trials = length_trials
+        self.tidal_turbine_rated_power = tidal_turbine_rated_power
         self.depth = depth
+        self.tidal_rotor_radius = tidal_rotor_radius
+        self.tidal_rotor_number = tidal_rotor_number
+        self.maximum_cp = maximum_cp
+        self.tidal_cut_in_velocity = tidal_cut_in_velocity
+        self.tidal_cut_out_velocity = tidal_cut_out_velocity
+        self.tidal_inverter_efficiency = tidal_inverter_efficiency
+        self.tidal_turbine_losses = tidal_turbine_losses
         self.start_year = start_year
         self.end_year = end_year
-        self.advanced_inputs = advanced_inputs
         self.tidal_profiles = []
         self.power_profiles = []
         self.tmy_tidal = None
 
-        # Add TIDAL_DEFAULTS to advanced inputs if not already included
-        for key in TIDAL_DEFAULTS:
-            if key not in self.advanced_inputs:
-                self.advanced_inputs[key] = TIDAL_DEFAULTS[key]
+        # # Add TIDAL_DEFAULTS to advanced inputs if not already included
+        # for key in TIDAL_DEFAULTS:
+        #     if key not in self.advanced_inputs:
+        #         self.advanced_inputs[key] = TIDAL_DEFAULTS[key]
 
         if validate:
             # List of initialized parameters to validate
@@ -111,8 +120,7 @@ class TidalProfileGenerator:
                          'longitude': self.longitude,
                          'timezone': self.timezone,
                          'num_trials': self.num_trials,
-                         'length_trials': self.length_trials,
-                         'tpg_advanced_inputs': self.advanced_inputs}
+                         'length_trials': self.length_trials}
             if start_year is not None:
                 args_dict['start_year'] = start_year
             if end_year is not None:
@@ -130,10 +138,8 @@ class TidalProfileGenerator:
     def get_tidal_data_from_upload(self):
         """Load tidal_current-specified tidal data"""
 
-        filedir = os.path.join(TIDAL_DATA_DIR, 'tidal_current')
-        file = os.listdir(filedir)
-        # read first (and only) file in directory
-        self.tidal_current = pd.read_csv(os.path.join(filedir, file[0]), header=0) # assuming one file
+        file = os.path.join(TIDAL_DATA_DIR, 'tidal_current', self.marine_data_filename)
+        self.tidal_current = pd.read_csv(file, header=0)
 
         # Find the closest depth
         def find_closest_depth(df, depth):
@@ -267,28 +273,28 @@ class TidalProfileGenerator:
             self.power_profiles += [calc_tidal_prod(
                 tidal,
                 self.timezone,
-                self.advanced_inputs['tidal_turbine_rated_power'],
-                self.advanced_inputs['tidal_rotor_radius'],
-                self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_inverter_efficiency'],
-                self.advanced_inputs['maximum_cp'],
-                self.advanced_inputs['tidal_turbine_losses'],
-                self.advanced_inputs['tidal_cut_in_velocity'],
-                self.advanced_inputs['tidal_cut_out_velocity'])]
+                self.tidal_turbine_rated_power,
+                self.tidal_rotor_radius,
+                self.tidal_rotor_number,
+                self.tidal_inverter_efficiency,
+                self.maximum_cp,
+                self.tidal_turbine_losses,
+                self.tidal_cut_in_velocity,
+                self.tidal_cut_out_velocity)]
             
         # Calculate power production for initial 1-year profile
         self.tidal_current['v_mag'] = self.tidal_current.apply(
             lambda x: (x['u']**2 + x['v']**2)**(0.5), axis=1)
         self.tmy_tidal = calc_tidal_prod(self.tidal_current, 
                 self.timezone,
-                self.advanced_inputs['tidal_turbine_rated_power'],
-                self.advanced_inputs['tidal_rotor_radius'],
-                self.advanced_inputs['tidal_rotor_number'],
-                self.advanced_inputs['tidal_inverter_efficiency'],
-                self.advanced_inputs['maximum_cp'],
-                self.advanced_inputs['tidal_turbine_losses'],
-                self.advanced_inputs['tidal_cut_in_velocity'],
-                self.advanced_inputs['tidal_cut_out_velocity'])
+                self.tidal_turbine_rated_power,
+                self.tidal_rotor_radius,
+                self.tidal_rotor_number,
+                self.tidal_inverter_efficiency,
+                self.maximum_cp,
+                self.tidal_turbine_losses,
+                self.tidal_cut_in_velocity,
+                self.tidal_cut_out_velocity)
 
     def tidal_checks(self):
         """ Several checks to  make sure the tidal profiles look OK. """
@@ -369,10 +375,14 @@ def calc_tidal_prod(tidal_profile, timezone,
 if __name__ == "__main__":
     # Used for testing
     # Create a TidalProfileGenerator object
+    marine_data_filename = 'PortAngeles_2015_alldepths.csv'
     latitude = 46.34
     longitude = -119.28
     timezone = 'US/Pacific'
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials= 5, length_trials= 14, depth = 10, validate=True)
+    tpg = TidalProfileGenerator(marine_data_filename, latitude, longitude, timezone, tidal_turbine_rated_power = 550,
+                  depth = 10, tidal_rotor_radius = 10, tidal_rotor_number = 2, maximum_cp = 0.42, tidal_cut_in_velocity = 0.5,
+                  tidal_cut_out_velocity = 3, tidal_inverter_efficiency = 0.9, tidal_turbine_losses = 10, num_trials= 5,
+                  length_trials= 14, validate=True)
 
     tpg.get_tidal_data_from_upload()
     print('uploaded data')

@@ -79,10 +79,11 @@ def run_mcor(input_dict):
     if 'mre' in system_inputs['renewable_resources'] and mre_inputs['generator_type'] == 'tidal':
         # Run get_tidal_profile
         # Set MRE params
-        tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
-                                    float(system_inputs['num_trials']), float(system_inputs['length_trials']), float(mre_inputs['depth']),
-                                    mre_data_start_year, mre_data_end_year,
-                                    advanced_inputs=mre_inputs)
+        tpg = TidalProfileGenerator(mre_inputs['marine_data_filename'], system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],float(system_inputs['num_trials']),
+                                    float(system_inputs['length_trials']), mre_inputs['tidal_turbine_rated_power'], float(mre_inputs['depth']), mre_inputs['tidal_rotor_radius'],
+                                    mre_inputs['tidal_rotor_number'], mre_inputs['maximum_cp'], mre_inputs['tidal_cut_in_velocity'], mre_inputs['tidal_cut_out_velocity'],
+                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'])
+
         tpg.get_tidal_data_from_upload()
         tpg.extrapolate_tidal_epoch()
         if mre_inputs['get_tidal_profiles']:
@@ -142,7 +143,7 @@ def run_mcor(input_dict):
                       include_mre=sizing_inputs['include_mre'])
 
     # Run all simulations
-    optim.run_sims_par()
+    optim.run_sims()
 
     # Filter and rank results
     optim.parse_results()
@@ -191,17 +192,27 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
-        'get_solar_data': True,
-        'get_solar_profiles': True
+        'get_solar_data': False,
+        'get_solar_profiles': False
     }
+
+    # Tidal device dictionary
+    # input_dict['tidal_devices'] = {
+
+    device_costs = pd.read_excel('data/MCOR Prices.xlsx', sheet_name='mre_costs', index_col=0)
+    device_name = "RM1"
+
+
 
     # MRE dictionary
     input_dict['mre_inputs'] =  {
+        'marine_data_filename' : 'PortAngeles_2015_alldepths.csv',
         'generator_type': 'tidal',
+        'device_name': device_name,
+        'tidal_turbine_rated_power': int(device_costs.loc[device_name, 'Rated Power (kW)']),
+        'tidal_rotor_radius': int(device_costs.loc[device_name, 'Rotor Diameter (m)']/2),
+        'tidal_rotor_number': int(device_costs.loc[device_name, 'Turbine Count']),
         'depth': 10,
-        'tidal_turbine_rated_power': 550,
-        'tidal_rotor_radius': 10,
-        'tidal_rotor_number': 2,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
         'tidal_cut_out_velocity': 3,
