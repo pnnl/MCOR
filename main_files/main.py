@@ -82,7 +82,7 @@ def run_mcor(input_dict):
         tpg = TidalProfileGenerator(mre_inputs['marine_data_filename'], system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],float(system_inputs['num_trials']),
                                     float(system_inputs['length_trials']), mre_inputs['tidal_turbine_rated_power'], float(mre_inputs['depth']), mre_inputs['tidal_rotor_radius'],
                                     mre_inputs['tidal_rotor_number'], mre_inputs['maximum_cp'], mre_inputs['tidal_cut_in_velocity'], mre_inputs['tidal_cut_out_velocity'],
-                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'])
+                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'], mre_data_start_year, mre_data_end_year)
 
         tpg.get_tidal_data_from_upload()
         tpg.extrapolate_tidal_epoch()
@@ -91,7 +91,8 @@ def run_mcor(input_dict):
         tpg.get_power_profiles()
         tmy_mre = tpg.tmy_tidal
         mre_params = {'generator_type': 'tidal', 
-                      'generator_capacity': mre_inputs['tidal_turbine_rated_power']}
+                      'generator_capacity': mre_inputs['tidal_turbine_rated_power'],
+                      'device_name': mre_inputs['device_name']}
         power_profiles['mre'] = tpg.power_profiles
     else:
         tmy_mre = None
@@ -192,17 +193,12 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
-        'get_solar_data': False,
-        'get_solar_profiles': False
+        'get_solar_data': True,
+        'get_solar_profiles': True
     }
-
-    # Tidal device dictionary
-    # input_dict['tidal_devices'] = {
 
     device_costs = pd.read_excel('data/MCOR Prices.xlsx', sheet_name='mre_costs', index_col=0)
     device_name = "RM1"
-
-
 
     # MRE dictionary
     input_dict['mre_inputs'] =  {

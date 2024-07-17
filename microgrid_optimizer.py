@@ -82,7 +82,8 @@ class GridSearchOptimizer(Optimizer):
         mre_params: dictionary with the following keys and value 
             datatypes:
             {'generator_type': str,
-            'generator_capacity': float}
+            'generator_capacity': float
+            device_name: str}
 
         battery_params: dictionary with the following keys and value
             datatypes:
@@ -92,7 +93,7 @@ class GridSearchOptimizer(Optimizer):
               'soc_upper_limit': float, 'soc_lower_limit': float,
               'init_soc_lower_limit': float}
 
-        # TODO: update with wave and tidal costs
+        # TODO: update with wave costs
         system_costs: dictionary containing the following Pandas
             dataframes:
             pv_costs: cost of PV per Watt, with the upper limit for pv
@@ -1581,9 +1582,9 @@ class GridSearchOptimizer(Optimizer):
         if self.mre_params and self.mre_params['generator_type'] == 'tidal':
             inputs['MRE System'] = \
                 pd.DataFrame.from_dict({
-                    'tidal_turbine_rated_power': tpg.advanced_inputs['tidal_turbine_rated_power'],
-                    'tidal_rotor_radius': tpg.advanced_inputs['tidal_rotor_radius'],
-                    'tidal_rotor_number': tpg.advanced_inputs['tidal_rotor_number']
+                    'tidal_turbine_rated_power': tpg.tidal_turbine_rated_power,
+                    'tidal_rotor_radius': tpg.tidal_rotor_radius,
+                    'tidal_rotor_number': tpg.tidal_rotor_number
                 }, orient='index')
         inputs['Battery System'] = pd.DataFrame.from_dict({
             key.replace('_', ' '): val for key, val in
@@ -1623,11 +1624,11 @@ class GridSearchOptimizer(Optimizer):
         if self.mre_params and self.mre_params['generator_type'] == 'tidal':
             assumptions['MRE System'] = \
                 pd.DataFrame.from_dict({
-                    'maximum_cp': tpg.advanced_inputs['maximum_cp'],
-                    'tidal_cut_in_velocity': tpg.advanced_inputs['tidal_cut_in_velocity'],
-                    'tidal_cut_out_velocity': tpg.advanced_inputs['tidal_cut_out_velocity'],
-                    'tidal_inverter_efficiency': tpg.advanced_inputs['tidal_inverter_efficiency'],
-                    'tidal_turbine_losses': tpg.advanced_inputs['tidal_turbine_losses']
+                    'maximum_cp': tpg.maximum_cp,
+                    'tidal_cut_in_velocity': tpg.tidal_cut_in_velocity,
+                    'tidal_cut_out_velocity': tpg.tidal_cut_out_velocity,
+                    'tidal_inverter_efficiency': tpg.tidal_inverter_efficiency,
+                    'tidal_turbine_losses': tpg.tidal_turbine_losses
                 }, orient='index')
 
         assumptions['Cost'] = pd.DataFrame.from_dict(

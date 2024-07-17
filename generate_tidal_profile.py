@@ -49,11 +49,6 @@ class TidalProfileGenerator:
         num_trials: Number of tidal profiles to create
     
         length_trials: Length of tidal profiles in hours
-
-        advanced_inputs: Dictionary specifying advanced tidal system inputs.
-            These could include:
-                rated power, rotor length, tidal_rotor_number, turbine number, maximum cp,
-                cut in velocity, cut out velocity, inverter efficiency, tidal_turbine_losses
                 
     Methods
     ----------
@@ -108,11 +103,6 @@ class TidalProfileGenerator:
         self.tidal_profiles = []
         self.power_profiles = []
         self.tmy_tidal = None
-
-        # # Add TIDAL_DEFAULTS to advanced inputs if not already included
-        # for key in TIDAL_DEFAULTS:
-        #     if key not in self.advanced_inputs:
-        #         self.advanced_inputs[key] = TIDAL_DEFAULTS[key]
 
         if validate:
             # List of initialized parameters to validate
