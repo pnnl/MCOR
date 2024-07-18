@@ -44,11 +44,10 @@ def create_spg_object(system_inputs, pv_inputs, warning_inputs, multithreading_i
 
 
 def create_tpg_object(system_inputs, data_start_year, data_end_year, mre_inputs):
-    tpg = TidalProfileGenerator(system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],
-                                    float(system_inputs['num_trials']), float(system_inputs['length_trials']),
-                                    mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'],
-                                    data_start_year, data_end_year, advanced_inputs=mre_inputs)
-    tpg.get_tidal_data_from_upload()
+    tpg = TidalProfileGenerator(mre_inputs['marine_data_filename'], system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],float(system_inputs['num_trials']),
+                                float(system_inputs['length_trials']), mre_inputs['tidal_turbine_rated_power'], float(mre_inputs['depth']), mre_inputs['tidal_rotor_radius'],
+                                mre_inputs['tidal_rotor_number'], mre_inputs['maximum_cp'], mre_inputs['tidal_cut_in_velocity'], mre_inputs['tidal_cut_out_velocity'],
+                                mre_inputs['tidal_inverter_efficiency'], mre_inputs['tidal_turbine_losses'], data_start_year, data_end_year)
     return tpg
 
 
@@ -57,11 +56,18 @@ def get_solar_data(spg):
     return spg
 
 def build_solar_model(spg, system_inputs):
+    spg.solar_profiles = []
+    spg.temp_profiles = []
+    spg.power_profiles = []
+    spg.night_profiles = []
     spg.get_solar_profiles(system_inputs['start_datetimes'])
     return spg
 
 
 def build_mre_model(tpg, start_datetimes):
+    tpg.tidal_profiles = []
+    tpg.power_profiles = []
+    tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
     tpg.generate_tidal_profiles(start_datetimes)
     return tpg
@@ -91,7 +97,8 @@ def run_mcor_iteration(spg, tpg, input_dict):
         tpg.get_power_profiles()
         tmy_mre = tpg.tmy_tidal
         mre_params = {'generator_type': 'tidal', 
-                      'generator_capacity': input_dict['mre_inputs']['tidal_turbine_rated_power']}
+                      'generator_capacity': input_dict['mre_inputs']['tidal_turbine_rated_power'],
+                      'device_name': input_dict['mre_inputs']['device_name']}
         power_profiles['mre'] = tpg.power_profiles
     
     # Set up parameter dictionaries
@@ -185,8 +192,8 @@ if __name__ == "__main__":
     # TODO - should we constrain which parameters can be varying? how many params can be varied at a time?
     sensitivity_param = {
         'param_category': 'mre_inputs',
-        'param_name': 'tidal_turbine_losses',
-        'param_values': [10, 20, 30]
+        'param_name': 'depth',
+        'param_values': [5, 10, 20]
     }
 
     if sensitivity_param['param_name'] not in ALLOWED_SENSITIVITY_PARAMS:
@@ -203,7 +210,7 @@ if __name__ == "__main__":
         'longitude': -119.28,
         'timezone': 'US/Pacific',
         'altitude': 0,
-        'num_trials': 5,
+        'num_trials': 200,
         'length_trials': 14 * 24,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
@@ -222,16 +229,22 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
-        'get_solar_data': False,
-        'get_solar_profiles': False
+        'get_solar_data': True,
+        'get_solar_profiles': True
     }
+
+    device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
+    device_name = "RM1"
 
     # MRE dictionary
     input_dict['mre_inputs'] =  {
+        'marine_data_filename' : 'PortAngeles_2015_alldepths.csv',
         'generator_type': 'tidal',
-        'tidal_turbine_rated_power': 550,
-        'tidal_rotor_radius': 10,
-        'tidal_rotor_number': 2,
+        'device_name': device_name,
+        'tidal_turbine_rated_power': int(device_costs.loc[device_name, 'Rated Power (kW)']),
+        'tidal_rotor_radius': int(device_costs.loc[device_name, 'Rotor Diameter (m)']/2),
+        'tidal_rotor_number': int(device_costs.loc[device_name, 'Rotors per Turbine']),
+        'depth': 10,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
         'tidal_cut_out_velocity': 3,

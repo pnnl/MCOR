@@ -196,7 +196,7 @@ if __name__ == "__main__":
         'get_solar_profiles': True
     }
 
-    device_costs = pd.read_excel('data/MCOR Prices.xlsx', sheet_name='mre_costs', index_col=0)
+    device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
     device_name = "RM1"
 
     # MRE dictionary

@@ -425,10 +425,10 @@ class SolarProfileGenerator:
                 solar.index = pd.to_datetime(solar.index, utc=True).tz_convert(self.timezone)
 
             # Check that the solar data and index are not misaligned (e.g. the sun is up
-            #   during the day) - this only works if the profile is at least 24 hours long
-            if len(solar) >= 24 :
-                # Get median solar start hour
+            #   during the day) - this only works if the profile is at least 72 hours long
+            if len(solar) >= 72 :
                 solar['date'] = solar.index.date
+                # Get median solar start hour
                 median_hour = solar.groupby('date').apply(
                     lambda x: x[x['ghi'] > 0].iloc[0].name.hour
                     if len(x[x['ghi'] > 0]) else 0).median()
@@ -751,13 +751,13 @@ def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
         while success == 0:
             try:
                 if name == 'tmy':
-                    dataset = 'psm3-tmy-download'
+                    dataset = 'psm3-2-2-tmy-download'
                     interval = 60
                 elif source == 'himawari':
                     dataset = 'himawari-download'
                     interval = 30
                 elif source == 'nsrdb' and name <= 2020:
-                    dataset = 'psm3-download'
+                    dataset = 'psm3-2-2-download'
                     interval = 30
                 elif source == 'nsrdb' and name > 2020:
                     dataset = 'psm3-2-2-download'
