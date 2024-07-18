@@ -110,7 +110,16 @@ class TidalProfileGenerator:
                          'longitude': self.longitude,
                          'timezone': self.timezone,
                          'num_trials': self.num_trials,
-                         'length_trials': self.length_trials}
+                         'length_trials': self.length_trials,
+                        'tidal_turbine_rated_power': self.tidal_turbine_rated_power,
+                        'depth': self.depth,
+                        'tidal_rotor_radius': self.tidal_rotor_radius,
+                        'tidal_rotor_number': self.tidal_rotor_number,
+                        'tidal_inverter_efficiency': self.tidal_inverter_efficiency,
+                        'maximum_cp': self.maximum_cp,
+                        'tidal_turbine_losses': self.tidal_turbine_losses,
+                        'tidal_cut_in_velocity': self.tidal_cut_in_velocity,
+                        'tidal_cut_out_velocity': self.tidal_cut_out_velocity}
             if start_year is not None:
                 args_dict['start_year'] = start_year
             if end_year is not None:

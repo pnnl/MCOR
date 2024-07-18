@@ -207,7 +207,7 @@ if __name__ == "__main__":
         'device_name': device_name,
         'tidal_turbine_rated_power': int(device_costs.loc[device_name, 'Rated Power (kW)']),
         'tidal_rotor_radius': int(device_costs.loc[device_name, 'Rotor Diameter (m)']/2),
-        'tidal_rotor_number': int(device_costs.loc[device_name, 'Turbine Count']),
+        'tidal_rotor_number': int(device_costs.loc[device_name, 'Rotors per Turbine']),
         'depth': 10,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
