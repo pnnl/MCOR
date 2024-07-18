@@ -129,6 +129,7 @@ class PV(Component):
         self.pv_racking = pv_racking
         self.advanced_inputs = advanced_inputs
 
+
         if validate:
             # List of initialized parameters to validate
             args_dict = {'existing': existing, 'pv_capacity': pv_capacity,
@@ -252,7 +253,7 @@ class Tidal(MRE):
 
     """
 
-    def __init__(self, existing, mre_capacity, generator_capacity, validate=True):
+    def __init__(self, existing, mre_capacity, generator_capacity, device_name, validate=True):
         super().__init__(existing, mre_capacity, 'tidal', generator_capacity)
 
         if validate:
@@ -262,6 +263,8 @@ class Tidal(MRE):
 
             # Validate input parameters
             validate_all_parameters(args_dict)
+
+        self.device_name = device_name
 
     def __repr__(self):
         return 'Tidal: Capacity: {:.1f}kW'.format(self.capacity)
@@ -278,8 +281,11 @@ class Tidal(MRE):
         else:
             adjusted_mre_num = self.num_generators
 
+        # Set costs using loc to find the correct device
+        tidal_cost_per_turbine = cost_df.loc[self.device_name, 'Cost (USD)']
+
         # Set costs
-        tidal_cost_per_turbine = cost_df.reset_index().iloc[0]['Tidal']
+        # tidal_cost_per_turbine = cost_df.reset_index().iloc[0]['Cost (USD)']
 
         return adjusted_mre_num * tidal_cost_per_turbine
 

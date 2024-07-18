@@ -22,6 +22,7 @@ component,microgrid_system.Component,,,,,,,
 connections,"int,float",0,100,,,,,
 demand_rate,"int,float",0,50,,,,,
 demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
+depth,"int,float",0,500,,,,,
 dispatch_strategy,str,,,"night_const_batt,night_dynamic_batt,available_capacity",,,,
 duration,int,1,86400,,,,,
 electricity_rate,"int,float",0,1,,,,,

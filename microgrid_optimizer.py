@@ -84,7 +84,8 @@ class GridSearchOptimizer(Optimizer):
         mre_params: dictionary with the following keys and value 
             datatypes:
             {'generator_type': str,
-            'generator_capacity': float}
+            'generator_capacity': float
+            device_name: str}
 
         battery_params: dictionary with the following keys and value
             datatypes:
@@ -94,7 +95,7 @@ class GridSearchOptimizer(Optimizer):
               'soc_upper_limit': float, 'soc_lower_limit': float,
               'init_soc_lower_limit': float}
 
-        # TODO: update with wave and tidal costs
+        # TODO: update with wave costs
         system_costs: dictionary containing the following Pandas
             dataframes:
             pv_costs: cost of PV per Watt, with the upper limit for pv
@@ -105,6 +106,15 @@ class GridSearchOptimizer(Optimizer):
                     ground;single_axis: 2.97, 1.75, 0.89
                     roof;fixed: 2.65, 1.56, 0.83
                     carport;fixed: 3.15, 1.86, 0.83
+
+            tidal_costs: cost of tidal turbines per project/device, with the
+                following columns:
+                Project/Device Name
+                Rated Power (kW)
+                Turbine Count
+                Rotor Diameter (m)
+                Rotors per Turbine
+                Cost (USD)
 
             om_costs: operations and maintenance costs for the following
                 components:
@@ -712,6 +722,7 @@ class GridSearchOptimizer(Optimizer):
             if self.mre_params['generator_type'] == 'tidal':
                 mre = Tidal('mre' in self.existing_components, mre_size,
                         self.mre_params['generator_capacity'],
+                        self.mre_params['device_name'],
                         validate=False)
                 component_list += [mre]
                 system_name_list += ['tidal_{:.1f}kW'.format(mre_size)]
@@ -1636,9 +1647,9 @@ class GridSearchOptimizer(Optimizer):
         if self.mre_params and self.mre_params['generator_type'] == 'tidal':
             inputs['MRE System'] = \
                 pd.DataFrame.from_dict({
-                    'tidal_turbine_rated_power': tpg.advanced_inputs['tidal_turbine_rated_power'],
-                    'tidal_rotor_radius': tpg.advanced_inputs['tidal_rotor_radius'],
-                    'tidal_rotor_number': tpg.advanced_inputs['tidal_rotor_number']
+                    'tidal_turbine_rated_power': tpg.tidal_turbine_rated_power,
+                    'tidal_rotor_radius': tpg.tidal_rotor_radius,
+                    'tidal_rotor_number': tpg.tidal_rotor_number
                 }, orient='index')
         inputs['Battery System'] = pd.DataFrame.from_dict({
             key.replace('_', ' '): val for key, val in
@@ -1678,11 +1689,11 @@ class GridSearchOptimizer(Optimizer):
         if self.mre_params and self.mre_params['generator_type'] == 'tidal':
             assumptions['MRE System'] = \
                 pd.DataFrame.from_dict({
-                    'maximum_cp': tpg.advanced_inputs['maximum_cp'],
-                    'tidal_cut_in_velocity': tpg.advanced_inputs['tidal_cut_in_velocity'],
-                    'tidal_cut_out_velocity': tpg.advanced_inputs['tidal_cut_out_velocity'],
-                    'tidal_inverter_efficiency': tpg.advanced_inputs['tidal_inverter_efficiency'],
-                    'tidal_turbine_losses': tpg.advanced_inputs['tidal_turbine_losses']
+                    'maximum_cp': tpg.maximum_cp,
+                    'tidal_cut_in_velocity': tpg.tidal_cut_in_velocity,
+                    'tidal_cut_out_velocity': tpg.tidal_cut_out_velocity,
+                    'tidal_inverter_efficiency': tpg.tidal_inverter_efficiency,
+                    'tidal_turbine_losses': tpg.tidal_turbine_losses
                 }, orient='index')
 
         assumptions['Cost'] = pd.DataFrame.from_dict(
@@ -2071,8 +2082,9 @@ if __name__ == "__main__":
     start_datetimes = [profile.index[0] for profile in spg.power_profiles]
 
     # Set up tidal profiles
-    tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials,
-        start_year=1998, end_year=2022)
+    tpg = TidalProfileGenerator(marine_data_filename='PortAngeles_2015_alldepths.csv', latitude = 46.34, longitude =-119.28, timezone = 'US/Pacific', num_trials = 5, length_trials = 14, tidal_turbine_rated_power = 550,
+                  depth = 10, tidal_rotor_radius = 10, tidal_rotor_number = 2, maximum_cp = 0.42, tidal_cut_in_velocity = 0.5,
+                  tidal_cut_out_velocity = 3, tidal_inverter_efficiency = 0.9, tidal_turbine_losses = 10, start_year=1998, end_year=2022)
     tpg.get_tidal_data_from_upload()
     tpg.extrapolate_tidal_epoch()
     tpg.generate_tidal_profiles(start_datetimes)
