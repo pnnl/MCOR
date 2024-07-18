@@ -15,6 +15,8 @@ from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
 from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank
+from config import DATA_DIR
+from config import OUTPUT_DIR
 
 
 def run_mcor(input_dict):
@@ -160,9 +162,6 @@ if __name__ == "__main__":
     # Define simulation parameters here
     ###########################################################################
 
-    # Go back to main working directory
-    os.chdir('..')
-
     days_to_hours = 24
 
     # Define parameters and populate dict for run_mcor()
@@ -197,7 +196,7 @@ if __name__ == "__main__":
         'get_solar_profiles': True
     }
 
-    device_costs = pd.read_excel('data/MCOR Prices.xlsx', sheet_name='mre_costs', index_col=0)
+    device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
     device_name = "RM1"
 
     # MRE dictionary
@@ -231,7 +230,7 @@ if __name__ == "__main__":
 
     # Load (in kW) dictionary
     input_dict['load_inputs'] = {
-        'annual_load_profile': pd.read_csv(os.path.join('data', 'sample_load_profile.csv'), 
+        'annual_load_profile': pd.read_csv(os.path.join(DATA_DIR, 'sample_load_profile.csv'), 
                                            index_col=0)['Load'],
         'off_grid_load_profile': None
     }
@@ -240,7 +239,8 @@ if __name__ == "__main__":
     input_dict['financial_inputs'] = {
         'utility_rate': 0.03263,                 # Utility rate in $/kWh dictionary
         'demand_rate': None,                     # Demand rate in $/kW (optional) dictionary
-        'system_costs': pd.read_excel('data/MCOR Prices.xlsx', sheet_name=None, index_col=0)
+        'system_costs': pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), 
+                                      sheet_name=None, index_col=0)
     }
 
     # Determine if asp multithreading should be used dictionary
@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
     # Save results
     optim.save_results_to_file(spg, tpg, save_filename)
-    pickle.dump(optim, open('output/{}.pkl'.format(save_filename), 'wb'))
+    pickle.dump(optim, open(os.path.join(OUTPUT_DIR, '{}.pkl'.format(save_filename)), 'wb'))
 
     if input_dict['output_inputs']['save_timeseries_json']:
         optim.save_timeseries_to_json(save_filename)

@@ -67,6 +67,10 @@ generator_metrics = {'fuel_tank_size_gal': {'display_name': 'Total Fuel Tank Cap
                                             'units': 'kW', 'format': 'one_fp'},
                      'gen_peak_load max': {'display_name': 'Max Peak Generator Load (conservative scenario)', 
                                            'units': 'kW', 'format': 'one_fp'}, 
+                     'gen_total_load mean': {'display_name': 'Mean Total Generator Load (typical scenario)', 
+                                            'units': 'kWh', 'format': 'one_fp'},
+                     'gen_total_load max': {'display_name': 'Max Total Generator Load (conservative scenario)', 
+                                           'units': 'kWh', 'format': 'one_fp'},  
                      'gen_percent mean': {'display_name': 'Generator Percent', 'units': '%', 
                                           'format': 'perc'},
                      'generator_power_kW mean': {'display_name': 'Generator Power (typical scenario)', 
@@ -86,6 +90,7 @@ metric_order = ['pv_capacity', 'mre_capacity', 'battery_capacity', 'battery_powe
                 'pv_avg_load mean', 'pv_peak_load mean', 'pv_peak_load max',
                 'mre_avg_load mean', 'mre_peak_load mean', 'mre_peak_load max',
                 'gen_avg_load mean', 'gen_peak_load mean', 'gen_peak_load max',
+                'gen_total_load mean', 'gen_total_load max',
                 'batt_avg_load mean', 'batt_peak_load mean', 'batt_peak_load max',
                 'pv_percent mean', 'mre_percent mean', 'batt_percent mean', 
                 'gen_percent mean', 'fuel_used_gal mean', 'fuel_used_gal max']

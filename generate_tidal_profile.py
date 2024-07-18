@@ -14,8 +14,11 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
+import warnings
 import matplotlib.pyplot as plt
-from utide import solve, reconstruct
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    from utide import solve, reconstruct
 from validation import validate_all_parameters, log_error, strings_warnings
 from config import TIDAL_DATA_DIR, ROOT_DIR
 
@@ -79,7 +82,7 @@ class TidalProfileGenerator:
     """
 
     def __init__(self, marine_data_filename, latitude, longitude, timezone, num_trials, length_trials, tidal_turbine_rated_power, depth,
-                 tidal_rotor_radius, tidal_rotor_number, maximum_cp,tidal_cut_in_velocity, tidal_cut_out_velocity, tidal_inverter_efficiency,
+                 tidal_rotor_radius, tidal_rotor_number, maximum_cp, tidal_cut_in_velocity, tidal_cut_out_velocity, tidal_inverter_efficiency,
                  tidal_turbine_losses, start_year=None, end_year=None, validate=True):
 
         # Assign parameters
@@ -174,11 +177,13 @@ class TidalProfileGenerator:
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
 
         # TODO: modify this in the future to extrapolate any amount of data
-        coef = solve(t = self.tidal_current.index,u = self.tidal_current['u'],v = self.tidal_current['v'] , lat=self.latitude, method="ols", conf_int="linear",verbose=False)
-
-        epoch_index = pd.date_range(
-            start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year+1}', freq='H', tz=self.timezone)[:-1]
-        tide = reconstruct(epoch_index, coef, verbose=False)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            coef = solve(t = self.tidal_current.index, u = self.tidal_current['u'], v = self.tidal_current['v'], 
+                         lat=self.latitude, method="ols", conf_int="linear",verbose=False)
+            epoch_index = pd.date_range(
+                start=f'1/1/{self.start_year}', end=f'1/1/{self.end_year+1}', freq='H', tz=self.timezone)[:-1]
+            tide = reconstruct(epoch_index, coef, verbose=False)
         self.tidal_epoch = pd.DataFrame()
         self.tidal_epoch['v_mag'] = (tide.u**2 + tide.v**2)**(0.5)
         self.tidal_epoch.index = epoch_index

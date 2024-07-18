@@ -15,8 +15,9 @@ battery_costs,pandas.core.frame.DataFrame,,,,,check_battery_costs,,"Battery_Cost
 battery_params,dict,,,,,check_battery_params,,"battery_params must be a dictionary with the following keys and value datatypes:  {'battery_power_to_energy': float, 'initial_soc': float,   'one_way_battery_efficiency': float,   'one_way_inverter_efficiency': float, 'soc_upper_limit': float, 'soc_lower_limit': float, 'init_soc_lower_limit': float}. The initial SOC must be between the upper and lower limits."
 battery_power_to_energy,"int,float",0,100,,,,,
 capital_cost,"int,float",0,,,,,,
-category,string,,,"pv,battery,generator",,,,
+category,str,,,"pv,battery,generator",,,,
 cld_hours,tuple,,,,2,check_cld_hours,,each element in cld_hours must be between 0 and 23
+comparison_param,str,,,"pv_capacity,mre_capacity,battery_capacity,battery_power,generator_power_kW,fuel_tank_size_gal,pv_area_ft2,mre_area_ft2',capital_cost_usd,pv_capital,mre_capital,battery_capital,generator_capital,fuel_tank_capital,pv_o&m,mre_o&m,battery_o&m,generator_o&m,annual_benefits_usd,demand_benefits_usd,simple_payback_yr,pv_avg_load,pv_peak_load,mre_avg_load,mre_peak_load,gen_avg_load,gen_peak_load,batt_avg_load,batt_peak_load,pv_percent,mre_percent,batt_percent,gen_percent,fuel_used_gal,gen_total_load",,,,
 component,microgrid_system.Component,,,,,,,
 connections,"int,float",0,100,,,,,
 demand_rate,"int,float",0,50,,,,,
@@ -120,6 +121,7 @@ resilience_percent,"int,float",0,100,,,,,
 scenario_criteria,str,,,"pv,gen,mre",,,,
 shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
+sim_label,str,,,"avg,max,min,distribution",,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
 size_resources_based_on_tmy,bool,,,,,,,
 snow,"int,float",0,100,,,,,
@@ -138,6 +140,7 @@ strings,dict,,,,,check_strings,,The strings parameter much include both mods_per
 strings_per_inv,int,1,,,,,,
 system,microgrid_system.MicrogridSystem,,,,,,,
 system_costs,dict,,,,,check_system_costs,,"system_costs must be a dictionary with the following keys and value datatypes:  {'battery_costs': pd.DataFrame, 'generator_costs': pd.DataFrame,  'pv_costs': pd.DataFrame ,  'fuel_tank_costs': pd.DataFrame, 'om_costs': pd.DataFrame}."
+system_label,str,,,"least_fuel,least_cost,pv_only,mre_only,most_diversified",,,,
 temp_bins,range,,,,,,,
 temp_profile,pandas.core.frame.DataFrame,,,,,check_temp_profile,,"The temperature profile does not have the necessary columns or index, make sure you are using a DataFrame produced by get_solar_profiles."
 temp_profiles,list,,,,,check_temp_profiles,,"One or more of the temperature profiles does not have the necessary columns or index, make sure you are using a list produced by get_solar_profiles."
