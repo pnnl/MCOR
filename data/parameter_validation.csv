@@ -124,6 +124,7 @@ sim,microgrid_simulator.Simulator,,,,,,,
 sim_label,str,,,"avg,max,min,distribution",,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
 size_resources_based_on_tmy,bool,,,,,,,
+size_resources_with_battery_eff_term,bool,,,,,,,
 snow,"int,float",0,100,,,,,
 soc_at_initial_hour_of_night,"int,float",0,1,,,,,
 soc_lower_limit,"int,float",0,1,,,,,

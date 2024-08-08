@@ -332,14 +332,16 @@ class SolarProfileGenerator:
         asp.create_trial_data(start_datetimes)
 
         # Create directory to hold data
-        if '{}_{}_{}d_{}t'.format(
-                self.latitude, self.longitude, int(self.length_trials/24),
-                int(self.num_trials)) not in \
+        if self.length_trials <  24:
+            dir_name = '{}_{}_{}h_{}t'.format(
+                self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+        else:
+            dir_name = '{}_{}_{}d_{}t'.format(
+                self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
+        if dir_name not in \
                 os.listdir(os.path.join(SOLAR_DATA_DIR, 'solar_profiles')):
             os.mkdir(os.path.join(
-                SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials/24),
-                    int(self.num_trials))))
+                SOLAR_DATA_DIR, 'solar_profiles', dir_name))
 
         # Extract trial data
         self.start_datetimes = []
@@ -349,7 +351,7 @@ class SolarProfileGenerator:
             try:
                 solar_profile.index = pd.date_range(
                     start=solar_profile.index[0], periods=len(solar_profile),
-                    freq='H', tz=self.timezone)
+                    freq='H', tz=self.timezone, ambiguous=False)
 
                 # NREL historical data is not daylight savings time aware, so we need to shift
                 #   it for compatibility with the pvlib library
@@ -364,37 +366,45 @@ class SolarProfileGenerator:
                 # Shift the start time to account for it
                 solar_profile.index = pd.date_range(
                     start=solar_profile.index[0] + datetime.timedelta(hours=1),
-                    periods=len(solar_profile), freq='H', tz=self.timezone)
+                    periods=len(solar_profile), freq='H', tz=self.timezone, ambiguous=False)
 
             # Add to start datetimes
             self.start_datetimes += [solar_profile.index[0]]
 
             # Save to file
+            if self.length_trials <  24:
+                dir_name = '{}_{}_{}h_{}t'.format(
+                    self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+            else:
+                dir_name = '{}_{}_{}d_{}t'.format(
+                    self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
             solar_profile.to_csv(os.path.join(
-                SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials/24),
-                    int(self.num_trials)),
+                SOLAR_DATA_DIR, 'solar_profiles', dir_name,
                 '{}_{}_solar_trial_{}.csv'.format(self.latitude,
                                                   self.longitude, i)))
 
     def get_power_profiles(self):
         """ 
         Calculate the output AC power for a 1kW system for each solar and temperature profile.
-       
-        If read_from_file is True, reads the solar and temperature data  from csv, allowing
-            for faster lookup rather than re-running get_solar_data and get_solar_profiles.
             
         """
 
         # For each solar and temperature profile, calculate PV production
         # Load the solar and temperature data from csv
         self.start_datetimes = []
+        self.solar_profiles = []
+        self.temp_profiles = []
+        self.power_profiles = []
         for i in range(int(self.num_trials)):
             try:
+                if self.length_trials <  24:
+                    dir_name = '{}_{}_{}h_{}t'.format(
+                        self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+                else:
+                    dir_name = '{}_{}_{}d_{}t'.format(
+                        self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
                 solar = pd.read_csv(os.path.join(
-                    SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                        self.latitude, self.longitude, int(self.length_trials/24),
-                        int(self.num_trials)),
+                    SOLAR_DATA_DIR, 'solar_profiles', dir_name,
                     '{}_{}_solar_trial_{}.csv'.format(self.latitude, self.longitude, i)),
                     index_col=0, parse_dates=[0])
 
@@ -402,10 +412,7 @@ class SolarProfileGenerator:
                 #   code was converted to Python
                 if 'temp' not in solar.columns:
                     solar['temp'] = pd.read_csv(os.path.join(
-                        SOLAR_DATA_DIR, 'solar_profiles', '{}_{}_{}d_{}t'.format(
-                            self.latitude, self.longitude,
-                            int(self.length_trials/24),
-                            int(self.num_trials)),
+                        SOLAR_DATA_DIR, 'solar_profiles', dir_name,
                         '{}_{}_temp_trial_{}.csv'.format(self.latitude, self.longitude, i)),
                         index_col=0, parse_dates=[0]).values
 
@@ -593,6 +600,7 @@ class SolarProfileGenerator:
             args_dict = {'percent_at_night': percent_at_night}
             validate_all_parameters(args_dict)
 
+        self.night_profiles = []
         for power_profile in self.power_profiles:
             self.night_profiles += [calc_night_duration(
                 power_profile, percent_at_night, validate=False)]

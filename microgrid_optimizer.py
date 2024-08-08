@@ -293,6 +293,7 @@ class GridSearchOptimizer(Optimizer):
                  pv_params=None, mre_params=None, 
                  tmy_solar=None, tmy_mre=None,
                  size_resources_based_on_tmy=True,
+                 size_resources_with_battery_eff_term=True,
                  dispatch_strategy='night_dynamic_batt',
                  batt_sizing_method='longest_night', electricity_rate=None,
                  net_metering_rate=None, demand_rate=None,
@@ -311,6 +312,7 @@ class GridSearchOptimizer(Optimizer):
         self.pv_params = pv_params
         self.mre_params = mre_params
         self.size_resources_based_on_tmy = size_resources_based_on_tmy
+        self.size_resources_with_battery_eff_term = size_resources_with_battery_eff_term
         self.battery_params = battery_params
         self.system_costs = system_costs
         self.re_constraints = re_constraints
@@ -343,7 +345,8 @@ class GridSearchOptimizer(Optimizer):
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
                          'system_costs': system_costs,
-                         'size_resources_based_on_tmy': size_resources_based_on_tmy}
+                         'size_resources_based_on_tmy': size_resources_based_on_tmy,
+                         'size_resources_with_battery_eff_term': size_resources_with_battery_eff_term}
             if pv_params is not None:
                 args_dict['pv_params'] = pv_params
             if tmy_solar is not None:
@@ -431,12 +434,18 @@ class GridSearchOptimizer(Optimizer):
         if self.size_resources_based_on_tmy:
             # Get the total annual load, mre production and pv production
             total_load = self.annual_load_profile.sum()
+            if self.size_resources_with_battery_eff_term:
+                total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
+                    * self.battery_params['one_way_inverter_efficiency']**2)
             total_mre = self.tmy_mre.sum()
             if self.pv_params:
                 total_pv = self.tmy_solar.sum()
         else:
             # Get the total load, mre and pv production from the profiles
             total_load = np.sum([profile.sum() for profile in self.load_profiles])
+            if self.size_resources_with_battery_eff_term:
+                total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
+                    * self.battery_params['one_way_inverter_efficiency']**2)
             total_mre = np.sum([profile.sum() for profile in self.power_profiles['mre']])
             if self.pv_params:
                 total_pv = np.sum([profile.sum() for profile in self.power_profiles['pv']])
@@ -552,10 +561,16 @@ class GridSearchOptimizer(Optimizer):
         if self.size_resources_based_on_tmy:
             # Get the total annual load and pv production
             total_load = self.annual_load_profile.sum()
+            if self.size_resources_with_battery_eff_term:
+                total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
+                    * self.battery_params['one_way_inverter_efficiency']**2)
             total_pv = self.tmy_solar.sum()
         else:
             # Get the total load and pv production from the profiles
             total_load = np.sum([profile.sum() for profile in self.load_profiles])
+            if self.size_resources_with_battery_eff_term:
+                total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
+                    * self.battery_params['one_way_inverter_efficiency']**2)
             total_pv = np.sum([profile.sum() for profile in self.power_profiles['pv']])
         net_zero = total_load / total_pv
 
@@ -1873,9 +1888,12 @@ class GridSearchOptimizer(Optimizer):
                              for iter_name, iter_data in sensitivity_data.items()}
             with open(os.path.join(OUTPUT_DIR,'{}_scalar_outputs.json'.format(filename)), 'w') as f:
                 json.dump(combined_dict, f, indent=2)
+            for iter_name, iter_data in sensitivity_data.items():
+                iter_data.save_timeseries_to_json(filename=f'{filename}_{iter_name}')
         else:
             with open(os.path.join(OUTPUT_DIR,'{}_scalar_outputs.json'.format(filename)), 'w') as f:
                 json.dump(self.results_grid.to_dict(orient='index'), f, indent=2)
+            self.save_timeseries_to_json(filename=filename)
 
     def write_results_sheet(self, format_results, data_formats, writer, sheet_name):
         # Re-order columns

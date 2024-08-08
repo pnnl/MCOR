@@ -56,10 +56,6 @@ def get_solar_data(spg):
     return spg
 
 def build_solar_model(spg, system_inputs):
-    spg.solar_profiles = []
-    spg.temp_profiles = []
-    spg.power_profiles = []
-    spg.night_profiles = []
     spg.get_solar_profiles(system_inputs['start_datetimes'])
     return spg
 
@@ -121,6 +117,7 @@ def run_mcor_iteration(spg, tpg, input_dict):
                                 tmy_solar=tmy_solar, pv_params=pv_params, tmy_mre=tmy_mre,
                                 mre_params=mre_params, 
                                 size_resources_based_on_tmy=input_dict['system_inputs']['size_resources_based_on_tmy'],
+                                size_resources_with_battery_eff_term=input_dict['system_inputs']['size_resources_with_battery_eff_term'],
                                 dispatch_strategy=input_dict['system_inputs']['dispatch_strategy'],
                                 electricity_rate=input_dict['financial_inputs']['utility_rate'],
                                 net_metering_rate=input_dict['net_metering_inputs']['net_metering_rate'],
@@ -215,6 +212,7 @@ if __name__ == "__main__":
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
         'size_resources_based_on_tmy': True,
+        'size_resources_with_battery_eff_term': True,
         'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
         're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
     }
@@ -354,7 +352,8 @@ if __name__ == "__main__":
             spg = get_solar_data(spg)
         if 'pv' in input_dict['system_inputs']['renewable_resources'] and \
                 ((i == 0 and input_dict['pv_inputs']['get_solar_profiles']) 
-                 or sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS):
+                 or (sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS 
+                 and input_dict['pv_inputs']['get_solar_profiles'])):
             spg.__setattr__(sensitivity_param['param_name'], param_value)
             spg = build_solar_model(spg, input_dict['system_inputs'])
         if 'mre' in input_dict['system_inputs']['renewable_resources'] and \
@@ -363,7 +362,8 @@ if __name__ == "__main__":
             tpg.__setattr__(sensitivity_param['param_name'], param_value)
             if 'pv' in input_dict['system_inputs']['renewable_resources']:
                 # Check to see if spg start_datetimes list has been intialized
-                if not len(spg.start_datetimes):
+                if not len(spg.start_datetimes) or sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS:
+                    spg.__setattr__(sensitivity_param['param_name'], param_value)
                     spg.get_power_profiles()
                 start_datetimes = spg.start_datetimes
             else:
@@ -372,9 +372,9 @@ if __name__ == "__main__":
 
         # Even if the resource models don't need to be re-generated, update with the new param if
         #   applicable
-        if spg is not None and sensitivity_param['param_category'] == 'pv_inputs':
+        if spg is not None and (sensitivity_param['param_category'] == 'pv_inputs' or sensitivity_param['param_name'] in GET_SOLAR_PROFILES_PARAMS):
             spg.__setattr__(sensitivity_param['param_name'], param_value)
-        if tpg is not None and sensitivity_param['param_category'] == 'mre_inputs':
+        if tpg is not None and (sensitivity_param['param_category'] == 'mre_inputs' or sensitivity_param['param_name'] in GET_TIDAL_PROFILE_PARAMS):
             tpg.__setattr__(sensitivity_param['param_name'], param_value)
             
         # Run simulation
@@ -392,9 +392,9 @@ if __name__ == "__main__":
     pickle.dump(output_dict, open(os.path.join(OUTPUT_DIR, f'{save_filename}.pkl'), 'wb'))
 
     # Plot dispatch for across iterations
-    # for iter_name, iter_optim in output_dict.items():
-    #     print(iter_name)
-    #     iter_optim.plot_best_system()
+    for iter_name, iter_optim in output_dict.items():
+        print(iter_name)
+        iter_optim.plot_best_system()
         
     #   Plot comparison of specific params across iterations and systems, either avg of systems or specific ones, e.g. system with least fuel
     #   Inputs: 
