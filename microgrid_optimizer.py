@@ -504,6 +504,8 @@ class GridSearchOptimizer(Optimizer):
             for system_name, system_sizes in re_sizes.items():
                 remaining_load = np.max([total_load - total_mre * system_sizes['mre'], 0])
                 pv_capacity = remaining_load / total_pv
+                if np.isnan(pv_capacity):
+                    pv_capacity = 0
 
                 # Check that pv size is less than PV constraint and total RE capacity is less 
                 #   than total RE constraint
