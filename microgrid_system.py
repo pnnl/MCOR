@@ -295,10 +295,10 @@ class Tidal(MRE):
         # Adjust total mre_capacity to consider existing mre
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
-            adjusted_mre_num = max(
-                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
+            adjusted_mre_cap = max(
+                self.capacity - existing_components['mre'].capacity, 0)
         else:
-            adjusted_mre_cap = self.mre_capacity
+            adjusted_mre_cap = self.capacity
 
         # Set O&M cost
         tidal_om_cost_per_kw = cost_df['Tidal'].values[1]

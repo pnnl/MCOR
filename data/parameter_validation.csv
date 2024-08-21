@@ -93,7 +93,7 @@ num_systems,int,1,,,,,,
 num_trials,"int,float",1,1000,,,,,
 num_units,int,0,,,,,,
 off_grid_load_profile,pandas.core.series.Series,,,,,check_off_grid_load_profile,duration,"The off grid load profile must have a datetime index, contain values for each day and hour (or the corresponding interval if duration is not 1 hour) of the year, and have non-negative values."
-om_cost,"int,float",0,500,,,,,
+om_cost,"int,float",0,1000,,,,,
 om_costs,pandas.core.frame.DataFrame,,,,,check_om_costs,,"O&M must include the following columns: 'Generator', 'Battery', 'PV_ground;fixed', 'PV_ground;single_axis ', 'PV_roof;fixed', 'PV_carport;fixed'"
 one_way_battery_efficiency,"int,float",0,1,,,,,
 one_way_inverter_efficiency,"int,float",0,1,,,,,
