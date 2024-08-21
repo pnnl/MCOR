@@ -116,8 +116,9 @@ def run_mcor_iteration(spg, tpg, input_dict):
                                 input_dict['system_inputs']['re_constraints'],
                                 tmy_solar=tmy_solar, pv_params=pv_params, tmy_mre=tmy_mre,
                                 mre_params=mre_params, 
-                                size_resources_based_on_tmy=input_dict['system_inputs']['size_resources_based_on_tmy'],
-                                size_resources_with_battery_eff_term=input_dict['system_inputs']['size_resources_with_battery_eff_term'],
+                                size_re_resources_based_on_tmy=input_dict['system_inputs']['size_re_resources_based_on_tmy'],
+                                size_battery_based_on_tmy=input_dict['system_inputs']['size_battery_based_on_tmy'],
+                                size_resources_with_battery_eff_term=input_dict['system_inputs']                                ['size_resources_with_battery_eff_term'],
                                 dispatch_strategy=input_dict['system_inputs']['dispatch_strategy'],
                                 electricity_rate=input_dict['financial_inputs']['utility_rate'],
                                 net_metering_rate=input_dict['net_metering_inputs']['net_metering_rate'],
@@ -145,7 +146,7 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
     output_dict: dictionary of Optimizer objects
     sensitivity_param: dictionary with info on sensitivity param
     comparison_param: name of parameter to be compared across iterations. Must be the name of a column from the Optimizer results_grid.
-    system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+    system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified, all]
     sim_label: indicates which simulation to reference, options include: [avg, max, min, distribution]
 
     '''
@@ -159,18 +160,70 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
             comparison_data[iter_val] = np.nan
 
     # Plot comparison param across iterations
-    plt.figure()
-    # If single value
-    if sim_label in ['avg', 'max', 'min']:
-        sns.scatterplot(comparison_data)
-        plt.xlabel(sensitivity_param['param_name'])
-        plt.ylabel(comparison_param)
+    fig = plt.figure()
+    # If looking across all systems
+    if system_label == 'all':
+        # Rename systems into categories: no_re, pv_small/med/large_battery, mre_small/med/large_battery
+        for iter_name, iter_val in comparison_data.items():
+            new_dict = {}
+            pv_batt_sizes = np.sort([sys_name.split('_')[-1][:-3] for sys_name in iter_val.keys() if ('tidal' not in sys_name and 'wave' not in sys_name) 
+                                                                                              or sys_name.split('_')[3][:-2] == '0.0'])
+            # TODO: This only works for runs with only one set of MRE systems. This will need to be expanded if there are more MRE options. 
+            mre_batt_sizes = np.sort([sys_name.split('_')[-1][:-3] for sys_name in iter_val.keys() if ('tidal' in sys_name or 'wave' in sys_name) 
+                                                                                              and sys_name.split('_')[3][:-2] != '0.0'])
+            for sys_name, sys_data in iter_val.items():
+                pv_size = sys_name.split('_')[1][:-2]
+                if 'tidal' in sys_name or 'wave' in sys_name:
+                    mre_size = sys_name.split('_')[3][:-2]
+                else:
+                    mre_size = None
+                batt_size = sys_name.split('_')[-1][:-3]
+                if pv_size == '0.0' and (mre_size is None or mre_size == '0.0'):
+                    new_dict['no_RE'] = sys_data
+                elif pv_size != '0.0' and (mre_size is None or mre_size == '0.0'):
+                    if batt_size == pv_batt_sizes[1]:
+                        new_dict['pv_only_small_battery'] = sys_data
+                    elif batt_size == pv_batt_sizes[2]:
+                        new_dict['pv_only_med_battery'] = sys_data
+                    elif batt_size == pv_batt_sizes[3]:
+                        new_dict['pv_only_large_battery'] = sys_data
+                elif mre_size is not None and mre_size != '0.0':
+                    if batt_size == mre_batt_sizes[0]:
+                        new_dict['mre_small_battery'] = sys_data
+                    elif batt_size == mre_batt_sizes[1]:
+                        new_dict['mre_med_battery'] = sys_data
+                    elif batt_size == mre_batt_sizes[2]:
+                        new_dict['mre_large_battery'] = sys_data
+            comparison_data[iter_name] = new_dict
 
-    # If distribution
-    if sim_label == 'distribution':
-        sns.boxplot(comparison_data)
-        plt.xlabel(sensitivity_param['param_name'])
-        plt.ylabel(comparison_param)
+        # For single values, use categorical barplot
+        if sim_label in ['avg', 'max', 'min']:
+            df = pd.DataFrame(comparison_data)
+            sns.catplot(data=df.stack().to_frame(name=comparison_param).reset_index(names=['system', sensitivity_param['param_name']]), 
+                        x=sensitivity_param['param_name'], y=comparison_param, hue='system')
+        else:
+            df = pd.DataFrame()
+            for k, v in comparison_data.items():
+                df_temp = pd.DataFrame(v).stack().to_frame(name=comparison_param).reset_index(names=['skip', 'system'])
+                df_temp[sensitivity_param['param_name']] = k
+                df = pd.concat([df, df_temp])
+            sns.boxplot(data=df,x=sensitivity_param['param_name'], y=comparison_param, hue='system')
+            plt.legend(bbox_to_anchor=(1.05, 0.5, 0.5, 0.5))
+
+    else:
+        # If single value
+        if sim_label in ['avg', 'max', 'min']:
+            sns.scatterplot(comparison_data)
+            plt.xlabel(sensitivity_param['param_name'])
+            plt.ylabel(comparison_param)
+
+        # If distribution
+        if sim_label == 'distribution':
+            sns.boxplot(comparison_data)
+            plt.xlabel(sensitivity_param['param_name'])
+            plt.ylabel(comparison_param)
+
+    return fig
 
 def save_comparison_json(output_dict, sensitivity_param, comparison_param, system_label, sim_label):
     # Get comparison param across iterations
@@ -211,7 +264,8 @@ if __name__ == "__main__":
         'length_trials': 14 * 24,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
-        'size_resources_based_on_tmy': True,
+        'size_re_resources_based_on_tmy': False,
+        'size_battery_based_on_tmy': True,
         'size_resources_with_battery_eff_term': True,
         'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
         're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
@@ -405,8 +459,8 @@ if __name__ == "__main__":
     #   'annual_benefits_usd', 'demand_benefits_usd', 'simple_payback_yr', 'pv_avg_load', 
     #   'pv_peak_load', 'mre_avg_load', 'mre_peak_load', 'gen_avg_load', 'gen_peak_load', 
     #   'batt_avg_load', 'batt_peak_load', 'pv_percent', 'mre_percent', 'batt_percent', 
-    #   'gen_percent', 'fuel_used_gal']
-    #   system label: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+    #   'gen_percent', 'fuel_used_gal', 'storage_recovery_percent']
+    #   system label: [least_fuel, least_cost, pv_only, mre_only, most_diversified, all]
     #   sim label: [avg, min, max, distribution]
     plot_comparison_graphs(output_dict, sensitivity_param, 'gen_total_load', 'most_diversified', 'avg')
     save_comparison_json(output_dict, sensitivity_param, 'gen_total_load', 'least_fuel', 'avg')

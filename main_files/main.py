@@ -126,7 +126,9 @@ def run_mcor(input_dict):
                                 system_inputs['re_constraints'],
                                 tmy_solar=tmy_solar, pv_params=pv_params, tmy_mre=tmy_mre,
                                 mre_params=mre_params, 
-                                size_resources_based_on_tmy=input_dict['system_inputs']['size_resources_based_on_tmy'],
+                                size_re_resources_based_on_tmy=input_dict['system_inputs']['size_re_resources_based_on_tmy'],
+                                size_battery_based_on_tmy=input_dict['system_inputs']['size_battery_based_on_tmy'],
+                                size_resources_with_battery_eff_term=input_dict['system_inputs']['size_resources_with_battery_eff_term'],
                                 dispatch_strategy=input_dict['system_inputs']['dispatch_strategy'],
                                 electricity_rate=financial_inputs['utility_rate'],
                                 net_metering_rate=net_metering_inputs['net_metering_rate'],
@@ -177,7 +179,9 @@ if __name__ == "__main__":
         'length_trials': 14 * days_to_hours,
         'renewable_resources': ['mre', 'pv'], # Can include 'pv' and/or 'mre', in order of dispatch',
         'dispatch_strategy': 'available_capacity',
-        'size_resources_based_on_tmy': True,
+        'size_re_resources_based_on_tmy': False,
+        'size_battery_based_on_tmy': True,
+        'size_resources_with_battery_eff_term': True,
         'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
         're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
     }

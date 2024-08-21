@@ -217,6 +217,9 @@ class GridSearchOptimizer(Optimizer):
         size_batt_for_no_RE_export: Sizes the battery such that no
             excess RE is exported to the grid during normal operation.
 
+        size_batt_for_unmet_load: Sizes the battery such that it is
+            big enough to meet the largest daily load unmet by RE
+
         create_new_system: Create a new SimpleMicrogridSystem to add to
             the system grid
 
@@ -292,7 +295,8 @@ class GridSearchOptimizer(Optimizer):
                  battery_params, system_costs, re_constraints, duration=3600,
                  pv_params=None, mre_params=None, 
                  tmy_solar=None, tmy_mre=None,
-                 size_resources_based_on_tmy=True,
+                 size_re_resources_based_on_tmy=True,
+                 size_battery_based_on_tmy=True,
                  size_resources_with_battery_eff_term=True,
                  dispatch_strategy='night_dynamic_batt',
                  batt_sizing_method='longest_night', electricity_rate=None,
@@ -311,7 +315,8 @@ class GridSearchOptimizer(Optimizer):
         self.tmy_mre = tmy_mre
         self.pv_params = pv_params
         self.mre_params = mre_params
-        self.size_resources_based_on_tmy = size_resources_based_on_tmy
+        self.size_re_resources_based_on_tmy = size_re_resources_based_on_tmy
+        self.size_battery_based_on_tmy = size_battery_based_on_tmy
         self.size_resources_with_battery_eff_term = size_resources_with_battery_eff_term
         self.battery_params = battery_params
         self.system_costs = system_costs
@@ -345,7 +350,8 @@ class GridSearchOptimizer(Optimizer):
                          'dispatch_strategy': dispatch_strategy,
                          'batt_sizing_method': batt_sizing_method,
                          'system_costs': system_costs,
-                         'size_resources_based_on_tmy': size_resources_based_on_tmy,
+                         'size_re_resources_based_on_tmy': size_re_resources_based_on_tmy,
+                         'size_battery_based_on_tmy': size_battery_based_on_tmy,
                          'size_resources_with_battery_eff_term': size_resources_with_battery_eff_term}
             if pv_params is not None:
                 args_dict['pv_params'] = pv_params
@@ -431,7 +437,7 @@ class GridSearchOptimizer(Optimizer):
         re_sizes = {}
 
         # Determine if sizing is based on TMY or profiles
-        if self.size_resources_based_on_tmy:
+        if self.size_re_resources_based_on_tmy:
             # Get the total annual load, mre production and pv production
             total_load = self.annual_load_profile.sum()
             if self.size_resources_with_battery_eff_term:
@@ -560,7 +566,7 @@ class GridSearchOptimizer(Optimizer):
         """
 
         # Determine if sizing is based on TMY or profiles
-        if self.size_resources_based_on_tmy:
+        if self.size_re_resources_based_on_tmy:
             # Get the total annual load and pv production
             total_load = self.annual_load_profile.sum()
             if self.size_resources_with_battery_eff_term:
@@ -629,10 +635,10 @@ class GridSearchOptimizer(Optimizer):
         max_nightly_energy = night_df.groupby(['month', 'day'])['load']. \
             sum().max()
 
-        # Maximum battery capacity = max nightly load / RTE
-        system_rte = self.battery_params['one_way_battery_efficiency'] ** 2 \
-                     * self.battery_params['one_way_inverter_efficiency'] ** 2
-        max_cap = max_nightly_energy / system_rte
+        # Maximum battery capacity = max nightly load / OWE
+        system_owe = self.battery_params['one_way_battery_efficiency'] \
+                     * self.battery_params['one_way_inverter_efficiency'] 
+        max_cap = max_nightly_energy / system_owe
         max_pow = max_cap * self.battery_params['battery_power_to_energy']
 
         return [(max_cap, max_pow),
@@ -640,6 +646,59 @@ class GridSearchOptimizer(Optimizer):
                 (max_cap * 0.5, max_pow * 0.5),
                 (max_cap * 0.25, max_pow * 0.25),
                 (0, 0)]
+
+    def _calculate_excess_RE(self, re_sizes):
+        """
+        Calculates excess RE that can be used to charge a battery and load not met,
+            using either TMY data or individual profiles
+
+        Args:
+            re_sizes (dict): dictionary of PV and MRE capacities, with key as system name and
+                values as dictionaries with keys 'pv' and/or 'mre'
+        """
+
+        # Determine if sizing is based on TMY or profiles
+        if self.size_battery_based_on_tmy:
+            # Get the total annual load and pv production
+            excess_re = self.annual_load_profile.copy(deep=True).to_frame(name='load')
+            if self.pv_params:
+                excess_re['pv_base'] = self.tmy_solar.values
+            else:
+                excess_re['pv_base'] = 0
+            if self.mre_params:
+                excess_re['mre_base'] = self.tmy_mre.values
+            else:
+                excess_re['mre_base'] = 0
+        else:
+            # Get the total load and pv production from the profiles
+            excess_re = pd.concat(self.load_profiles).to_frame(name='load')
+            if self.pv_params:
+                excess_re['pv_base'] = pd.concat(self.power_profiles['pv']).values
+            else:
+                excess_re['pv_base'] = 0
+            if self.mre_params:
+                excess_re['mre_base'] = pd.concat(self.power_profiles['mre']).values
+            else:
+                excess_re['mre_base'] = 0
+
+        # Calculate excess RE production for each system
+        for system_name, sizes in re_sizes.items():
+            excess_re[system_name] = excess_re['pv_base'] * sizes['pv'] \
+                + excess_re['mre_base'] * sizes['mre']
+            excess_re[f'{system_name}_exported'] = excess_re[system_name] \
+                - excess_re['load']
+            excess_re[f'{system_name}_loadnotmet'] = excess_re['load'] \
+                - excess_re[system_name]
+        excess_re[excess_re < 0] = 0
+
+        # Calculate battery power as the maximum exported RE power
+        power = excess_re.max()
+        
+        # Group load not met by day
+        excess_re['day'] = excess_re.index.date
+        cap = excess_re.groupby('day').sum().max()
+
+        return power, cap
 
     def size_batt_for_no_RE_export(self, re_sizes):
         """
@@ -649,40 +708,38 @@ class GridSearchOptimizer(Optimizer):
         Args:
             re_sizes (dict): dictionary of PV and MRE capacities, with key as system name and
                 values as dictionaries with keys 'pv' and/or 'mre'
-            load_profile (Pandas Series): _description_
         """
-        
-        # Calculate excess RE production for each system
-        excess_re = self.annual_load_profile.copy(deep=True).to_frame(name='load')
-        if self.pv_params:
-            excess_re['pv_base'] = self.tmy_solar.values
-        else:
-            excess_re['pv_base'] = 0
-        if self.mre_params:
-            excess_re['mre_base'] = self.tmy_mre.values
-        else:
-            excess_re['mre_base'] = 0
-        for system_name, sizes in re_sizes.items():
-            excess_re[system_name] = excess_re['pv_base'] * sizes['pv'] \
-                + excess_re['mre_base'] * sizes['mre']
-            excess_re[f'{system_name}_exported'] = excess_re[system_name] \
-                - excess_re['load']
-        excess_re[excess_re < 0] = 0
 
-        # Calculate battery power as the maximum exported RE power
-        power = excess_re.max()
-
-        # Calculate capacity as the maximum daily exported RE energy
-        excess_re['day'] = excess_re.index.date
-        cap = excess_re.groupby('day').sum().max()
+        # Calculate excess RE
+        power, cap = self._calculate_excess_RE(re_sizes)
 
         return {system_name: (round(cap[f'{system_name}_exported'] *
-                                    self.battery_params['one_way_inverter_efficiency'] *
-                                    self.battery_params['one_way_battery_efficiency'], 2),
+                       self.battery_params['one_way_inverter_efficiency'] *
+                       self.battery_params['one_way_battery_efficiency'], 2),
                               round(power[f'{system_name}_exported'] *
-                                    self.battery_params['one_way_inverter_efficiency'], 2))
+                       self.battery_params['one_way_inverter_efficiency'], 2))
                 for system_name in re_sizes.keys()}
+    
+    def size_batt_for_unmet_load(self, re_sizes):
+        """
+        Sizes the battery such that the capacity is the maximum daily load not met by RE and the 
+        power is the maximum excess hourly RE.
 
+        Args:
+            re_sizes (dict): dictionary of PV and MRE capacities, with key as system name and
+                values as dictionaries with keys 'pv' and/or 'mre'
+        """
+
+        # Calculate excess RE
+        power, cap = self._calculate_excess_RE(re_sizes)
+
+        return {system_name: (round(cap[f'{system_name}_loadnotmet'] /
+                       (self.battery_params['one_way_inverter_efficiency'] *
+                       self.battery_params['one_way_battery_efficiency']), 2),
+                              round(power[f'{system_name}_exported'] /
+                       self.battery_params['one_way_inverter_efficiency'], 2))
+                for system_name in re_sizes.keys()}
+    
     def size_batt_for_no_pv_export(self, pv_sizes, load_profile):
         """
         Sizes the battery such that no excess PV is exported to the grid
@@ -834,7 +891,15 @@ class GridSearchOptimizer(Optimizer):
         # Determine which method to use for sizing the battery
         if self.mre_params:
             # Size battery to capture all excess RE generation
-            batt_range = self.size_batt_for_no_RE_export(re_sizes)
+            if self.batt_sizing_method == 'no_RE_export':
+                batt_range = self.size_batt_for_no_RE_export(re_sizes)
+            elif self.batt_sizing_method == 'unmet_load':
+                batt_range = self.size_batt_for_unmet_load(re_sizes)
+            else:
+                # Add error about wrong label
+                message = 'Invalid battery sizing method, for systems with MRE, you must choose no_re_export or unmet_load'
+                log_error(message)
+                raise Exception(message)
             
             # Add add'l systems for battery to capture 75% and 50% of excess energy
             re_sizes_new = {}
@@ -1535,7 +1600,7 @@ class GridSearchOptimizer(Optimizer):
         Parameters
         ----------
         comparison_param: name of parameter to be compared across iterations. Must be the name of a column from the Optimizer results_grid.
-        system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified]
+        system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified, all]
         sim_label: indicates which simulation to reference, options include: [avg, max, min, distribution]
 
         """
@@ -1550,22 +1615,31 @@ class GridSearchOptimizer(Optimizer):
             validate_all_parameters(args_dict)
 
         # Filter results grid to get appropriate system
-        if system_label == 'least_fuel':
-            system_row = self.results_grid.sort_values('fuel_used_gal mean')
-        elif system_label == 'least_cost':
-            system_row = self.results_grid.sort_values('capital_cost_usd')
-        elif system_label == 'pv_only':
-            system_row = self.results_grid[(self.results_grid['pv_capacity'] > 0) & (self.results_grid['mre_capacity'] == 0)]
-        elif system_label == 'mre_only':
-            system_row = self.results_grid[(self.results_grid['mre_capacity'] > 0) & (self.results_grid['pv_capacity'] == 0)]
-        elif system_label == 'most_diversified':
-            system_row = self.results_grid[(self.results_grid['pv_percent mean'] > 0) & (self.results_grid['mre_percent mean'] > 0)].sort_values('gen_percent mean', ascending=True)
-        if len(system_row):
-            system_row = system_row.iloc[0]
+        if system_label == 'all':
+            system_row = self.results_grid
         else:
-            print('A system with those requirements was not found.')
-            return
-        
+            if system_label == 'least_fuel':
+                system_row = self.results_grid.sort_values('fuel_used_gal mean')
+            elif system_label == 'least_cost':
+                system_row = self.results_grid.sort_values('capital_cost_usd')
+            elif system_label == 'pv_only':
+                system_row = self.results_grid[(self.results_grid['pv_capacity'] > 0) & (self.results_grid['mre_capacity'] == 0)]
+            elif system_label == 'mre_only':
+                system_row = self.results_grid[(self.results_grid['mre_capacity'] > 0) & (self.results_grid['pv_capacity'] == 0)]
+            elif system_label == 'most_diversified':
+                system_row = self.results_grid[(self.results_grid['pv_percent mean'] > 0) & (self.results_grid['mre_percent mean'] > 0)].sort_values('gen_percent mean', ascending=True)
+            if len(system_row):
+                system_row = system_row.iloc[0]
+            else:
+                print('A system with those requirements was not found.')
+                return
+            
+            # Get appropriate system object
+            system_name = 'pv_{:.1f}kW_tidal_{:.1f}kW_batt_{:.1f}kW_{:.1f}kWh'.format(
+                system_row['pv_capacity'], system_row['mre_capacity'], system_row['battery_power'], 
+                system_row['battery_capacity'])
+            s = self.get_system(system_name)
+
         # If param already in system row, grab from system row and return
         if comparison_param in system_row:
             return system_row[comparison_param]
@@ -1573,22 +1647,26 @@ class GridSearchOptimizer(Optimizer):
             return system_row[f'{comparison_param} mean']
         elif sim_label == 'max' and f'{comparison_param} max' in system_row:
             return system_row[f'{comparison_param} max']
-            
-        # Get appropriate system object
-        system_name = 'pv_{:.1f}kW_tidal_{:.1f}kW_batt_{:.1f}kW_{:.1f}kWh'.format(
-            system_row['pv_capacity'], system_row['mre_capacity'], system_row['battery_power'], 
-            system_row['battery_capacity'])
-        s = self.get_system(system_name)
 
         # Return avg, max, min or list across simulations
-        if sim_label == 'avg':
-            return np.mean(s.outputs[comparison_param])
-        elif sim_label == 'max':
-            return np.max(s.outputs[comparison_param])
-        elif sim_label == 'min':
-            return np.min(s.outputs[comparison_param])
-        elif sim_label == 'distribution':
-            return s.outputs[comparison_param]
+        if system_label == 'all':
+            if sim_label == 'avg':
+                return {sys_name: np.mean(sys_data.outputs[comparison_param]) for sys_name, sys_data in self.output_system_grid.items()}
+            elif sim_label == 'max':
+                return {sys_name: np.max(sys_data.outputs[comparison_param]) for sys_name, sys_data in self.output_system_grid.items()}
+            elif sim_label == 'min':
+                return {sys_name: np.min(sys_data.outputs[comparison_param]) for sys_name, sys_data in self.output_system_grid.items()}
+            elif sim_label == 'distribution':
+                return {sys_name: sys_data.outputs[comparison_param] for sys_name, sys_data in self.output_system_grid.items()}
+        else:
+            if sim_label == 'avg':
+                return np.mean(s.outputs[comparison_param])
+            elif sim_label == 'max':
+                return np.max(s.outputs[comparison_param])
+            elif sim_label == 'min':
+                return np.min(s.outputs[comparison_param])
+            elif sim_label == 'distribution':
+                return s.outputs[comparison_param]
         
     def add_system(self, new_system, validate=True):
         """  Add a specific system to the input list """

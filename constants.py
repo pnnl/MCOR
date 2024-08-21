@@ -40,7 +40,10 @@ battery_metrics = {'battery_capacity': {'display_name': 'Battery Capacity', 'uni
                    'batt_peak_load max': {'display_name': 'Max Peak Battery Load', 'units': 'kW', 
                                           'format': 'one_fp'},
                    'batt_percent mean': {'display_name': 'Battery Percent', 'units': '%', 
-                                         'format': 'perc'}}
+                                         'format': 'perc'},
+                    'storage_recovery_percent mean': {'display_name': 'Storage Recovery', 'units': '%',
+                                         'format': 'perc'}                        
+                                         }
 mre_metrics = {'mre_capacity': {'display_name': 'MRE Capacity', 'units': 'kW', 
                                 'format': 'one_fp'}, 
                'mre_capital': {'display_name': 'MRE Capital', 'units': '$', 'format': 'dollars'}, 
@@ -93,4 +96,4 @@ metric_order = ['pv_capacity', 'mre_capacity', 'battery_capacity', 'battery_powe
                 'gen_total_load mean', 'gen_total_load max',
                 'batt_avg_load mean', 'batt_peak_load mean', 'batt_peak_load max',
                 'pv_percent mean', 'mre_percent mean', 'batt_percent mean', 
-                'gen_percent mean', 'fuel_used_gal mean', 'fuel_used_gal max']
+                'gen_percent mean', 'fuel_used_gal mean', 'fuel_used_gal max', 'storage_recovery_percent mean']
