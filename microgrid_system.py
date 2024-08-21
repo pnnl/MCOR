@@ -292,17 +292,17 @@ class Tidal(MRE):
     def calc_om_cost(self, cost_df, existing_components):
         """ Calculates O&M costs of a Tidal array """
 
-        # Adjust total mre_capacity to consider existing pv
+        # Adjust total mre_capacity to consider existing mre
         if 'mre' in existing_components.keys() and \
                 existing_components['mre'].generator_type == 'tidal':
             adjusted_mre_num = max(
-                self.num_generators - existing_components['mre'].num_generators, 0)
+                self.mre_capacity - existing_components['mre'].mre_capacity, 0)
         else:
-            adjusted_mre_num = self.num_generators
+            adjusted_mre_cap = self.mre_capacity
 
         # Set O&M cost
-        tidal_om_cost_per_turbine = cost_df['Tidal'].values[1]
-        return adjusted_mre_num * tidal_om_cost_per_turbine
+        tidal_om_cost_per_kw = cost_df['Tidal'].values[1]
+        return adjusted_mre_cap * tidal_om_cost_per_kw
 
 
 class Wave(MRE):
