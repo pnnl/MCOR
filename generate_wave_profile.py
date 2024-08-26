@@ -16,6 +16,7 @@ from scipy.integrate import trapezoid
 import numpy as np
 import seaborn as sns
 import os
+from config import WAVE_DATA_DIR
 #from validation import validate_all_parameters
 
 class WaveProfileGenerator:
@@ -26,13 +27,13 @@ class WaveProfileGenerator:
 
      Parameters
      ----------
-          file_paths: Currently accepts .csv and .xlsx files only. 
+          file_dir: Should include .csv and .xlsx files only. 
                
                Input site latitude and longitude into Marine Energy Atlas, and check boxes for 
           
                "significant wave height" and "energy period" and download all years. 
                
-               Insert path to texts into the file_paths brackets in the main section at the bottom
+               Insert name of file dir brackets in the main section at the bottom
 
                of this page.
 
@@ -98,6 +99,10 @@ class WaveProfileGenerator:
           outage_starttime: represents the starttime of the outage in whole numbers - 24-hr time.
 
           number_of_devices: represents the number of devices in the planned array.
+
+          start_year: start year of data files
+
+          end_year: end year of data files
 
           plot: user chooses which plots they'd like to view. Inputs are: ['power', 'energy', 'SWH', 'EP'] 
           
@@ -190,14 +195,16 @@ class WaveProfileGenerator:
                seasonal regularites.
 
     """
-     def __init__(self, file_paths, model, outage_month, outage_length, 
-                  outage_starttime, number_of_devices, plot, validate = True):
-          self.file_paths = file_paths
+     def __init__(self, file_dir, model, outage_month, outage_length, 
+                  outage_starttime, number_of_devices, start_year, end_year, plot, validate = True):
+          self.file_dir = file_dir
           self.model = model
           self.outage_month = outage_month
           self.outage_length = outage_length
           self.outage_starttime = outage_starttime
           self.number_of_devices = number_of_devices
+          self.start_year = start_year
+          self.end_year = end_year
           self.plot = plot
           self.sig_wave_heights = []
           self.energy_periods = []
@@ -264,8 +271,10 @@ class WaveProfileGenerator:
           col_name_day = ['Day', 'day']
           col_name_hour = ['Hour', 'hour']
 
-          for file_path in self.file_paths:
-               file_extension = os.path.splitext(file_path)[1].lower()
+          file_names = [elem for elem in os.listdir(self.file_dir) if 'csv' in elem or 'xlsx' in elem]
+          for filename in file_names:
+               file_path = os.path.join(self.file_dir, filename)
+               file_extension = os.path.splitext(file_path)[-1].lower()
                if file_extension =='.csv':
                     initial_rows = pd.read_csv(file_path, nrows=10)
                elif file_extension =='.xlsx':
@@ -323,7 +332,7 @@ class WaveProfileGenerator:
           full_energy_period=[]
           prev_month = 1
 
-          for i in range(0, len(self.file_paths)):
+          for i in range(0, len(file_names)):
                current_year = self.all_months[i]
                current_swh_year = self.sig_wave_heights[i] 
                current_ep_year = self.energy_periods[i]
@@ -472,10 +481,10 @@ class WaveProfileGenerator:
 
           """
 
-          power_files = ['C:/Users/kell321/MCOR/wave_data/Power_Gen_Data/ModelAAveragePower.xlsx', 
-                         'C:/Users/kell321/MCOR/wave_data/Power_Gen_Data/ModelBAveragePower.xlsx', 
-                         'C:/Users/kell321/MCOR/wave_data/Power_Gen_Data/ModelCAveragePower.xlsx', 
-                         'C:/Users/kell321/MCOR/wave_data/Power_Gen_Data/ModelDAveragePower.xlsx']
+          power_files = [
+               os.path.join(WAVE_DATA_DIR, 'Power_Gen_Data', f'Model{model}AveragePower.xlsx')
+               for model in ['A', 'B', 'C', 'D']
+          ]
           if self.model == 'A' or self.model == 'a':
                power_list = pd.read_excel(power_files[0], skiprows=0)
           elif self.model == 'B' or self.model =='b':
@@ -633,7 +642,9 @@ class WaveProfileGenerator:
           sample_month = self.outage_month
           outage_hours = self.outage_length
           hour_input = self.outage_starttime
-          sample_year_index = random.randint(0,len(self.file_paths)-1)
+          sample_year_index = random.randint(0, len(list(range(self.start_year, self.end_year+1))))
+          year = list(range(self.start_year, self.end_year+1))[sample_year_index]
+          # year = random.sample(list(range(self.start_year, self.end_year+1)), 1)[0]
           selected_year_data = {
                'Month':self.all_months[sample_year_index],
                'Day':self.all_days[sample_year_index],
@@ -654,8 +665,6 @@ class WaveProfileGenerator:
                     filtered_data['Hour'].append(selected_year_data['Hour'][i])
                     filtered_data['SignificantWaveHeight'].append(selected_year_data['SignificantWaveHeight'][i])
                     filtered_data['EnergyPeriod'].append(selected_year_data['EnergyPeriod'][i])
-          file_year = self.file_paths[sample_year_index]
-          year = file_year.split('_')[-1].split('.')[0]
 
           print(f"Data selected from {self.output_month} in {year} lasting {outage_hours} hours starting at {hour_input}:00")
           sample_swh = filtered_data['SignificantWaveHeight']
@@ -1026,7 +1035,8 @@ class WaveProfileGenerator:
           monthly_ep=[]
           yearly_ep=[]
 
-          for m in range(0, len(self.file_paths)): 
+          file_names = [elem for elem in os.listdir(self.file_dir) if 'csv' in elem or 'xlsx' in elem]
+          for m in range(0, len(file_names)): 
                current_year_swh = self.full_swh_list[m] 
                current_year_ep=self.full_ep_list[m]
                current_month_swh = current_year_swh[self.outage_month-1] 
@@ -1425,46 +1435,14 @@ class WaveProfileGenerator:
 if __name__ == "__main__":
 
      wave_profile = WaveProfileGenerator(
-     file_paths = [
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1979.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1980.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1981.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1982.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1983.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1984.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1985.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1986.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1988.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1987.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1988.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1989.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1990.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1991.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1992.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1993.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1994.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1995.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1996.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1997.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1998.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/167365_48.36_-124.72_1999.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2000.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2001.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2002.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2003.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2004.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2005.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2006.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2007.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2008.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2009.csv',
-     'C:/Users/kell321/MCOR/wave_data/Hobuck_Beach_MEA_Data/169361_48.36_-124.72_2010.csv',
-     ],
+     file_dir=os.path.join(WAVE_DATA_DIR, 'Hobuck_Beach_MEA_Data'),
      model = 'd',
      outage_month = 11,
      outage_length = 13,
      outage_starttime = 13,
      number_of_devices = 2,
+     start_year=1979,
+     end_year=2010,
      plot = ['SWH', 'EP','power', 'energy']
      )
 
