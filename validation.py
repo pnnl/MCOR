@@ -432,7 +432,7 @@ def check_pv_costs(pv_costs):
         return False
 
     # Check that price values are acceptable
-    for price in np.ravel(pv_costs.values):
+    for price in np.ravel(pv_costs.iloc[1:].values):
         validate_parameter('pv_cost_per_W', price, **CONSTRAINTS_DICT['pv_cost_per_W'])
     return True
 

@@ -15,6 +15,7 @@ File contents:
 """
 
 import json
+from logging import raiseExceptions
 import multiprocessing
 import os
 import sys
@@ -597,8 +598,27 @@ class GridSearchOptimizer(Optimizer):
         #   solar to equal annual load plus losses
         max_cap = (total_load + total_lost) / total_pv
 
+        # Filter out any sizes above total or pv constraint
+        sizes = [max_cap, net_zero, net_zero * 0.5, net_zero * 0.25]
+        sizes_with_pv_constraint = []
+        if 'pv' in self.re_constraints:
+            for size in sizes:
+                if size <= self.re_constraints['pv']:
+                    sizes_with_pv_constraint += [size]
+        else:
+            sizes_with_pv_constraint = sizes
+        sizes_with_total_constraint = []
+        if 'total' in self.re_constraints:
+            for size in sizes_with_pv_constraint:
+                if size <= self.re_constraints['total']:
+                    sizes_with_total_constraint += [size]
+        else:
+            sizes_with_total_constraint = sizes_with_pv_constraint
+        if not len(sizes_with_total_constraint):
+            raise Exception('ERROR: no PV sizes were found below the specified PV or total capacity constraint. Try raising the constraint capacity.')
+
         # Create grid based on max, min and standard intervals
-        return [max_cap, net_zero, net_zero * 0.5, net_zero * 0.25]
+        return sizes_with_total_constraint
 
     def size_batt_by_longest_night(self, load_profile):
         """
@@ -938,7 +958,21 @@ class GridSearchOptimizer(Optimizer):
             # Size battery to capture all excess PV generation
             batt_range = self.size_batt_for_no_pv_export(
                 pv_range, self.annual_load_profile.copy(deep=True))
-
+            
+            # Add add'l systems for battery to capture 75% and 50% of excess energy
+            pv_range_new = []
+            batt_range_new = []
+            for i, pv_size in enumerate(pv_range):
+                batt_size = batt_range[i]
+                for batt_percent in [1, .75, .50]:
+                    pv_range_new += [pv_size]
+                    batt_range_new += [tuple(b_size * batt_percent for b_size in batt_size)]
+                # Add and any battery sizes from include_batt list
+                for batt_size in include_batt:
+                    pv_range_new += [pv_size]
+                    batt_range_new += [batt_size]                      
+            pv_range = pv_range_new
+            batt_range = batt_range_new
         else:
             # Add error about wrong label
             message = 'Invalid battery sizing method'
