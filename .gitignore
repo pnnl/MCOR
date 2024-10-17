@@ -8,5 +8,6 @@ data/*
 main_files/*
 output/*
 solar_data/*
+tidal_data/*
 creds.yaml
 tests/system_tests/data/solar_data/*
