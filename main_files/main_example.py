@@ -200,17 +200,16 @@ if __name__ == "__main__":
         'get_solar_profiles': True
     }
 
-    device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
-    device_name = "RM1"
-
     # MRE dictionary
+    mre_device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
+    mre_device_name = "RM1"
     input_dict['mre_inputs'] =  {
         'marine_data_filename' : 'PortAngeles_2015_alldepths.csv',
         'generator_type': 'tidal',
-        'device_name': device_name,
-        'tidal_turbine_rated_power': int(device_costs.loc[device_name, 'Rated Power (kW)']),
-        'tidal_rotor_radius': int(device_costs.loc[device_name, 'Rotor Diameter (m)']/2),
-        'tidal_rotor_number': int(device_costs.loc[device_name, 'Rotors per Turbine']),
+        'device_name': mre_device_name,
+        'tidal_turbine_rated_power': int(mre_device_costs.loc[mre_device_name, 'Rated Power (kW)']),
+        'tidal_rotor_radius': int(mre_device_costs.loc[mre_device_name, 'Rotor Diameter (m)']/2),
+        'tidal_rotor_number': int(mre_device_costs.loc[mre_device_name, 'Rotors per Turbine']),
         'depth': 10,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
@@ -252,6 +251,9 @@ if __name__ == "__main__":
     input_dict['multithreading_inputs']['multithreading'] = False
 
     # Post-processing inputs
+    # To plot the scenarios with min/max pv or mre, set 'scenario_criteria' to 'pv' or 'mre', 
+    #   to plot scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', 
+    #   or to plot a specific scenario number, set the scenario_num parameter
     input_dict['post_processing_inputs'] = {
         'filtering_constraints': [],
         'ranking_criteria': [{'parameter': 'simple_payback_yr', 'order_type': 'ascending'}],
@@ -284,7 +286,7 @@ if __name__ == "__main__":
         'net_metering_rate': None
     }
 
-    # Other SolarProfileGenerator inputs dictionary
+    # Warning inputs dictionary
     input_dict['warning_inputs'] = {
         'suppress_warnings': False
     }
@@ -295,14 +297,9 @@ if __name__ == "__main__":
         'save_filename': 'project_name'
     }
 
-    # Settings for dispatch plots
-    # To plot the scenarios with min/max pv or mre, set 'scenario_criteria' to 'pv' or 'mre', 
-    #   to plot scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', 
-    #   or to plot a specific scenario number, set the scenario_num parameter
-    scenario_criteria = 'pv'
-    scenario_num = None
-
-    save_filename = input_dict['output_inputs']['save_filename']
+    ###########################################################################
+    # End parameter input here
+    ###########################################################################
 
     # call run_mcor()
     optim, spg, tpg = run_mcor(input_dict)
@@ -314,10 +311,11 @@ if __name__ == "__main__":
         tpg.tidal_checks()
 
     # Plot dispatch graphs
-    optim.plot_best_system(scenario_criteria=scenario_criteria, 
-                           scenario_num=scenario_num, stacked_graphs=True)
+    optim.plot_best_system(scenario_criteria=input_dict['post_processing_inputs']['dispatch_plot_scenario_criteria'], 
+                           scenario_num=input_dict['post_processing_inputs']['dispatch_plot_scenario_num'], stacked_graphs=True)
 
     # Save results
+    save_filename = input_dict['output_inputs']['save_filename']
     optim.save_results_to_file(spg, tpg, save_filename)
     pickle.dump(optim, open(os.path.join(OUTPUT_DIR, '{}.pkl'.format(save_filename)), 'wb'))
 

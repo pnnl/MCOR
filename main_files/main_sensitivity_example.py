@@ -238,6 +238,11 @@ def save_comparison_json(output_dict, sensitivity_param, comparison_param, syste
 
 
 if __name__ == "__main__":
+
+    ###########################################################################
+    # Define simulation parameters here
+    ###########################################################################
+
     # Define varying parameter
     # TODO - should we constrain which parameters can be varying? how many params can be varied at a time?
     sensitivity_param = {
@@ -285,17 +290,16 @@ if __name__ == "__main__":
         'get_solar_profiles': True
     }
 
-    device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
-    device_name = "RM1"
-
     # MRE dictionary
+    mre_device_costs = pd.read_excel(os.path.join(DATA_DIR, 'MCOR Prices.xlsx'), sheet_name='mre_costs', index_col=0)
+    mre_device_name = "RM1"
     input_dict['mre_inputs'] =  {
         'marine_data_filename' : 'PortAngeles_2015_alldepths.csv',
         'generator_type': 'tidal',
-        'device_name': device_name,
-        'tidal_turbine_rated_power': int(device_costs.loc[device_name, 'Rated Power (kW)']),
-        'tidal_rotor_radius': int(device_costs.loc[device_name, 'Rotor Diameter (m)']/2),
-        'tidal_rotor_number': int(device_costs.loc[device_name, 'Rotors per Turbine']),
+        'device_name': mre_device_name,
+        'tidal_turbine_rated_power': int(mre_device_costs.loc[mre_device_name, 'Rated Power (kW)']),
+        'tidal_rotor_radius': int(mre_device_costs.loc[mre_device_name, 'Rotor Diameter (m)']/2),
+        'tidal_rotor_number': int(mre_device_costs.loc[mre_device_name, 'Rotors per Turbine']),
         'depth': 10,
         'maximum_cp': 0.42,
         'tidal_cut_in_velocity': 0.5,
@@ -337,6 +341,9 @@ if __name__ == "__main__":
     input_dict['multithreading_inputs']['multithreading'] = False
 
     # Post-processing inputs
+    # To plot the scenarios with min/max pv or mre, set 'scenario_criteria' to 'pv' or 'mre', 
+    #   to plot scenarios with min/max fuel consumption, set 'scenario_criteria' to 'gen', 
+    #   or to plot a specific scenario number, set the scenario_num parameter
     input_dict['post_processing_inputs'] = {
         'filtering_constraints': [],
         'ranking_criteria': [{'parameter': 'simple_payback_yr', 'order_type': 'ascending'}],
@@ -358,7 +365,7 @@ if __name__ == "__main__":
         'net_metering_rate': None
     }
 
-    # Other SolarProfileGenerator inputs dictionary
+    # Warning inputs dictionary
     input_dict['warning_inputs'] = {
         'suppress_warnings': False
     }

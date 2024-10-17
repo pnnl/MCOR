@@ -151,10 +151,9 @@ class GridSearchOptimizer(Optimizer):
 
         batt_sizing_method: method for sizing the battery. Options are:
                 - longest_night
-                - no_pv_export
+                - no_RE_export
+                - unmet_load
                 Default = longest_night
-            Note: when a marine-renewable system is included, this is overriden and automatically
-            sizes for no RE export.
 
         electricity_rate: Local electricity rate in $/kWh. If it is set
             to None, the rate is determined by looking up the average
@@ -935,7 +934,7 @@ class GridSearchOptimizer(Optimizer):
             #   with highest load)
             batt_range = self.size_batt_by_longest_night(batt_sizing_load)
 
-        elif self.batt_sizing_method == 'no_pv_export':
+        elif self.batt_sizing_method == 'no_RE_export':
             # Size battery to capture all excess PV generation
             batt_range = self.size_batt_for_no_pv_export(
                 pv_range, self.annual_load_profile.copy(deep=True))
@@ -967,7 +966,7 @@ class GridSearchOptimizer(Optimizer):
                     system_name, system = self.create_new_system(pv_size, 0,
                                                                  battery_size)
                     self.input_system_grid[system_name] = system
-        elif self.batt_sizing_method == 'no_pv_export':
+        elif self.batt_sizing_method == 'no_RE_export':
             for pv_size, battery_size in zip(pv_range, batt_range):
                 system_name, system = self.create_new_system(pv_size, 0,
                                                              battery_size)

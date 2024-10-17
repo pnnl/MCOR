@@ -176,7 +176,6 @@ class TidalProfileGenerator:
     def extrapolate_tidal_epoch(self, validate=True):
         """Extract tidal constituents from 8760 of tidal current data and extrapolate 19-year tidal epoch"""
 
-        # TODO: modify this in the future to extrapolate any amount of data
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             coef = solve(t = self.tidal_current.index, u = self.tidal_current['u'], v = self.tidal_current['v'], 

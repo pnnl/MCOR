@@ -33,28 +33,37 @@ nrel_api_email: <your email>
 ```
 
 ### How to run MCOR
-To run MCOR, update the parameter values in the first half of main.py (or your site-specific
-copy of main.py) under the section titled "Define simulation parameters here". Then run 
-main.py in either a terminal or your IDE of choice.
+To run MCOR, update the parameter values in the first half of main_example.py (or your site-specific
+copy of main_example.py) under the section titled "Define simulation parameters here". Then run 
+main_example.py in either a terminal or your IDE of choice.
   
 ## Contents
 
 ### data/
 Includes input data such as component costs, generator specs, and validation requirements.
 
-### main_files/main.py
+### main_files/
+
+#### main_example.py
 Script for running MCOR from the command line. This file must be copied and 
 modified to include site parameters.
 
+#### main_sensitivity.py
+Script for running MCOR from the command line, and varying one parameter across a set of values.
+This file must be copied and modified to include site parameters.
+
 ### output/
-Output data from an MCOR run is saved here (Excel and pkl files).
+Output data from an MCOR run is saved here (Excel, json, and pkl files).
 
 ### solar_data/
-Includes downloaded NREL solar data and generated solar profile files that are created when
-running MCOR.
+Includes downloaded NREL solar data and generated solar profile files that are created when running MCOR.
 
 ### tests/
 Unit and integration tests.
+
+### tidal_data/
+Includes downloaded data (must be user supplied) and generated tidal profile files that
+are created when running MCOR with a tidal energy resource. 
 
 ### alternative_solar_profiles.py
 Alternative Solar Profiles (ASP) algorithm used for solar forecasting:
@@ -67,11 +76,14 @@ Classes:
 Standalone functions:
 * date_parser
 
-### creds.yaml
-Includes credentials for NREL api key. Needs to be created upon MCOR installation/set-up. 
-
 ### config.py
 Includes repository paths.
+
+### constants.py
+Tool-wide constants used for displaying simulation results.
+
+### creds.yaml
+Includes credentials for NREL api key. Needs to be created upon MCOR installation/set-up. 
 
 ### generate_solar_profile.py
 Calls the ASP code and calculates AC power production.
@@ -91,6 +103,20 @@ Standalone functions:
 * calc_pv_prod
 * calc_night_duration
 * parse_himawari_tmy
+
+### generate_tidal_profile.py
+Generates tidal generation profiles using one-year of modeled 
+hindcast data. 
+
+Tidal epoch extrapolation carried out using utide:
+    https://pypi.org/project/UTide/
+
+#### File contents:
+Classes:
+* TidalProfileGenerator
+
+Standalone functions:
+* calc_tidal_prod
 
 ### microgrid_optimizer.py
 Optimization class for simulating, filtering and ranking microgrid systems.
@@ -121,6 +147,9 @@ Class structure for microgrid system and its components.
 Classes:
 * Component
 * PV (inherits from Component)
+* MRE (inherits from Component)
+* Tidal (inherits from MRE)
+* Wave (inherits from MRE)
 * Battery (inherits from Component)
 * SimpleLiIonBattery (inherits from Battery)
 * Generator (inherits from Component)
