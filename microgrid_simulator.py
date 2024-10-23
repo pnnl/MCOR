@@ -145,6 +145,10 @@ class REBattGenSimulator(Simulator):
 
         get_gen_total: Returns total generator production
 
+        get_outage_load: Returns total load from the outage period
+
+        get_hours_before_gen: Returns the number of hours the microgrid can supply power before the generator is used
+
         get_batt_avg: Returns mean power of battery power supplied to system (excluding 0's and negative values)
 
         get_batt_peak: Returns max power of battery power supplied to system
@@ -578,6 +582,16 @@ class REBattGenSimulator(Simulator):
             return non_zero_gen_power['load_not_met'].sum()
         else:
             return 0
+        
+    def get_outage_load(self):
+        return self.dispatch_df['load'].sum()
+    
+    def get_hours_before_gen(self):
+        df_temp = self.dispatch_df.copy(deep=True).reset_index()
+        try:
+            return df_temp[df_temp['load_not_met'] > 0].index[0]
+        except IndexError:
+            return len(self.dispatch_df)
 
     def get_batt_avg(self):
         greater_than_zero_batt_power = self.dispatch_df[self.dispatch_df['delta_battery_power'] > 0]

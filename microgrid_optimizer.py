@@ -1253,6 +1253,7 @@ class GridSearchOptimizer(Optimizer):
                            'pv_avg_load': [], 'pv_peak_load': [],
                            'mre_avg_load': [], 'mre_peak_load': [],
                            'gen_avg_load': [], 'gen_peak_load': [], 'gen_total_load': [],
+                           'outage_total_load': [], 'hours_before_gen': [],
                            'batt_avg_load': [], 'batt_peak_load': []}
 
         # For each resource profile, create a simulator object
@@ -1324,6 +1325,10 @@ class GridSearchOptimizer(Optimizer):
                 [simulation.get_gen_peak()]
             results_summary['gen_total_load'] += \
                 [simulation.get_gen_total()]
+            results_summary['outage_total_load'] += \
+                [simulation.get_outage_load()]
+            results_summary['hours_before_gen'] += \
+                [simulation.get_hours_before_gen()]
             results_summary['batt_avg_load'] += \
                 [simulation.get_batt_avg()]
             results_summary['batt_peak_load'] += \
@@ -1367,7 +1372,7 @@ class GridSearchOptimizer(Optimizer):
             outputs = system.outputs
 
             # For each metric, calculate mean, max, and standard deviation
-            results_summary = {key: {'mean': np.mean(val), 'std': np.std(val), 'max':np.max(val)}
+            results_summary = {key: {'mean': np.mean(val), 'std': np.std(val), 'max':np.max(val), 'min': np.min(val)}
                                for key, val in outputs.items() if len(val)}
 
             # Save to system object
