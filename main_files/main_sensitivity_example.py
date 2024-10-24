@@ -146,7 +146,7 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
     output_dict: dictionary of Optimizer objects
     sensitivity_param: dictionary with info on sensitivity param
     comparison_param: name of parameter to be compared across iterations. Must be the name of a column from the Optimizer results_grid.
-    system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified, all]
+    system_label: indictates which system to reference, options include: [least_fuel, least_cost, pv_only, mre_only, most_diversified, all] 
     sim_label: indicates which simulation to reference, options include: [avg, max, min, distribution]
 
     '''
@@ -166,34 +166,37 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
         # Rename systems into categories: no_re, pv_small/med/large_battery, mre_small/med/large_battery
         for iter_name, iter_val in comparison_data.items():
             new_dict = {}
-            pv_batt_sizes = np.sort([sys_name.split('_')[-1][:-3] for sys_name in iter_val.keys() if ('tidal' not in sys_name and 'wave' not in sys_name) 
+            pv_batt_sizes = np.sort([float(sys_name.split('_')[-1][:-3]) for sys_name in iter_val.keys() if ('tidal' not in sys_name and 'wave' not in sys_name) 
                                                                                               or sys_name.split('_')[3][:-2] == '0.0'])
-            # TODO: This only works for runs with only one set of MRE systems. This will need to be expanded if there are more MRE options. 
-            mre_batt_sizes = np.sort([sys_name.split('_')[-1][:-3] for sys_name in iter_val.keys() if ('tidal' in sys_name or 'wave' in sys_name) 
+            mre_batt_sizes = {}
+            mre_sizes = set([float(sys_name.split('_')[3][:-2]) for sys_name in iter_val.keys() if ('tidal' in sys_name or 'wave' in sys_name) 
                                                                                               and sys_name.split('_')[3][:-2] != '0.0'])
+            for mre_size in mre_sizes:
+                mre_batt_sizes[mre_size] = np.sort([float(sys_name.split('_')[-1][:-3]) for sys_name in iter_val.keys() if ('tidal' in sys_name or 'wave' in sys_name) 
+                                                                                              and sys_name.split('_')[3][:-2] == str(mre_size)])
             for sys_name, sys_data in iter_val.items():
                 pv_size = sys_name.split('_')[1][:-2]
                 if 'tidal' in sys_name or 'wave' in sys_name:
-                    mre_size = sys_name.split('_')[3][:-2]
+                    mre_size = float(sys_name.split('_')[3][:-2])
                 else:
                     mre_size = None
-                batt_size = sys_name.split('_')[-1][:-3]
-                if pv_size == '0.0' and (mre_size is None or mre_size == '0.0'):
+                batt_size = float(sys_name.split('_')[-1][:-3])
+                if pv_size == '0.0' and (mre_size is None or mre_size == 0.0):
                     new_dict['no_RE'] = sys_data
-                elif pv_size != '0.0' and (mre_size is None or mre_size == '0.0'):
+                elif pv_size != '0.0' and (mre_size is None or mre_size == 0.0):
                     if batt_size == pv_batt_sizes[1]:
                         new_dict['pv_only_small_battery'] = sys_data
                     elif batt_size == pv_batt_sizes[2]:
                         new_dict['pv_only_med_battery'] = sys_data
                     elif batt_size == pv_batt_sizes[3]:
                         new_dict['pv_only_large_battery'] = sys_data
-                elif mre_size is not None and mre_size != '0.0':
-                    if batt_size == mre_batt_sizes[0]:
-                        new_dict['mre_small_battery'] = sys_data
-                    elif batt_size == mre_batt_sizes[1]:
-                        new_dict['mre_med_battery'] = sys_data
-                    elif batt_size == mre_batt_sizes[2]:
-                        new_dict['mre_large_battery'] = sys_data
+                elif mre_size is not None and mre_size != 0.0:
+                    if batt_size == mre_batt_sizes[mre_size][0]:
+                        new_dict[f'mre_{mre_size}kW_small_battery'] = sys_data
+                    elif batt_size == mre_batt_sizes[mre_size][1]:
+                        new_dict[f'mre_{mre_size}kW_med_battery'] = sys_data
+                    elif batt_size == mre_batt_sizes[mre_size][2]:
+                        new_dict[f'mre_{mre_size}kW_large_battery'] = sys_data
             comparison_data[iter_name] = new_dict
 
         # For single values, use categorical barplot
@@ -209,7 +212,6 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
                 df = pd.concat([df, df_temp])
             sns.boxplot(data=df,x=sensitivity_param['param_name'], y=comparison_param, hue='system')
             plt.legend(bbox_to_anchor=(1.05, 0.5, 0.5, 0.5))
-
     else:
         # If single value
         if sim_label in ['avg', 'max', 'min']:
@@ -224,6 +226,7 @@ def plot_comparison_graphs(output_dict, sensitivity_param, comparison_param, sys
             plt.ylabel(comparison_param)
 
     return fig
+
 
 def save_comparison_json(output_dict, sensitivity_param, comparison_param, system_label, sim_label):
     # Get comparison param across iterations
