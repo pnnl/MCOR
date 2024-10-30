@@ -1011,9 +1011,9 @@ class GridSearchOptimizer(Optimizer):
         self.input_system_grid[system_name] = system
 
         # If there is an existing generator, add to each system
-        if 'generator' in self.existing_components:
+        if 'gen' in self.existing_components:
             for system in self.input_system_grid.values():
-                system.add_component(self.existing_components['generator'],
+                system.add_component(self.existing_components['gen'],
                                      validate=False)
 
     def print_grid(self):
@@ -1797,11 +1797,11 @@ class GridSearchOptimizer(Optimizer):
         if 'mre' in self.existing_components:
             inputs['Existing Equipment'].loc['MRE'] = \
                 '{}kW'.format(self.existing_components['mre'].capacity)
-        if 'generator' in self.existing_components:
+        if 'gen' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
                 '{} units of {}kW'.format(
-                self.existing_components['generator'].num_units,
-                self.existing_components['generator'].rated_power)
+                self.existing_components['gen'].num_units,
+                self.existing_components['gen'].rated_power)
         if 'batt' in self.existing_components:
             inputs['Existing Equipment'].loc['Battery'] = \
                 '{}kW, {}kWh'.format(
