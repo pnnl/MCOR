@@ -44,6 +44,8 @@ generator_buffer,"int,float",0.9,2,,,,,
 generator_capital_cost,"int,float",0,,,,,,
 generator_costs,pandas.core.frame.DataFrame,,,,,check_generator_costs,,"Generator costs must include the following columns: 'Power (kW)', '1/4 Load (gal/hr)', '1/2 Load (gal/hr)', '3/4 Load (gal/hr)', 'Full Load (gal/hr)', 'Cost (USD)'"
 generator_power_kW,"int,float",0,,,,,,
+get_solar_data_from_file,bool,,,,,,,
+get_solar_profiles_from_file,bool,,,,,,,
 grouped_load,pandas.core.frame.DataFrame,,,,,check_grouped_load,,Grouped load must be a DataFrame with the columns 'num_hours' and 'binned_load'.
 ideal_minimum_load,"int,float",0,1,,,,,
 include_batt,tuple,,,,,check_include_batt,,"Include batt must be a list of tuples of the form (battery capacity, battery power)"
@@ -118,8 +120,6 @@ rated_power,"int,float",0,,,,,,
 read_from_file,bool,,,,,,,
 renewable_resources,list,,,,,check_renewable_resources,,"Renewable resources must be a list containing one or more of the following strings: 'pv', 'mre'"
 resilience_percent,"int,float",0,100,,,,,
-save_solar_data_to_file,bool,,,,,,,
-save_solar_profiles_to_file,bool,,,,,,,
 scenario_criteria,str,,,"pv,gen,mre",,,,
 shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,

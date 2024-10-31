@@ -195,7 +195,7 @@ class SolarProfileGenerator:
                  temp_bins=range(-30, 49), num_daily_ghi_states=11.,
                  num_daily_dni_states=11., max_iter=200, multithreading=True,
                  advanced_inputs={}, validate=True, suppress_warnings=False, 
-                 save_solar_data_to_file=True, save_solar_profiles_to_file=True):
+                 get_solar_data_from_file=True, get_solar_profiles_from_file=True):
 
         # Assign parameters
         self.latitude = latitude
@@ -223,8 +223,8 @@ class SolarProfileGenerator:
         self.multithreading = multithreading
         self.advanced_inputs = advanced_inputs
         self.suppress_warnings = suppress_warnings
-        self.save_solar_data_to_file = save_solar_data_to_file
-        self.save_solar_profiles_to_file = save_solar_profiles_to_file
+        self.get_solar_data_from_file = get_solar_data_from_file
+        self.get_solar_profiles_from_file = get_solar_profiles_from_file
         self.wind_speed = None
         self.start_datetimes = []
         self.solar_data = {}
@@ -264,8 +264,8 @@ class SolarProfileGenerator:
                          'multithreading': self.multithreading,
                          'spg_advanced_inputs': self.advanced_inputs,
                          'solar_source': self.solar_source,
-                         'save_solar_data_to_file': self.save_solar_data_to_file,
-                         'save_solar_profiles_to_file': self.save_solar_profiles_to_file}
+                         'get_solar_data_from_file': self.get_solar_data_from_file,
+                         'get_solar_profiles_from_file': self.get_solar_profiles_from_file}
 
             # Validate input parameters
             validate_all_parameters(args_dict)
@@ -283,14 +283,14 @@ class SolarProfileGenerator:
         self.solar_data = download_solar_data(self.latitude, self.longitude,
             os.path.join(SOLAR_DATA_DIR, 'nrel', f'{self.latitude}_{self.longitude}'),
             start_year=self.start_year, end_year=self.end_year, validate=False,
-            source=self.solar_source, save_solar_data_to_file = self.save_solar_data_to_file)
+            source=self.solar_source, get_solar_data_from_file = self.get_solar_data_from_file)
 
         self.solar_data.update(download_solar_data(self.latitude, self.longitude, 
             os.path.join(SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(self.latitude, self.longitude)),
             TMY=True, validate=False, source=self.solar_source,
-            save_solar_data_to_file = self.save_solar_data_to_file))
+            get_solar_data_from_file = self.get_solar_data_from_file))
 
-        if self.save_solar_data_to_file:
+        if self.get_solar_data_from_file:
             # Load each file and fill any nans
             filedir = os.path.join(SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(
                 self.latitude, self.longitude))
@@ -313,7 +313,7 @@ class SolarProfileGenerator:
         else:
             for key in self.solar_data:
                 self.solar_data[key] = self.solar_data[key].fillna(0)
-
+            
     def get_wind_speed(self):
         """ Get average wind speed from TMY data. """
 
@@ -337,16 +337,17 @@ class SolarProfileGenerator:
         asp.create_trial_data(start_datetimes)
 
         # Create directory to hold data
-        if self.length_trials <  24:
-            dir_name = '{}_{}_{}h_{}t'.format(
-                self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
-        else:
-            dir_name = '{}_{}_{}d_{}t'.format(
-                self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
-        if dir_name not in \
-                os.listdir(os.path.join(SOLAR_DATA_DIR, 'solar_profiles')):
-            os.mkdir(os.path.join(
-                SOLAR_DATA_DIR, 'solar_profiles', dir_name))
+        if self.get_solar_profiles_from_file:
+            if self.length_trials <  24:
+                dir_name = '{}_{}_{}h_{}t'.format(
+                    self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+            else:
+                dir_name = '{}_{}_{}d_{}t'.format(
+                    self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
+            if dir_name not in \
+                    os.listdir(os.path.join(SOLAR_DATA_DIR, 'solar_profiles')):
+                os.mkdir(os.path.join(
+                    SOLAR_DATA_DIR, 'solar_profiles', dir_name))
 
         # Extract trial data
         self.start_datetimes = []
@@ -377,16 +378,19 @@ class SolarProfileGenerator:
             self.start_datetimes += [solar_profile.index[0]]
 
             # Save to file
-            if self.length_trials <  24:
-                dir_name = '{}_{}_{}h_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+            if self.get_solar_profiles_from_file:
+                if self.length_trials <  24:
+                    dir_name = '{}_{}_{}h_{}t'.format(
+                        self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+                else:
+                    dir_name = '{}_{}_{}d_{}t'.format(
+                        self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
+                solar_profile.to_csv(os.path.join(
+                    SOLAR_DATA_DIR, 'solar_profiles', dir_name,
+                    '{}_{}_solar_trial_{}.csv'.format(self.latitude,
+                                                    self.longitude, i)))
             else:
-                dir_name = '{}_{}_{}d_{}t'.format(
-                    self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
-            solar_profile.to_csv(os.path.join(
-                SOLAR_DATA_DIR, 'solar_profiles', dir_name,
-                '{}_{}_solar_trial_{}.csv'.format(self.latitude,
-                                                  self.longitude, i)))
+                self.solar_profiles += [solar_profile]
 
     def get_power_profiles(self):
         """ 
@@ -397,36 +401,47 @@ class SolarProfileGenerator:
         # For each solar and temperature profile, calculate PV production
         # Load the solar and temperature data from csv
         self.start_datetimes = []
-        self.solar_profiles = []
+        if self.get_solar_profiles_from_file:
+            self.solar_profiles = []
         self.temp_profiles = []
         self.power_profiles = []
         for i in range(int(self.num_trials)):
-            try:
-                if self.length_trials <  24:
-                    dir_name = '{}_{}_{}h_{}t'.format(
-                        self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
-                else:
-                    dir_name = '{}_{}_{}d_{}t'.format(
-                        self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
-                solar = pd.read_csv(os.path.join(
-                    SOLAR_DATA_DIR, 'solar_profiles', dir_name,
-                    '{}_{}_solar_trial_{}.csv'.format(self.latitude, self.longitude, i)),
-                    index_col=0, parse_dates=[0])
-
-                # Allow for backward compatibility with solar profiles generated before ASP
-                #   code was converted to Python
-                if 'temp' not in solar.columns:
-                    solar['temp'] = pd.read_csv(os.path.join(
+            if self.get_solar_profiles_from_file:
+                try:
+                    if self.length_trials <  24:
+                        dir_name = '{}_{}_{}h_{}t'.format(
+                            self.latitude, self.longitude, int(self.length_trials), int(self.num_trials))
+                    else:
+                        dir_name = '{}_{}_{}d_{}t'.format(
+                            self.latitude, self.longitude, int(self.length_trials/24), int(self.num_trials))
+                    solar = pd.read_csv(os.path.join(
                         SOLAR_DATA_DIR, 'solar_profiles', dir_name,
-                        '{}_{}_temp_trial_{}.csv'.format(self.latitude, self.longitude, i)),
-                        index_col=0, parse_dates=[0]).values
+                        '{}_{}_solar_trial_{}.csv'.format(self.latitude, self.longitude, i)),
+                        index_col=0, parse_dates=[0])
 
-            except FileNotFoundError:
-                message = 'Solar profile csvs not found. Please check that you have entered' \
-                          ' the longitude, latitude, number, and length of trials for a ' \
-                          'site with previously generated solar profiles.'
-                log_error(message)
-                raise Exception(message)
+                    # Allow for backward compatibility with solar profiles generated before ASP
+                    #   code was converted to Python
+                    if 'temp' not in solar.columns:
+                        solar['temp'] = pd.read_csv(os.path.join(
+                            SOLAR_DATA_DIR, 'solar_profiles', dir_name,
+                            '{}_{}_temp_trial_{}.csv'.format(self.latitude, self.longitude, i)),
+                            index_col=0, parse_dates=[0]).values
+
+                except FileNotFoundError:
+                    message = 'Solar profile csvs not found. Please check that you have entered' \
+                            ' the longitude, latitude, number, and length of trials for a ' \
+                            'site with previously generated solar profiles.'
+                    log_error(message)
+                    raise Exception(message)
+
+            else:
+                try:
+                    solar = self.solar_profiles[i]
+                except IndexError:
+                    message = 'If get_solar_profiles_from_file is set to False, ' \
+                              'then get_solar_profiles must be set to True.'
+                    log_error(message)
+                    raise Exception(message)
 
             # Fix timezone
             try:
@@ -451,16 +466,22 @@ class SolarProfileGenerator:
                     log_error(message)
                     raise Exception(message)
 
-            self.solar_profiles += [solar]
+            if self.get_solar_profiles_from_file:
+                self.solar_profiles += [solar]
+            else:
+                self.solar_profiles[i] = solar
             self.temp_profiles += [solar['temp'].to_frame(name='temp_celcius')]
             self.start_datetimes += [solar.index[0]]
 
         # Read raw TMY file
-        self.tmy_solar_profile = pd.read_csv(
-            os.path.join(SOLAR_DATA_DIR,
-                         'nrel',
-                         '{}_{}'.format(self.latitude, self.longitude),
-                         '{}_{}_tmy.csv'.format(self.latitude, self.longitude)))
+        try:
+            self.tmy_solar_profile = self.solar_data['tmy']
+        except KeyError:
+            self.tmy_solar_profile = pd.read_csv(
+                os.path.join(SOLAR_DATA_DIR,
+                            'nrel',
+                            '{}_{}'.format(self.latitude, self.longitude),
+                            '{}_{}_tmy.csv'.format(self.latitude, self.longitude)))            
 
         # Get average wind speed
         self.get_wind_speed()
@@ -712,7 +733,7 @@ class SolarProfileGenerator:
 
 def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
                         start_year=1998, end_year=2020, validate=True, source='nsrdb',
-                        save_solar_data_to_file=True):
+                        get_solar_data_from_file=True):
     """ 
     Downloads hourly solar data for each year in the NREL NRSDB or the NREL Himawari dataset
         and formats into pandas dataframes contained in solar_dict
@@ -820,7 +841,7 @@ def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
                 raise IOError(message)
 
     # Save as csv files
-    if save_solar_data_to_file:
+    if get_solar_data_from_file:
         for key, val in solar_dict.items():
             # Remove times on the half-hour for non-TMY profiles
             if key != 'tmy':
