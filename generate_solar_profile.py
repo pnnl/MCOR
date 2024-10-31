@@ -194,7 +194,8 @@ class SolarProfileGenerator:
                  num_ghi_states=11., num_dni_states=11., cld_hours=(10, 17),
                  temp_bins=range(-30, 49), num_daily_ghi_states=11.,
                  num_daily_dni_states=11., max_iter=200, multithreading=True,
-                 advanced_inputs={}, validate=True, suppress_warnings=False):
+                 advanced_inputs={}, validate=True, suppress_warnings=False, 
+                 save_solar_data_to_file=True, save_solar_profiles_to_file=True):
 
         # Assign parameters
         self.latitude = latitude
@@ -222,8 +223,11 @@ class SolarProfileGenerator:
         self.multithreading = multithreading
         self.advanced_inputs = advanced_inputs
         self.suppress_warnings = suppress_warnings
+        self.save_solar_data_to_file = save_solar_data_to_file
+        self.save_solar_profiles_to_file = save_solar_profiles_to_file
         self.wind_speed = None
         self.start_datetimes = []
+        self.solar_data = {}
         self.solar_profiles = []
         self.temp_profiles = []
         self.power_profiles = []
@@ -259,7 +263,9 @@ class SolarProfileGenerator:
                          'max_iter': self.max_iter,
                          'multithreading': self.multithreading,
                          'spg_advanced_inputs': self.advanced_inputs,
-                         'solar_source': self.solar_source}
+                         'solar_source': self.solar_source,
+                         'save_solar_data_to_file': self.save_solar_data_to_file,
+                         'save_solar_profiles_to_file': self.save_solar_profiles_to_file}
 
             # Validate input parameters
             validate_all_parameters(args_dict)
@@ -274,40 +280,39 @@ class SolarProfileGenerator:
                 self.latitude, self.longitude)))
 
         # Download nrel files
-        download_solar_data(self.latitude, self.longitude,
-                            os.path.join(
-                                SOLAR_DATA_DIR,
-                                'nrel',
-                                f'{self.latitude}_{self.longitude}'),
-                            start_year=self.start_year,
-                            end_year=self.end_year,
-                            validate=False,
-                            source=self.solar_source)
+        self.solar_data = download_solar_data(self.latitude, self.longitude,
+            os.path.join(SOLAR_DATA_DIR, 'nrel', f'{self.latitude}_{self.longitude}'),
+            start_year=self.start_year, end_year=self.end_year, validate=False,
+            source=self.solar_source, save_solar_data_to_file = self.save_solar_data_to_file)
 
-        download_solar_data(self.latitude, self.longitude, os.path.join(
-            SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(self.latitude,
-                                                   self.longitude)),
-                            TMY=True, validate=False, source=self.solar_source)
+        self.solar_data.update(download_solar_data(self.latitude, self.longitude, 
+            os.path.join(SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(self.latitude, self.longitude)),
+            TMY=True, validate=False, source=self.solar_source,
+            save_solar_data_to_file = self.save_solar_data_to_file))
 
-        # Load each file and fill any nans
-        filedir = os.path.join(SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(
-            self.latitude, self.longitude))
-        files = os.listdir(filedir)
-        for file in files:
-            # skip files that aren't csv files (ex: .DS_Store)
-            if not file.split('.')[-1] == '.csv':
-                continue
-            df = pd.read_csv(os.path.join(filedir, file))
-            df.fillna(0, inplace=True)
+        if self.save_solar_data_to_file:
+            # Load each file and fill any nans
+            filedir = os.path.join(SOLAR_DATA_DIR, 'nrel', '{}_{}'.format(
+                self.latitude, self.longitude))
+            files = os.listdir(filedir)
+            for file in files:
+                # skip files that aren't csv files (ex: .DS_Store)
+                if not file.split('.')[-1] == '.csv':
+                    continue
+                df = pd.read_csv(os.path.join(filedir, file))
+                df.fillna(0, inplace=True)
 
-            # Check that dataframe is not empty
-            if not len(df):
-                message = 'NREL solar data empty. Check that you are using ' \
-                          'valid parameters to access the NREL api.'
-                log_error(message)
-                raise Exception(message)
+                # Check that dataframe is not empty
+                if not len(df):
+                    message = 'NREL solar data empty. Check that you are using ' \
+                            'valid parameters to access the NREL api.'
+                    log_error(message)
+                    raise Exception(message)
 
-            df.to_csv(os.path.join(filedir, file), index=False)
+                df.to_csv(os.path.join(filedir, file), index=False)
+        else:
+            for key in self.solar_data:
+                self.solar_data[key] = self.solar_data[key].fillna(0)
 
     def get_wind_speed(self):
         """ Get average wind speed from TMY data. """
@@ -323,7 +328,7 @@ class SolarProfileGenerator:
             self.start_year, self.end_year, self.num_ghi_states,
             self.num_dni_states, self.num_daily_ghi_states,
             self.num_daily_dni_states, self.cld_hours, self.temp_bins,
-            self.max_iter, self.multithreading, validate=validate)
+            self.max_iter, self.multithreading, self.solar_data, validate=validate)
 
         # Create state transition matrices
         asp.create_state_transition_matrices()
@@ -706,7 +711,8 @@ class SolarProfileGenerator:
 
 
 def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
-                        start_year=1998, end_year=2020, validate=True, source='nsrdb'):
+                        start_year=1998, end_year=2020, validate=True, source='nsrdb',
+                        save_solar_data_to_file=True):
     """ 
     Downloads hourly solar data for each year in the NREL NRSDB or the NREL Himawari dataset
         and formats into pandas dataframes contained in solar_dict
@@ -814,14 +820,18 @@ def download_solar_data(latitude=46.34, longitude=-119.28, path='.', TMY=False,
                 raise IOError(message)
 
     # Save as csv files
-    for key, val in solar_dict.items():
-        # Remove times on the half-hour for non-TMY profiles
-        if key != 'tmy':
-            val = val[val['Minute'] == 0]
+    if save_solar_data_to_file:
+        for key, val in solar_dict.items():
+            # Remove times on the half-hour for non-TMY profiles
+            if key != 'tmy':
+                val = val[val['Minute'] == 0]
 
-        # Save to csv
-        val.to_csv(os.path.join(path, '{}_{}_{}.csv'.format(
-            latitude, longitude, key)), index=False)
+            # Save to csv
+            val.to_csv(os.path.join(path, '{}_{}_{}.csv'.format(
+                latitude, longitude, key)), index=False)
+        return {}
+    else:
+        return {key: val[val['Minute'] == 0] if key != 'tmy' else val for key, val in solar_dict.items()}
 
 
 def parse_himawari_tmy(response, path, latitude, longitude):

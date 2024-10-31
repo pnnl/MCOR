@@ -1012,6 +1012,16 @@ def check_mre_params(mre_params):
     return True
 
 
+def check_solar_data_dict(solar_data_dict, start_year, end_year):
+    """ Checks that solar_data_dict has keys for each year between start_year and end_year"""
+
+    if len(solar_data_dict):
+        for year in range(start_year, end_year+1):
+            if year not in solar_data_dict:
+                return False
+    return True
+
+
 # Parameter warning functions
 def annual_load_profile_warnings(annual_load_profile):
     """ Checks to make sure the annual load profile looks realistic and outputs a warning if
@@ -1249,4 +1259,5 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_initial_soc': check_initial_soc,
                     'check_solar_source': check_solar_source,
                     'check_renewable_resources': check_renewable_resources,
-                    'check_mre_params': check_mre_params}
+                    'check_mre_params': check_mre_params,
+                    'check_solar_data_dict': check_solar_data_dict}

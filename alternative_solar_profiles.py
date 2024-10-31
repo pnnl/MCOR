@@ -174,7 +174,7 @@ class AlternativeSolarProfiles:
                  end_year=2016, num_hourly_ghi_states=11, num_hourly_dni_states=11,
                  num_daily_ghi_states=11, num_daily_dni_states=11, cloud_hours=(10, 17),
                  temp_bins=range(-30, 50, 3), max_iter=200, multithreading=True,
-                 validate=True):
+                 solar_data_dict = {}, validate=True):
 
         # Assign parameters from arguments
         self.latitude = latitude
@@ -191,6 +191,7 @@ class AlternativeSolarProfiles:
         self.temp_bins = temp_bins
         self.max_iter = max_iter
         self.multithreading = multithreading
+        self.solar_data_dict = solar_data_dict
 
         # Initialize other attributes
         self.nrel_data_df = None
@@ -223,7 +224,8 @@ class AlternativeSolarProfiles:
                          'cld_hours': self.cloud_hours,
                          'temp_bins': self.temp_bins,
                          'max_iter': self.max_iter,
-                         'multithreading': self.multithreading}
+                         'multithreading': self.multithreading,
+                         'solar_data_dict': self.solar_data_dict}
 
             # Validate input parameters
             validate_all_parameters(args_dict)
@@ -293,26 +295,34 @@ class AlternativeSolarProfiles:
 
         """
         # Read in historical NREL solar data
-        filedir = os.path.join(SOLAR_DATA_DIR, 'nrel',
-                               '{}_{}'.format(self.latitude, self.longitude))
+        if not len(self.solar_data_dict):
+            filedir = os.path.join(SOLAR_DATA_DIR, 'nrel',
+                                '{}_{}'.format(self.latitude, self.longitude))
 
-        # Check that files exist in directory
-        if '{}_{}_{}.csv'.format(self.latitude, self.longitude,
-                                 self.start_year) not in os.listdir(filedir):
-            message = 'NREL data not found, check the latitude and longitude '\
-                      'or run get_solar_data() first.'
-            log_error(message)
-            raise Exception(message)
+            # Check that files exist in directory
+            if '{}_{}_{}.csv'.format(self.latitude, self.longitude,
+                                    self.start_year) not in os.listdir(filedir):
+                message = 'NREL data not found, check the latitude and longitude '\
+                        'or run get_solar_data() first.'
+                log_error(message)
+                raise Exception(message)
 
-        # Read in files and add to dataframe
-        self.nrel_data_df = pd.DataFrame()
-        for year in range(self.start_year, self.end_year+1):
-            self.nrel_data_df = pd.concat([self.nrel_data_df, pd.read_csv(
-                os.path.join(filedir, '{}_{}_{}.csv'.format(
-                    self.latitude, self.longitude, year)),
-                usecols=['Year', 'Month', 'Day', 'Hour', 'DNI', 'GHI',
-                         'Clearsky DNI', 'Clearsky GHI', 'Cloud Type',
-                         'Solar Zenith Angle', 'Temperature'])])
+            # Read in files and add to dataframe
+            self.nrel_data_df = pd.DataFrame()
+            for year in range(self.start_year, self.end_year+1):
+                self.nrel_data_df = pd.concat([self.nrel_data_df, pd.read_csv(
+                    os.path.join(filedir, '{}_{}_{}.csv'.format(
+                        self.latitude, self.longitude, year)),
+                    usecols=['Year', 'Month', 'Day', 'Hour', 'DNI', 'GHI',
+                            'Clearsky DNI', 'Clearsky GHI', 'Cloud Type',
+                            'Solar Zenith Angle', 'Temperature'])])
+        else:
+            self.nrel_data_df = pd.DataFrame()
+            for year in range(self.start_year, self.end_year+1):
+                self.solar_data_dict[year] = self.solar_data_dict[year][
+                    ['Year', 'Month', 'Day', 'Hour', 'DNI', 'GHI', 'Clearsky DNI', 
+                     'Clearsky GHI', 'Cloud Type', 'Solar Zenith Angle', 'Temperature']]
+                self.nrel_data_df = pd.concat([self.nrel_data_df, self.solar_data_dict[year]])
         self.nrel_data_df['datetime'] = self.nrel_data_df.apply(
             lambda x: date_parser(x['Month'], x['Day'], x['Year'], x['Hour']), axis=1)
         self.nrel_data_df.columns = ['year', 'month', 'day',

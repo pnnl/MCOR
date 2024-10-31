@@ -44,7 +44,9 @@ def run_mcor(input_dict):
                                     pv_racking=pv_inputs['pv_racking'], pv_tracking=pv_inputs['pv_tracking'],
                                     suppress_warnings=warning_inputs['suppress_warnings'],
                                     multithreading=multithreading_inputs['multithreading'],
-                                    solar_source=pv_inputs['solar_data_source'])
+                                    solar_source=pv_inputs['solar_data_source'],
+                                    save_solar_data_to_file = pv_inputs['save_solar_data_to_file'],
+                                    save_solar_profiles_to_file = pv_inputs['save_solar_profiles_to_file'])
 
         if pv_inputs['get_solar_data']:
             spg.get_solar_data()
@@ -197,7 +199,9 @@ if __name__ == "__main__":
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
         'get_solar_data': True,
-        'get_solar_profiles': True
+        'save_solar_data_to_file': True,
+        'get_solar_profiles': True,
+        'save_solar_profiles_to_file': True
     }
 
     # MRE dictionary

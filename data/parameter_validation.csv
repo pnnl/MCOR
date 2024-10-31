@@ -118,6 +118,8 @@ rated_power,"int,float",0,,,,,,
 read_from_file,bool,,,,,,,
 renewable_resources,list,,,,,check_renewable_resources,,"Renewable resources must be a list containing one or more of the following strings: 'pv', 'mre'"
 resilience_percent,"int,float",0,100,,,,,
+save_solar_data_to_file,bool,,,,,,,
+save_solar_profiles_to_file,bool,,,,,,,
 scenario_criteria,str,,,"pv,gen,mre",,,,
 shading,"int,float",0,100,,,,,
 sim,microgrid_simulator.Simulator,,,,,,,
@@ -131,6 +133,7 @@ soc_at_initial_hour_of_night,"int,float",0,1,,,,,
 soc_lower_limit,"int,float",0,1,,,,,
 soc_upper_limit,"int,float",0,1,,,,,
 soiling,"int,float",0,100,,,,,
+solar_data_dict,dict,,,,,check_solar_data_dict,"start_year,end_year","solar_data_dict must be a dictionary with a key for each year between start_year and end_year"
 solar_profile,pandas.core.frame.DataFrame,,,,,check_solar_profile,,"The solar profile does not have the necessary columns or index, make sure you are using a DataFrame produced by get_solar_profiles."
 solar_source,str,,,"nsrdb,himawari",,check_solar_source,"start_year,end_year",The NSRDB dataset only contains data from 1998-2021. The Himawari dataset only contains data from 2016-2020.
 spacing_buffer,"int,float",0,10,,,,,

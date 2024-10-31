@@ -39,7 +39,9 @@ def create_spg_object(system_inputs, pv_inputs, warning_inputs, multithreading_i
                                     pv_racking=pv_inputs['pv_racking'], pv_tracking=pv_inputs['pv_tracking'],
                                     suppress_warnings=warning_inputs['suppress_warnings'],
                                     multithreading=multithreading_inputs['multithreading'],
-                                    solar_source=pv_inputs['solar_data_source'])
+                                    solar_source=pv_inputs['solar_data_source'],
+                                    save_solar_data_to_file = pv_inputs['save_solar_data_to_file'],
+                                    save_solar_profiles_to_file = pv_inputs['save_solar_profiles_to_file'])
     return spg
 
 
@@ -290,7 +292,9 @@ if __name__ == "__main__":
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
         'get_solar_data': True,
-        'get_solar_profiles': True
+        'save_solar_data_to_file': True,
+        'get_solar_profiles': True,
+        'save_solar_profiles_to_file': True
     }
 
     # MRE dictionary
@@ -320,7 +324,7 @@ if __name__ == "__main__":
         'one_way_inverter_efficiency': 0.95,
         'soc_upper_limit': 1,
         'soc_lower_limit': 0.2,
-        'batt_sizing_method': 'longest_night',
+        'batt_sizing_method': 'no_RE_export',
         'percent_at_night': 0.1
     }
 
