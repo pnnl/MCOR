@@ -197,7 +197,7 @@ if __name__ == "__main__":
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
         'get_solar_data': True,
-        'get_solar_profiles': True,
+        'get_solar_profiles': True
     }
 
     # MRE dictionary
