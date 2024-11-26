@@ -498,22 +498,39 @@ class Battery(Component):
     def get_capacity_power(self):
         return self.batt_capacity, self.power
 
-    def calc_capital_cost(self, cost_df, *args):
+    def calc_capital_cost(self, cost_df, existing_components):
         """ Calculate battery system capital costs """
+
+        # Adjust total capacity and power to consider existing batteries
+        if 'batt' in existing_components.keys():
+            adjusted_batt_capacity = max(
+                self.batt_capacity - existing_components['batt'].batt_capacity, 0)
+            adjusted_batt_power = max(
+                self.power - existing_components['batt'].power, 0)
+        else:
+            adjusted_batt_capacity = self.batt_capacity
+            adjusted_batt_power = self.power
 
         # Parse battery and inverter capital costs from costs dataframe
         batt_cost_per_wh = cost_df['Battery System'].values[1]
         inverter_cost_per_w = cost_df['Inverter'].values[1]
 
-        return self.batt_capacity * 1000 * batt_cost_per_wh \
-            + self.power * 1000 * inverter_cost_per_w
+        return adjusted_batt_capacity * 1000 * batt_cost_per_wh \
+            + adjusted_batt_power * 1000 * inverter_cost_per_w
 
-    def calc_om_cost(self, cost_df, *args):
+    def calc_om_cost(self, cost_df, existing_components):
         """ Calculate battery system O&M costs """
+
+        # Adjust total capacity and power to consider existing batteries
+        if 'batt' in existing_components.keys():
+            adjusted_batt_capacity = max(
+                self.batt_capacity - existing_components['batt'].batt_capacity, 0)
+        else:
+            adjusted_batt_capacity = self.batt_capacity
 
         # Parse battery and inverter o&m costs from costs dataframe
         batt_om_cost_per_kwh = cost_df['Battery'].values[1]
-        return self.batt_capacity * batt_om_cost_per_kwh
+        return adjusted_batt_capacity * batt_om_cost_per_kwh
 
 
 class SimpleLiIonBattery(Battery):
@@ -741,7 +758,7 @@ class Generator(Component):
     def get_fuel_curve_model(self):
         return self.get_fuel_curve_model
 
-    def calculate_fuel_consumption(self, unmet_load, duration, validate=True):
+    def calculate_fuel_consumption(self, gen_power, duration, validate=True):
         """
         Calculates fuel consumed by generator, and also return number of hours at each load
             bin which is used for the load duration calculation.
@@ -749,7 +766,7 @@ class Generator(Component):
             at the same loading level. This will have to be updated in the future.
 
         Inputs:
-            unmet_load: dataframe with one column: 'load_not_met'
+            gen_power: dataframe with one column: 'gen_power'
             duration: time step length in seconds
 
         Outputs:
@@ -760,13 +777,13 @@ class Generator(Component):
 
         # Validate input parameters
         if validate:
-            args_dict = {'unmet_load': unmet_load, 'duration': duration}
+            args_dict = {'gen_power': gen_power, 'duration': duration}
             validate_all_parameters(args_dict)
 
         # Create load bins
-        unmet_load.columns = ['load_not_met']
-        unmet_load['binned_load'] = unmet_load['load_not_met'].apply(round)
-        grouped_load = unmet_load.groupby('binned_load')['load_not_met'].\
+        gen_power.columns = ['gen_power']
+        gen_power['binned_load'] = gen_power['gen_power'].apply(round)
+        grouped_load = gen_power.groupby('binned_load')['gen_power'].\
             count().to_frame(name='num_timesteps').reset_index()
 
         # Calculate the number of hours at each load bin
@@ -794,18 +811,24 @@ class Generator(Component):
 
         return grouped_load, total_fuel
 
-    def calc_capital_cost(self, *args):
+    def calc_capital_cost(self, cost_df, existing_components):
         """ Calculate generator capital costs """
 
-        return self.capital_cost * self.num_units
+        if 'generator' in existing_components.keys():
+            return 0
+        else:
+            return self.capital_cost * self.num_units
 
-    def calc_om_cost(self, cost_df, *args):
+    def calc_om_cost(self, cost_df, existing_components):
         """ Calculate generator O&M costs """
 
-        # Parse generator o&m costs from costs dataframe
-        gen_om_per_kW_scalar = cost_df['Generator_scalar'].values[1]
-        gen_om_exp = cost_df['Generator_exp'].values[1]
-        return gen_om_per_kW_scalar * (self.rated_power * self.num_units)**gen_om_exp
+        if 'generator' in existing_components.keys():
+            return 0
+        else:
+            # Parse generator o&m costs from costs dataframe
+            gen_om_per_kW_scalar = cost_df['Generator_scalar'].values[1]
+            gen_om_exp = cost_df['Generator_exp'].values[1]
+            return gen_om_per_kW_scalar * (self.rated_power * self.num_units)**gen_om_exp
 
 
 class FuelTank(Component):
@@ -1122,7 +1145,7 @@ class MicrogridSystem:
         if 'generator' in self.components:
             title_string += '{:.0f}kW Generator System'.format(self.components['generator'].rated_power)
             legend_list += ['Generator']
-            dispatch_list += ['load_not_met']
+            dispatch_list += ['gen_power']
 
         return title_string, legend_list, dispatch_list
 
@@ -1250,7 +1273,7 @@ class MicrogridSystem:
             'mre_power': 'MRE',
             'delta_battery_power': 'Battery', 
             'load': 'Load',
-            'load_not_met': 'Generator'}, inplace=True)
+            'gen_power': 'Generator'}, inplace=True)
         df_plot.drop(columns='Load').plot.area(ax=ax, color=resource_color_list, linewidth=0)
         df_plot['Load'].plot(ax=ax, color=color_dict['Load'], lw=2)
         plt.legend(loc=1, numpoints=1)
@@ -1569,7 +1592,7 @@ class SimpleMicrogridSystem(MicrogridSystem):
         fuel_consumed = []
         for sim_num, sim in self.simulations.items():
             fuel_consumed += [gen.calculate_fuel_consumption(
-                sim.dispatch_df[['load_not_met']], sim.duration,
+                sim.dispatch_df[['gen_power']], sim.duration,
                 validate=False)[1]]
 
         # Aggregate across simulations

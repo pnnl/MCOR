@@ -175,7 +175,7 @@ class REBattGenSimulator(Simulator):
         dispatch_df: Pandas dataframe containing dispatch info for each timestep.
             Includes the columns:
             ['load', '<re_type>_power', 'battery_soc', 'delta_battery_power', 
-             'excess_<re_type>', 'load_not_met']
+             'excess_<re_type>', 'gen_power', 'load_not_met', 'load_not_met_by_RE']
             
         load_duration_df: Pandas dataframe containing load duration curve, with columns:
             [load_bin, num_hours, num_hours_at_or_below] 
@@ -305,21 +305,11 @@ class REBattGenSimulator(Simulator):
             self.dispatch_df['excess_RE'] += self.dispatch_df[f'excess_{re_resource}']
 
         # Calculate load not met
-        self.dispatch_df['load_not_met'] = self.dispatch_df['net_load']
-        self.dispatch_df.loc[self.dispatch_df['net_load'] > 0, 'load_not_met'] = \
+        self.dispatch_df['load_not_met_by_RE'] = self.dispatch_df['net_load']
+        self.dispatch_df.loc[self.dispatch_df['net_load'] > 0, 'load_not_met_by_RE'] = \
             self.dispatch_df.loc[self.dispatch_df['net_load'] > 0, 'net_load'] \
                 - self.dispatch_df.loc[self.dispatch_df['net_load'] > 0, 'delta_battery_power']
-        self.dispatch_df.loc[self.dispatch_df['load_not_met'] < 0, 'load_not_met'] = 0
-
-        # Calculate load breakdown by each component
-        for re_resource in self.renewable_resources:
-            self.load_breakdown[re_resource] = self.dispatch_df[f'{re_resource}_power_to_load'].sum() \
-                / self.dispatch_df['load'].sum()
-        self.load_breakdown['battery'] = self.dispatch_df.loc[
-            self.dispatch_df['delta_battery_power'] >= 0,
-            'delta_battery_power'].sum() / self.dispatch_df['load'].sum()
-        self.load_breakdown['generator'] = \
-                self.dispatch_df['load_not_met'].sum() / self.dispatch_df['load'].sum()
+        self.dispatch_df.loc[self.dispatch_df['load_not_met_by_RE'] < 0, 'load_not_met_by_RE'] = 0
         
         # Calculate ES recovery percent
         # If there is no RE, this will cause a RuntimeWarning, so set to 0 (try/except won't
@@ -395,9 +385,9 @@ class REBattGenSimulator(Simulator):
             args_dict = {'generator_costs': generator_options}
             validate_all_parameters(args_dict)
 
-        # Calculate generator usage and fuel required to meet load not met
+        # Calculate generator usage and fuel required to meet load not met by RE and batteries
         # Total rated power (including multiple units together) based on max unmet power
-        max_power = self.dispatch_df['load_not_met'].max()
+        max_power = self.dispatch_df['load_not_met_by_RE'].max()
         
         # Find the smallest generator(s) with sufficient rated power, assumes generators are
         #   sorted from smallest to largest. If no single generator is large enough, try
@@ -428,9 +418,11 @@ class REBattGenSimulator(Simulator):
                 self.generator_obj = gen
 
         # Calculate the load duration and total fuel used
+        self.dispatch_df['gen_power'] = self.dispatch_df['load_not_met_by_RE']
         grouped_load, self.fuel_used_gal = gen.calculate_fuel_consumption(
-            self.dispatch_df[['load_not_met']], self.duration, validate=False)
+            self.dispatch_df[['gen_power']], self.duration, validate=False)
         self.load_duration_df = calculate_load_duration(grouped_load, validate=False)
+        self.dispatch_df['load_not_met'] = 0
             
     def calc_existing_generator_dispatch(self, generator_options,
                                          validate=True):
@@ -450,28 +442,17 @@ class REBattGenSimulator(Simulator):
         # Get info from existing generator
         gen = self.system.components['generator']
         self.generator_power_kW = gen.rated_power
-        
-        # Create a temporary dataframe to hold load not met cropped at the existing generator
-        #   rated power to calculate fuel used by existing generator
-        temp_df = self.dispatch_df.copy()
-        temp_df.loc[temp_df['load_not_met'] > gen.rated_power,
-                    'load_not_met'] = gen.rated_power
-        grouped_load, existing_gen_fuel_used = gen.calculate_fuel_consumption(
-            temp_df[['load_not_met']], self.duration, validate=False)
-        temp_load_duration_curve = calculate_load_duration(grouped_load, validate=False)
 
         # Determine if unmet load can be supplied by existing generator
-        self.dispatch_df['load_not_met_by_existing_generator'] = [x - gen.rated_power if x - gen.rated_power >= 0 else 0 for x in self.dispatch_df['load_not_met']]
+        self.dispatch_df['load_not_met'] = [x - gen.rated_power if x - gen.rated_power >= 0 else 0 for x in self.dispatch_df['load_not_met_by_RE']]
 
         # Determine the load met by existing generators
-        self.dispatch_df['load_met_by_existing_generator'] = [gen.rated_power if x - gen.rated_power >= 0 else x for x in self.dispatch_df['load_not_met']]
+        self.dispatch_df['gen_power'] = [gen.rated_power if x - gen.rated_power >= 0 else x for x in self.dispatch_df['load_not_met_by_RE']]
 
-        # Update the unmet load with what is left after the existing generators are applied
-        self.dispatch_df['load_not_met'] = self.dispatch_df['load_not_met_by_existing_generator']
-
-        self.load_duration_df = pd.DataFrame(
-            0, index=temp_load_duration_curve.index,
-            columns=temp_load_duration_curve.columns)
+        # Calculate fuel used by existing generator
+        grouped_load, existing_gen_fuel_used = gen.calculate_fuel_consumption(
+            self.dispatch_df[['gen_power']], self.duration, validate=False)
+        self.load_duration_df = calculate_load_duration(grouped_load, validate=False)
         self.fuel_used_gal = existing_gen_fuel_used
         
     def get_load_breakdown(self):
@@ -506,38 +487,21 @@ class REBattGenSimulator(Simulator):
         return re_peak
 
     def get_gen_avg(self):
-        if bool(self.system.components) and ('generator' in self.system.components.keys()):
-            non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_met_by_existing_generator'] != 0]
-            if len(non_zero_gen_power) > 0:
-                return non_zero_gen_power['load_met_by_existing_generator'].mean()
-            else:
-                return 0
+        non_zero_gen_power = self.dispatch_df[self.dispatch_df['gen_power'] != 0]
+        if len(non_zero_gen_power) > 0:
+            return non_zero_gen_power['gen_power'].mean()
         else:
-            non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_not_met'] != 0]
-            if len(non_zero_gen_power) > 0:
-                return non_zero_gen_power['load_not_met'].mean()
-            else:
-                return 0
+            return 0
 
     def get_gen_peak(self):
-        if bool(self.system.components) and ('generator' in self.system.components.keys()):
-            return self.dispatch_df['load_met_by_existing_generator'].max()
-        else:
-            return self.dispatch_df['load_not_met'].max()
+        return self.dispatch_df['gen_power'].max()
     
     def get_gen_total(self):
-        if bool(self.system.components) and ('generator' in self.system.components.keys()):
-            non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_met_by_existing_generator'] != 0]
-            if len(non_zero_gen_power) > 0:
-                return non_zero_gen_power['load_met_by_existing_generator'].sum()
-            else:
-                return 0
+        non_zero_gen_power = self.dispatch_df[self.dispatch_df['gen_power'] != 0]
+        if len(non_zero_gen_power) > 0:
+            return non_zero_gen_power['gen_power'].sum()
         else:
-            non_zero_gen_power = self.dispatch_df[self.dispatch_df['load_not_met'] != 0]
-            if len(non_zero_gen_power) > 0:
-                return non_zero_gen_power['load_not_met'].sum()
-            else:
-                return 0
+            return 0
 
     def get_load_not_met(self):
         return abs(self.dispatch_df['load_not_met'].sum())
@@ -548,7 +512,7 @@ class REBattGenSimulator(Simulator):
     def get_hours_before_gen(self):
         df_temp = self.dispatch_df.copy(deep=True).reset_index()
         try:
-            return df_temp[df_temp['load_not_met'] > 0].index[0]
+            return df_temp[df_temp['gen_power'] > 0].index[0]
         except IndexError:
             return len(self.dispatch_df)
 
@@ -680,4 +644,4 @@ if __name__ == "__main__":
     sim.size_single_generator(generator_options, validate=True)
 
     # Plot dispatch
-    sim.dispatch_df[['load', 'pv_power', 'mre_power', 'delta_battery_power', 'load_not_met']].plot()
+    sim.dispatch_df[['load', 'pv_power', 'mre_power', 'delta_battery_power', 'gen_power']].plot()

@@ -31,7 +31,6 @@ def run_mcor(input_dict):
     sizing_inputs = input_dict['sizing_inputs']
     battery_inputs = input_dict['battery_inputs']
     post_processing_inputs = input_dict['post_processing_inputs']
-    # existing_components_inputs = input_dict['existing_components']
 
     # Get renewable resource and power profiles
     power_profiles = {}
@@ -197,8 +196,8 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
-        'get_solar_data': False,
-        'get_solar_profiles': False
+        'get_solar_data': True,
+        'get_solar_profiles': True
     }
 
     # MRE dictionary
@@ -217,7 +216,7 @@ if __name__ == "__main__":
         'tidal_cut_out_velocity': 3,
         'tidal_inverter_efficiency': 0.9,
         'tidal_turbine_losses': 10,
-        'get_tidal_profiles': False
+        'get_tidal_profiles': True
     }
 
     # Battery dictionary
@@ -280,8 +279,13 @@ if __name__ == "__main__":
     # Uncomment the following to specify specific pv and battery sizes
     # input_dict['sizing_inputs']['include_pv'] = (500, 400)
     # input_dict['sizing_inputs']['include_batt'] = ((1000, 100), (1000, 500))
-    gen = Generator(existing=True, rated_power=100, num_units=1, fuel_curve_model={'1/4 Load (gal/hr)': 11, '1/2 Load (gal/hr)': 18.5, '3/4 Load (gal/hr)': 26.4, 'Full Load (gal/hr)': 35.7}, capital_cost=191000, ideal_minimum_load=0.3, loading_level_to_add_unit=0.9, loading_level_to_remove_unit=0.3, validate=True)
-    input_dict['sizing_inputs']['existing_components'] = {'generator': gen}
+    # gen = Generator(existing=True, 
+    #                 rated_power=100, 
+    #                 num_units=1, 
+    #                 fuel_curve_model={'1/4 Load (gal/hr)': 2.6, '1/2 Load (gal/hr)': 4.1, 
+    #                                   '3/4 Load (gal/hr)': 5.8, 'Full Load (gal/hr)': 7.4}, 
+    #                 capital_cost=191000)
+    # input_dict['sizing_inputs']['existing_components'] = {'generator': gen}
 
     # Net-metering options dictionary
     input_dict['net_metering_inputs'] = {

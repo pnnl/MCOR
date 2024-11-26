@@ -465,10 +465,10 @@ def check_om_costs(om_costs):
     return True
 
 
-def check_unmet_load(unmet_load):
-    """ Check that unmet load has a DateTimeIndex. """
+def check_gen_power(gen_power):
+    """ Check that gen_power has a DateTimeIndex. """
 
-    return isinstance(unmet_load.index, pd.DatetimeIndex)
+    return isinstance(gen_power.index, pd.DatetimeIndex)
 
 
 def check_grouped_load(grouped_load):
@@ -1213,7 +1213,7 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_location': check_location,
                     'check_night_profile': check_night_profile,
                     'check_generator_costs': check_generator_costs,
-                    'check_unmet_load': check_unmet_load,
+                    'check_gen_power': check_gen_power,
                     'check_grouped_load': check_grouped_load,
                     'check_power_profile': check_power_profile,
                     'check_power_profiles': check_power_profiles,

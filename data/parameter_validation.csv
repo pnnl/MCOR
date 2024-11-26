@@ -38,6 +38,7 @@ fuel_tank_costs,pandas.core.frame.DataFrame,,,,,check_fuel_tank_costs,,Fuel tank
 fuel_tank_size,"int,float",0,10000000,,,,,
 fuel_used_gal,"int,float",0,,,,,,
 gen_percent,"int,float",,,,,,,
+gen_power,pandas.core.frame.DataFrame,,,,,check_gen_power,,gen_power must be a DataFrame with a DateTimeIndex
 gen_power_percent,tuple,,,,,check_gen_power_percent,,Each value in gen_power_percent must be between 0 and 100.
 generator,microgrid_system.Generator,,,,,,,
 generator_buffer,"int,float",0.9,2,,,,,
@@ -161,6 +162,5 @@ TMY,bool,,,,,,,
 tmy_mre,pandas.core.series.Series,,,,8760,,,
 tmy_solar,pandas.core.series.Series,,,,8760,,,
 tpg_advanced_inputs,dict,,,,,check_tpg_advanced_inputs,,
-unmet_load,pandas.core.frame.DataFrame,,,,,check_unmet_load,,Unmet load must be a DataFrame with a DateTimeIndex
 wind_speed,"int,float",0,,,,,,
 wiring,"int,float",0,100,,,,,
