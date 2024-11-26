@@ -462,11 +462,6 @@ class REBattGenSimulator(Simulator):
 
         # Determine if unmet load can be supplied by existing generator
         self.dispatch_df['load_not_met_by_existing_generator'] = [x - gen.rated_power if x - gen.rated_power >= 0 else 0 for x in self.dispatch_df['load_not_met']]
-        # self.dispatch_df['load_not_met_by_existing_generator'] = \
-        #     self.dispatch_df['load_not_met'] - gen.rated_power
-        
-        # self.dispatch_df.loc[self.dispatch_df['load_not_met_by_existing_generator'] < 0,
-        #                      'load_not_met_by_existing_generator'] = 0
 
         # Determine the load met by existing generators
         self.dispatch_df['load_met_by_existing_generator'] = [gen.rated_power if x - gen.rated_power >= 0 else x for x in self.dispatch_df['load_not_met']]
@@ -474,65 +469,6 @@ class REBattGenSimulator(Simulator):
         # Update the unmet load with what is left after the existing generators are applied
         self.dispatch_df['load_not_met'] = self.dispatch_df['load_not_met_by_existing_generator']
 
-
-        # If the load cannot be fully met by the existing generator
-        # if self.dispatch_df['load_not_met'].sum() > 0:
-            
-        #     # If another generator can be added
-        #     if add_additional_generator:
-                
-        #         # Total rated power (including multiple units together) based on max unmet
-        #         #   power
-        #         max_power = self.dispatch_df['load_not_met'].max()
-                
-        #         # Find the smallest generator with sufficent rated power, assumes generators
-        #         #   are sorted from smallest to largest
-        #         addl_gen = None
-        #         num_gen = 1
-        #         while addl_gen is None:
-        #             # Find an appropriately sized generator
-        #             best_gen = generator_options[generator_options.index
-        #                                          * num_gen >= max_power
-        #                                          * self.generator_buffer]
-        
-        #             # If no single generator is large enough, increase the number of
-        #             #   generators
-        #             if not len(best_gen):
-        #                 num_gen += 1
-        #             else:
-        #                 # Create generator object
-        #                 best_gen = best_gen.iloc[0]
-        #                 self.generator_power_kW += best_gen.name*num_gen
-        #                 addl_gen = Generator(
-        #                     existing=False, rated_power=best_gen.name,
-        #                     num_units=num_gen,
-        #                     fuel_curve_model=best_gen[
-        #                         ['1/4 Load (gal/hr)', '1/2 Load (gal/hr)',
-        #                          '3/4 Load (gal/hr)', 'Full Load (gal/hr)']].to_dict(),
-        #                     capital_cost=best_gen['Cost (USD)'],
-        #                     validate=False)
-        #                 self.generator_obj = addl_gen
-                        
-        #         # Calculate the load duration curve and fuel consumption for the additional
-        #         #   generator
-        #         grouped_load, addl_fuel_used = \
-        #             addl_gen.calculate_fuel_consumption(
-        #                 self.dispatch_df[['load_not_met']],
-        #                 self.duration, validate=False)
-        #         self.load_duration_df = calculate_load_duration(grouped_load,
-        #                                                         validate=False)
-        #         self.fuel_used_gal = existing_gen_fuel_used + addl_fuel_used
-                
-        #     # If another generator cannot be dispatched
-        #     else:    
-        #         self.load_duration_df = pd.DataFrame(
-        #             0, index=temp_load_duration_curve.index,
-        #             columns=temp_load_duration_curve.columns)
-        #         self.fuel_used_gal = existing_gen_fuel_used
-        
-        # If the existing generator can meet load, use empty load duration curve and existing
-        #   fuel used
-        # else:
         self.load_duration_df = pd.DataFrame(
             0, index=temp_load_duration_curve.index,
             columns=temp_load_duration_curve.columns)
