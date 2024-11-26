@@ -1011,9 +1011,9 @@ class GridSearchOptimizer(Optimizer):
         self.input_system_grid[system_name] = system
 
         # If there is an existing generator, add to each system
-        if 'gen' in self.existing_components:
+        if 'generator' in self.existing_components:
             for system in self.input_system_grid.values():
-                system.add_component(self.existing_components['gen'],
+                system.add_component(self.existing_components['generator'],
                                      validate=False)
 
     def print_grid(self):
@@ -1287,8 +1287,17 @@ class GridSearchOptimizer(Optimizer):
                 log_error(message)
                 raise Exception(message)
 
-            # Size and dispatch generator
-            simulation.size_single_generator(
+            if bool(self.existing_components):
+              try:
+                simulation.calc_existing_generator_dispatch(generator_options = self.system_costs['generator_costs'], validate = False)
+              except Exception as exc:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                err_message = f'Error! Code: {exc_type} at line {exc_tb.tb_lineno}. Message: {str(exc)}\nCheck there are generators among the system existing components.'
+                log_error(err_message)
+                raise Exception(err_message)
+            else:
+              # Size and dispatch generator
+              simulation.size_single_generator(
                 self.system_costs['generator_costs'], validate=False)
 
             # Add the results to the lists
@@ -1317,8 +1326,11 @@ class GridSearchOptimizer(Optimizer):
                 [simulation.get_storage_recovery_percent()]
             results_summary['fuel_used_gal'] += \
                 [simulation.get_fuel_used()]
-            results_summary['generator_power_kW'] += \
-                [simulation.get_generator_power()]
+            # The generator results refer to only the additional generators needed when load is not met by DERs, and
+            # there are no existing generators in the system.
+            if ('generator' not in simulation.system.components.keys()):
+                results_summary['generator_power_kW'] += \
+                    [simulation.get_generator_power()]
             results_summary['gen_avg_load'] += \
                 [simulation.get_gen_avg()]
             results_summary['gen_peak_load'] += \
@@ -1339,11 +1351,12 @@ class GridSearchOptimizer(Optimizer):
 
         # Find the simulation with the largest generator and add that
         #   generator object to the system
-        max_gen_sim_num = \
-            np.where(results_summary['generator_power_kW']
-                     == max(results_summary['generator_power_kW']))[0][0]
-        max_gen_sim = system.get_simulation(max_gen_sim_num)
-        system.add_component(max_gen_sim.generator_obj, validate=False)
+        if ('generator' not in simulation.system.components.keys()):
+            max_gen_sim_num = \
+                np.where(results_summary['generator_power_kW']
+                        == max(results_summary['generator_power_kW']))[0][0]
+            max_gen_sim = system.get_simulation(max_gen_sim_num)
+            system.add_component(max_gen_sim.generator_obj, validate=False)
 
         return results_summary, system
 
@@ -1797,11 +1810,11 @@ class GridSearchOptimizer(Optimizer):
         if 'mre' in self.existing_components:
             inputs['Existing Equipment'].loc['MRE'] = \
                 '{}kW'.format(self.existing_components['mre'].capacity)
-        if 'gen' in self.existing_components:
+        if 'generator' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
                 '{} units of {}kW'.format(
-                self.existing_components['gen'].num_units,
-                self.existing_components['gen'].rated_power)
+                self.existing_components['generator'].num_units,
+                self.existing_components['generator'].rated_power)
         if 'batt' in self.existing_components:
             inputs['Existing Equipment'].loc['Battery'] = \
                 '{}kW, {}kWh'.format(
@@ -2020,6 +2033,11 @@ class GridSearchOptimizer(Optimizer):
             metric_order_local = [elem for elem in metric_order_local if 'pv' not in elem]
         if not self.mre_params:
             metric_order_local = [elem for elem in metric_order_local if 'mre' not in elem]
+        if bool(self.existing_components) and 'generator' in self.existing_components.keys():
+            # Laurentiu: Not keen on the test below: 'generator' not in elem
+            # but I was trying to avoid addin another variable in the constants.py file.
+            # It makes sense as of now, but if something similar were to be added in the futurer, it might not.
+            metric_order_local = [elem for elem in metric_order_local if 'generator' not in elem]
         format_results = format_results[metric_order_local]
 
         # Add units

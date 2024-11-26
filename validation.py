@@ -313,14 +313,14 @@ def check_existing_components(existing_components):
     """
 
     # Check that keys are allowable
-    if len(set(existing_components.keys()) - {'pv', 'mre', 'batt', 'gen', 'fuel_tank'}) > 0:
+    if len(set(existing_components.keys()) - {'pv', 'mre', 'batt', 'generator', 'fuel_tank'}) > 0:
         return False
 
     # Check the datatype for each elem
     type_key = {'pv': 'microgrid_system.PV',
                 'batt': 'microgrid_system.Battery',
                 'mre': 'microgrid_system.MRE',
-                'gen': 'microgrid_system.Generator',
+                'generator': 'microgrid_system.Generator',
                 'fuel_tank': 'microgrid_system.FuelTank'}
     for key, val in existing_components.items():
         validate_parameter(key, val, data_type=[type_key[key]])
