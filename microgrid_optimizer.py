@@ -35,7 +35,7 @@ from microgrid_simulator import REBattGenSimulator
 from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem
 from validation import validate_all_parameters, log_error, annual_load_profile_warnings
 from constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
-    generator_metrics, re_metrics, metric_order
+    generator_metrics, re_metrics, metric_order_size_gen, metric_order_existing_gen
 from config import OUTPUT_DIR
 
 
@@ -1287,9 +1287,24 @@ class GridSearchOptimizer(Optimizer):
                 log_error(message)
                 raise Exception(message)
 
-            # Size and dispatch generator
-            simulation.size_single_generator(
-                self.system_costs['generator_costs'], validate=False)
+            if 'generator' in self.existing_components:
+                # Dispatch existing generator
+                simulation.calc_existing_generator_dispatch(self.system_costs['generator_costs'], 
+                                                            validate = False)
+            else:
+              # Size and dispatch generator
+              simulation.size_single_generator(self.system_costs['generator_costs'], 
+                                               validate=False)
+
+            # Calculate load breakdown by each component
+            for re_resource in simulation.renewable_resources:
+                simulation.load_breakdown[re_resource] = simulation.dispatch_df[f'{re_resource}_power_to_load'].sum() \
+                    / simulation.dispatch_df['load'].sum()
+            simulation.load_breakdown['battery'] = simulation.dispatch_df.loc[
+                simulation.dispatch_df['delta_battery_power'] >= 0,
+                'delta_battery_power'].sum() / simulation.dispatch_df['load'].sum()
+            simulation.load_breakdown['generator'] = \
+                simulation.dispatch_df['gen_power'].sum() / simulation.dispatch_df['load'].sum()
 
             # Add the results to the lists
             if self.pv_params:
@@ -1339,11 +1354,12 @@ class GridSearchOptimizer(Optimizer):
 
         # Find the simulation with the largest generator and add that
         #   generator object to the system
-        max_gen_sim_num = \
-            np.where(results_summary['generator_power_kW']
-                     == max(results_summary['generator_power_kW']))[0][0]
-        max_gen_sim = system.get_simulation(max_gen_sim_num)
-        system.add_component(max_gen_sim.generator_obj, validate=False)
+        if ('generator' not in self.existing_components):
+            max_gen_sim_num = \
+                np.where(results_summary['generator_power_kW']
+                        == max(results_summary['generator_power_kW']))[0][0]
+            max_gen_sim = system.get_simulation(max_gen_sim_num)
+            system.add_component(max_gen_sim.generator_obj, validate=False)
 
         return results_summary, system
 
@@ -2015,7 +2031,10 @@ class GridSearchOptimizer(Optimizer):
 
     def write_results_sheet(self, format_results, data_formats, writer, sheet_name):
         # Re-order columns
-        metric_order_local = copy.deepcopy(metric_order)
+        if 'generator' in self.existing_components:
+            metric_order_local = copy.deepcopy(metric_order_existing_gen)
+        else:
+            metric_order_local = copy.deepcopy(metric_order_size_gen)
         if not self.pv_params:
             metric_order_local = [elem for elem in metric_order_local if 'pv' not in elem]
         if not self.mre_params:
@@ -2061,13 +2080,12 @@ class GridSearchOptimizer(Optimizer):
             ts_outputs[system_name] = []
             for sim in system_obj.simulations.values():
                 df = sim.dispatch_df
-                output_cols = ['load', 'battery_soc', 'delta_battery_power', 'load_not_met']
+                output_cols = ['load', 'battery_soc', 'delta_battery_power', 'gen_power', 'load_not_met']
                 if self.pv_params:
                     output_cols += ['pv_power']
                 if self.mre_params:
                     output_cols += ['mre_power']
                 df = df[output_cols]
-                df.rename(columns={'load_not_met': 'gen_power'}, inplace=True)
                 df = df.reset_index()
                 df['index'] = df['index'].apply(lambda x: x.strftime('%Y-%m-%d %X'))
                 df_dict = df.to_dict(orient='list')

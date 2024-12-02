@@ -279,6 +279,13 @@ if __name__ == "__main__":
     # Uncomment the following to specify specific pv and battery sizes
     # input_dict['sizing_inputs']['include_pv'] = (500, 400)
     # input_dict['sizing_inputs']['include_batt'] = ((1000, 100), (1000, 500))
+    # gen = Generator(existing=True, 
+    #                 rated_power=100, 
+    #                 num_units=1, 
+    #                 fuel_curve_model={'1/4 Load (gal/hr)': 2.6, '1/2 Load (gal/hr)': 4.1, 
+    #                                   '3/4 Load (gal/hr)': 5.8, 'Full Load (gal/hr)': 7.4}, 
+    #                 capital_cost=191000)
+    # input_dict['sizing_inputs']['existing_components'] = {'generator': gen}
 
     # Net-metering options dictionary
     input_dict['net_metering_inputs'] = {

@@ -313,14 +313,14 @@ def check_existing_components(existing_components):
     """
 
     # Check that keys are allowable
-    if len(set(existing_components.keys()) - {'pv', 'mre', 'batt', 'gen', 'fuel_tank'}) > 0:
+    if len(set(existing_components.keys()) - {'pv', 'mre', 'batt', 'generator', 'fuel_tank'}) > 0:
         return False
 
     # Check the datatype for each elem
     type_key = {'pv': 'microgrid_system.PV',
                 'batt': 'microgrid_system.Battery',
                 'mre': 'microgrid_system.MRE',
-                'gen': 'microgrid_system.Generator',
+                'generator': 'microgrid_system.Generator',
                 'fuel_tank': 'microgrid_system.FuelTank'}
     for key, val in existing_components.items():
         validate_parameter(key, val, data_type=[type_key[key]])
@@ -465,10 +465,10 @@ def check_om_costs(om_costs):
     return True
 
 
-def check_unmet_load(unmet_load):
-    """ Check that unmet load has a DateTimeIndex. """
+def check_gen_power(gen_power):
+    """ Check that gen_power has a DateTimeIndex. """
 
-    return isinstance(unmet_load.index, pd.DatetimeIndex)
+    return isinstance(gen_power.index, pd.DatetimeIndex)
 
 
 def check_grouped_load(grouped_load):
@@ -1223,7 +1223,7 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_location': check_location,
                     'check_night_profile': check_night_profile,
                     'check_generator_costs': check_generator_costs,
-                    'check_unmet_load': check_unmet_load,
+                    'check_gen_power': check_gen_power,
                     'check_grouped_load': check_grouped_load,
                     'check_power_profile': check_power_profile,
                     'check_power_profiles': check_power_profiles,
