@@ -13,6 +13,7 @@ File contents:
         Battery (inherits from Component)
         SimpleLiIonBattery (inherits from Battery)
         Generator (inherits from Component)
+        GeneratorGroup (inherits from Component)
         FuelTank (inherits from Component)
         MicrogridSystem
         SimpleMicrogridSystem (inherits from MicrogridSystem)
@@ -68,6 +69,11 @@ class Component:
 
     def calc_om_cost(self, *args):
         pass
+
+    def copy_and_mod(self, param_name, param_value):
+        self_copy = deepcopy(self)
+        self_copy.__setattr__(param_name, param_value)
+        return self_copy
 
 
 class PV(Component):
@@ -705,6 +711,8 @@ class Generator(Component):
             
         capital_cost: cost for both parts and labor in USD
 
+        prime_generator: (boolean) indicates order of dispatch for multiple generators
+
     Methods
     ----------
     
@@ -721,12 +729,13 @@ class Generator(Component):
     """
     
     def __init__(self, existing, rated_power, num_units, fuel_curve_model, capital_cost,
-                 ideal_minimum_load=0.3, loading_level_to_add_unit=0.9,
+                 prime_generator=True, ideal_minimum_load=0.3, loading_level_to_add_unit=0.9,
                  loading_level_to_remove_unit=0.3, validate=True):
         self.category = 'generator'
         self.existing = existing
         self.rated_power = rated_power  # kW
         self.num_units = num_units
+        self.prime_generator = prime_generator
         self.fuel_curve_model = fuel_curve_model
         self.capital_cost = capital_cost
         self.ideal_minimum_load = ideal_minimum_load
@@ -740,6 +749,7 @@ class Generator(Component):
                 'num_units': num_units,
                 'fuel_curve_model': fuel_curve_model,
                 'capital_cost': capital_cost,
+                'prime_generator': prime_generator,
                 'ideal_minimum_load': ideal_minimum_load,
                 'loading_level_to_add_unit': loading_level_to_add_unit,
                 'loading_level_to_remove_unit': loading_level_to_remove_unit
@@ -829,6 +839,55 @@ class Generator(Component):
             gen_om_per_kW_scalar = cost_df['Generator_scalar'].values[1]
             gen_om_exp = cost_df['Generator_exp'].values[1]
             return gen_om_per_kW_scalar * (self.rated_power * self.num_units)**gen_om_exp
+
+
+class GeneratorGroup(Component):
+    """
+    Generator Group class
+    
+    Parameters
+    ----------
+    
+        category: equipment type, set to 'generator'
+
+        generator_list: a list of Generator objects
+
+    Methods
+    ----------
+
+        calc_capital_cost: calculate capital costs
+
+        calc_om_cost: calculate om costs
+                
+    """
+    
+    def __init__(self, generator_list, validate=True):
+        self.category = 'generator'
+        self.generator_list = generator_list
+        self.rated_power = np.sum([gen.rated_power * gen.num_units for gen in self.generator_list])
+        self.num_units = 1  # Used for results parsing to be consistent with Generator object
+
+        if validate:
+            # List of initialized parameters to validate
+            args_dict = {
+                'generator_list': generator_list
+            }
+
+            # Validate input parameters
+            validate_all_parameters(args_dict)
+
+    def __repr__(self):
+        return f'GeneratorGroup: {[print(gen) for gen in self.generator_list]}'
+
+    def calc_capital_cost(self, cost_df, *args):
+        """ Calculate generator group capital costs """
+
+        return np.sum([gen.calc_capital_cost(cost_df, {}) for gen in self.generator_list])
+
+    def calc_om_cost(self, cost_df, *args):
+        """ Calculate generator O&M costs """
+
+        return np.sum([gen.calc_om_cost(cost_df, {}) for gen in self.generator_list])
 
 
 class FuelTank(Component):

@@ -32,7 +32,8 @@ from geopy.geocoders import Nominatim
 from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_simulator import REBattGenSimulator
-from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem
+from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem, \
+    GeneratorGroup
 from validation import validate_all_parameters, log_error, annual_load_profile_warnings
 from constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
     generator_metrics, re_metrics, metric_order_size_gen, metric_order_existing_gen
@@ -1013,8 +1014,7 @@ class GridSearchOptimizer(Optimizer):
         # If there is an existing generator, add to each system
         if 'generator' in self.existing_components:
             for system in self.input_system_grid.values():
-                system.add_component(self.existing_components['generator'],
-                                     validate=False)
+                system.add_component(self.existing_components['generator'], validate=False)
 
     def print_grid(self):
         """ Print out the sizes in a grid of system configurations. """
@@ -1292,9 +1292,9 @@ class GridSearchOptimizer(Optimizer):
                 simulation.calc_existing_generator_dispatch(self.system_costs['generator_costs'], 
                                                             validate = False)
             else:
-              # Size and dispatch generator
-              simulation.size_single_generator(self.system_costs['generator_costs'], 
-                                               validate=False)
+                # Size and dispatch generator
+                simulation.size_single_generator(self.system_costs['generator_costs'], 
+                                                validate=False)
 
             # Calculate load breakdown by each component
             for re_resource in simulation.renewable_resources:
@@ -1815,9 +1815,9 @@ class GridSearchOptimizer(Optimizer):
                 '{}kW'.format(self.existing_components['mre'].capacity)
         if 'generator' in self.existing_components:
             inputs['Existing Equipment'].loc['Generator'] = \
-                '{} units of {}kW'.format(
-                self.existing_components['generator'].num_units,
-                self.existing_components['generator'].rated_power)
+                ', '.join(['{} units of {}kW'.format(
+                gen.num_units, gen.rated_power) for gen in 
+                self.existing_components['generator'].generator_list])
         if 'batt' in self.existing_components:
             inputs['Existing Equipment'].loc['Battery'] = \
                 '{}kW, {}kWh'.format(
