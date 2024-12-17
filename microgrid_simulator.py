@@ -427,10 +427,12 @@ class REBattGenSimulator(Simulator):
     def calc_existing_generator_dispatch(self, generator_options,
                                          validate=True):
         """ 
-        If there is an existing generator, determine how it meets the load and consumes fuel.
+        If there are existing generators, determine how they meet the load and consume fuel.
 
         Once that is established, update and save how much load is still not met and
         calculate some of the metrics based on the how much load the existing generators meet.
+
+        Note: This function was optimized for efficiency using the AI Incubator tool
 
         """
 
@@ -439,22 +441,59 @@ class REBattGenSimulator(Simulator):
             args_dict = {'generator_options': generator_options}
             validate_all_parameters(args_dict)
 
-        # Get info from existing generator
-        gen = self.system.components['generator']
-        self.generator_power_kW = gen.rated_power
+        # Get info from existing generators
+        gen_group = self.system.components['generator']
 
-        # Determine if unmet load can be supplied by existing generator
-        self.dispatch_df['load_not_met'] = [x - gen.rated_power if x - gen.rated_power >= 0 else 0 for x in self.dispatch_df['load_not_met_by_RE']]
-
-        # Determine the load met by existing generators
-        self.dispatch_df['gen_power'] = [gen.rated_power if x - gen.rated_power >= 0 else x for x in self.dispatch_df['load_not_met_by_RE']]
-
-        # Calculate fuel used by existing generator
-        grouped_load, existing_gen_fuel_used = gen.calculate_fuel_consumption(
-            self.dispatch_df[['gen_power']], self.duration, validate=False)
-        self.load_duration_df = calculate_load_duration(grouped_load, validate=False)
-        self.fuel_used_gal = existing_gen_fuel_used
+        # Sort generators into prime and non-prime
+        prime_gens = []
+        non_prime_gens = []
+        for gen in gen_group.generator_list:
+            if gen.prime_generator:
+                for _ in range(gen.num_units):
+                    prime_gens += [gen.copy_and_mod('num_units', 1)]
+            else:
+                for _ in range(gen.num_units):
+                    non_prime_gens += [gen.copy_and_mod('num_units', 1)]
         
+        # Determine generator order and cumulative power
+        gen_order = np.append(np.random.permutation(prime_gens), np.random.permutation(non_prime_gens))
+        gens_power = [gen.rated_power for gen in gen_order]
+        gen_cumulative_power = np.cumsum(gens_power)
+
+        # Determine the number of generators that must be dispatched at each timestep to meet 
+        #   load (if possible) and total power dispatched
+        load_not_met_by_RE = self.dispatch_df['load_not_met_by_RE'].values
+        gens_available = np.searchsorted(gen_cumulative_power, load_not_met_by_RE, side='left')
+        gen_cumulative_power = np.append(gen_cumulative_power, [gen_cumulative_power[-1]])
+        total_power_of_gens_dispatched = gen_cumulative_power[gens_available]
+        gen_power = np.minimum(load_not_met_by_RE, total_power_of_gens_dispatched)
+
+        # Calculate the load met by each generator for fuel calculation
+        gen_power_dict = {}
+        gen_0_power_condition = gen_power < gen_cumulative_power[0]
+        gen_power_dict['gen_0_power'] = np.where(gen_0_power_condition, gen_power, gens_power[0])
+        for gen_indx in range(1, len(gen_order)):
+            power_column = f'gen_{gen_indx}_power'
+            gen_power_dict[power_column] = gens_power[gen_indx]
+            condition = gen_power < gen_cumulative_power[gen_indx]
+            gen_power_dict[power_column] = np.where(condition,
+                gen_power - gen_cumulative_power[gen_indx-1],
+                gen_power_dict[power_column])
+            gen_power_dict[power_column] = np.maximum(gen_power_dict[power_column], 0)
+        
+        # Determine if unmet load can be supplied by generators
+        self.dispatch_df['gen_power'] = gen_power
+        self.dispatch_df['load_not_met'] = self.dispatch_df['load_not_met_by_RE'] - self.dispatch_df['gen_power']
+
+        # Calculate fuel used by each generator
+        self.fuel_used_gal = 0
+        self.fuel_used_gal = sum(
+            gen_order[gen_indx].calculate_fuel_consumption(
+                pd.DataFrame(gen_power_dict[f'gen_{gen_indx}_power']), self.duration, validate=False)[1]
+            for gen_indx in range(len(gens_power)))
+        
+        self.generator_power_kW = gen_cumulative_power[-1]
+
     def get_load_breakdown(self):
         return self.load_breakdown
         

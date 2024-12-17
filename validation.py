@@ -320,10 +320,19 @@ def check_existing_components(existing_components):
     type_key = {'pv': 'microgrid_system.PV',
                 'batt': 'microgrid_system.Battery',
                 'mre': 'microgrid_system.MRE',
-                'generator': 'microgrid_system.Generator',
+                'generator': 'microgrid_system.GeneratorGroup',
                 'fuel_tank': 'microgrid_system.FuelTank'}
     for key, val in existing_components.items():
         validate_parameter(key, val, data_type=[type_key[key]])
+    return True
+
+
+def check_generator_list(generator_list):
+    """Check that each element in generator_list is a Generator object.
+    """
+
+    for elem in generator_list:
+        validate_parameter('generator', elem, data_type=['microgrid_system.Generator'])
     return True
 
 
@@ -1260,4 +1269,5 @@ VALIDATION_FUNCS = {'check_path': check_path,
                     'check_solar_source': check_solar_source,
                     'check_renewable_resources': check_renewable_resources,
                     'check_mre_params': check_mre_params,
-                    'check_solar_data_dict': check_solar_data_dict}
+                    'check_solar_data_dict': check_solar_data_dict,
+                    'check_generator_list': check_generator_list}

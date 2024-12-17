@@ -14,7 +14,7 @@ import pandas as pd
 from generate_solar_profile import SolarProfileGenerator
 from generate_tidal_profile import TidalProfileGenerator
 from microgrid_optimizer import GridSearchOptimizer
-from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank
+from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank, GeneratorGroup
 from config import DATA_DIR
 from config import OUTPUT_DIR
 
@@ -275,17 +275,22 @@ if __name__ == "__main__":
     #         module_capacity=0.360, module_area=3, spacing_buffer=2,
     #         pv_tracking='fixed', pv_racking='ground')
     # input_dict['sizing_inputs']['existing_components'] = {'pv': pv}
+    # gen_group = GeneratorGroup(
+    #     [Generator(
+    #         existing=True, rated_power=100, num_units=1, prime_generator=True, 
+    #         capital_cost=191000,
+    #         fuel_curve_model={'1/4 Load (gal/hr)': 2.6, '1/2 Load (gal/hr)': 4.1, 
+    #                           '3/4 Load (gal/hr)': 5.8, 'Full Load (gal/hr)': 7.4}),
+    #     Generator(existing=True, rated_power=50, num_units=2, prime_generator=False, 
+    #               capital_cost=301000,
+    #               fuel_curve_model={'1/4 Load (gal/hr)': 1.8, '1/2 Load (gal/hr)': 2.9, 
+    #                                 '3/4 Load (gal/hr)': 3.8, 'Full Load (gal/hr)': 4.8}, 
+    #                 )])
+    # input_dict['sizing_inputs']['existing_components'] = {'generator': gen_group}
 
     # Uncomment the following to specify specific pv and battery sizes
     # input_dict['sizing_inputs']['include_pv'] = (500, 400)
     # input_dict['sizing_inputs']['include_batt'] = ((1000, 100), (1000, 500))
-    # gen = Generator(existing=True, 
-    #                 rated_power=100, 
-    #                 num_units=1, 
-    #                 fuel_curve_model={'1/4 Load (gal/hr)': 2.6, '1/2 Load (gal/hr)': 4.1, 
-    #                                   '3/4 Load (gal/hr)': 5.8, 'Full Load (gal/hr)': 7.4}, 
-    #                 capital_cost=191000)
-    # input_dict['sizing_inputs']['existing_components'] = {'generator': gen}
 
     # Net-metering options dictionary
     input_dict['net_metering_inputs'] = {
