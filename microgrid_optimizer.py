@@ -200,7 +200,7 @@ class GridSearchOptimizer(Optimizer):
             operation. If this parameter is not set to None, the
             annual_load_profile is used to size the RE system and
             calculate annual revenue, and this profile is used to size
-            the battery and generator and calculate resilience metrics.
+            the battery and generator.
             Default = None
 
     Methods
@@ -337,6 +337,7 @@ class GridSearchOptimizer(Optimizer):
         self.input_system_grid = {}  # Dict of MicrogridSystem objects
         self.output_system_grid = {}
         self.results_grid = None
+        self.resilience_metrics = {}
         self.filter = None
         self.rank = None
 
@@ -566,6 +567,11 @@ class GridSearchOptimizer(Optimizer):
             - 0 PV
         """
 
+        # Calculate round-trip efficiency based on battery and inverter
+        #   efficiency
+        system_rte = self.battery_params['one_way_battery_efficiency'] ** 2 \
+            * self.battery_params['one_way_inverter_efficiency'] ** 2
+        
         # Determine if sizing is based on TMY or profiles
         if self.size_re_resources_based_on_tmy:
             # Get the total annual load and pv production
@@ -574,6 +580,14 @@ class GridSearchOptimizer(Optimizer):
                 total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
                     * self.battery_params['one_way_inverter_efficiency']**2)
             total_pv = self.tmy_solar.sum()
+            net_zero = total_load / total_pv
+
+            # Calculate the amount of pv energy lost through
+            #   charging/discharging batteries at the net zero capacity
+            losses = pd.Series(self.tmy_solar.values * net_zero -
+                            self.annual_load_profile.values)
+            losses.loc[losses < 0] = 0
+            total_lost = losses.sum() * (1 - system_rte)
         else:
             # Get the total load and pv production from the profiles
             total_load = np.sum([profile.sum() for profile in self.load_profiles])
@@ -581,19 +595,14 @@ class GridSearchOptimizer(Optimizer):
                 total_load = total_load / (self.battery_params['one_way_battery_efficiency']**2 
                     * self.battery_params['one_way_inverter_efficiency']**2)
             total_pv = np.sum([profile.sum() for profile in self.power_profiles['pv']])
-        net_zero = total_load / total_pv
+            net_zero = total_load / total_pv
 
-        # Calculate round-trip efficiency based on battery and inverter
-        #   efficiency
-        system_rte = self.battery_params['one_way_battery_efficiency'] ** 2 \
-            * self.battery_params['one_way_inverter_efficiency'] ** 2
-
-        # Calculate the amount of pv energy lost through
-        #   charging/discharging batteries at the net zero capacity
-        losses = pd.Series(self.tmy_solar.values * net_zero -
-                           self.annual_load_profile.values)
-        losses.loc[losses < 0] = 0
-        total_lost = losses.sum() * (1 - system_rte)
+            # Calculate the amount of pv energy lost through
+            #   charging/discharging batteries at the net zero capacity
+            losses = np.array([pv_profile.values * net_zero - load_profile.values for pv_profile, load_profile 
+                      in zip(self.power_profiles['pv'], self.load_profiles)]).flatten()
+            losses[losses < 0] = 0
+            total_lost = losses.sum() * (1 - system_rte)
 
         # Maximum (net-zero) solar size is based on scaling total annual
         #   solar to equal annual load plus losses
@@ -1042,7 +1051,7 @@ class GridSearchOptimizer(Optimizer):
         """
 
         # If the user specified an off-grid load profile, use this for the
-        #   resiliency simulations, otherwise use the annual load profile
+        #   outage simulations, otherwise use the annual load profile
         if self.off_grid_load_profile is None:
             load_profile = self.annual_load_profile
         else:
@@ -1254,7 +1263,8 @@ class GridSearchOptimizer(Optimizer):
                            'mre_avg_load': [], 'mre_peak_load': [],
                            'gen_avg_load': [], 'gen_peak_load': [], 'gen_total_load': [],
                            'outage_total_load': [], 'hours_before_gen': [],
-                           'batt_avg_load': [], 'batt_peak_load': []}
+                           'batt_avg_load': [], 'batt_peak_load': [],
+                           'resilience_metrics': []}
 
         # For each resource profile, create a simulator object
         for i in range(len(self.load_profiles)):
@@ -1289,8 +1299,7 @@ class GridSearchOptimizer(Optimizer):
 
             if 'generator' in self.existing_components:
                 # Dispatch existing generator
-                simulation.calc_existing_generator_dispatch(self.system_costs['generator_costs'], 
-                                                            validate = False)
+                simulation.calc_existing_generator_dispatch()
             else:
                 # Size and dispatch generator
                 simulation.size_single_generator(self.system_costs['generator_costs'], 
@@ -1305,6 +1314,10 @@ class GridSearchOptimizer(Optimizer):
                 'delta_battery_power'].sum() / simulation.dispatch_df['load'].sum()
             simulation.load_breakdown['generator'] = \
                 simulation.dispatch_df['gen_power'].sum() / simulation.dispatch_df['load'].sum()
+
+            # Calculate resilience metrics if an existing generator is included
+            if 'generator' in self.existing_components:
+                results_summary['resilience_metrics'] += [simulation.calc_resilience_metrics(system)]
 
             # Add the results to the lists
             if self.pv_params:
@@ -1389,7 +1402,7 @@ class GridSearchOptimizer(Optimizer):
 
             # For each metric, calculate mean, max, and standard deviation
             results_summary = {key: {'mean': np.mean(val), 'std': np.std(val), 'max':np.max(val), 'min': np.min(val)}
-                               for key, val in outputs.items() if len(val)}
+                               for key, val in outputs.items() if len(val) and not isinstance(val[0], dict)}
 
             # Save to system object
             system.set_outputs(results_summary, validate=False)
@@ -1431,6 +1444,10 @@ class GridSearchOptimizer(Optimizer):
 
             # Add results to dataframe
             self.results_grid.loc[system_name] = system_row
+
+            # Calculate resilience metrics
+            if 'generator' in self.existing_components:
+                self.resilience_metrics[system_name] = system.calculate_resilience_metrics()
 
     def filter_results(self, filter_constraints, validate=True):
         """
