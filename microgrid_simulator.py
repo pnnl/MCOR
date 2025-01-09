@@ -428,7 +428,7 @@ class REBattGenSimulator(Simulator):
         self.dispatch_df['gen_power'] = self.dispatch_df['load_not_met_by_RE']
         grouped_load, self.fuel_used_gal = gen.calculate_fuel_consumption(
             self.dispatch_df[['gen_power']], self.duration, validate=False)
-        self.load_duration_df = calculate_load_duration(grouped_load, validate=False)
+        # self.load_duration_df = calculate_load_duration(grouped_load, validate=False)
         self.dispatch_df['load_not_met'] = 0
             
     def calc_existing_generator_dispatch(self, validate=True):
