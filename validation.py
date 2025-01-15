@@ -685,7 +685,7 @@ def check_annual_load_profile(annual_load_profile, duration):
 
     # Check that the index has all of the expected values
     comp_index = pd.date_range(start='1/1/2017', end='1/1/2018',
-                               freq='{}S'.format(int(duration)))[:-1]
+                               freq='{}s'.format(int(duration)))[:-1]
     if len(set(comp_index).symmetric_difference(set(converted_index))):
         message = 'The annual load profile must begin on January 1 at ' \
                   '00:00:00 and have no missing values.'

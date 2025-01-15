@@ -803,7 +803,7 @@ class Generator(Component):
 
         # Determine fuel consumption function
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', np.RankWarning)
+            warnings.simplefilter('ignore', np.exceptions.RankWarning)
             fuel_func = np.poly1d(np.polyfit([0, 0.25, 0.5, 0.75, 1],
                                    [0,
                                     self.fuel_curve_model['1/4 Load (gal/hr)'],

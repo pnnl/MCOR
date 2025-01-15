@@ -374,7 +374,7 @@ class SolarProfileGenerator:
             try:
                 solar_profile.index = pd.date_range(
                     start=solar_profile.index[0], periods=len(solar_profile),
-                    freq='H', tz=self.timezone, ambiguous=False)
+                    freq='h', tz=self.timezone, ambiguous=False)
 
                 # NREL historical data is not daylight savings time aware, so we need to shift
                 #   it for compatibility with the pvlib library
@@ -1191,7 +1191,7 @@ def calc_night_duration(power_profile, percent_at_night=0, validate=True):
                     and not night_df.iloc[i - 1, -3]):
                 night_df.iloc[i, -2] = True
                 night_df.iloc[i, -1] = night_lengths.pop(0)
-        night_df['night_duration'].ffill(inplace=True)
+        night_df['night_duration'] = night_df['night_duration'].ffill()
     night_df.loc[~night_df['is_night'], 'night_duration'] = 0
 
     return night_df

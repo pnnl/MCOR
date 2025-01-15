@@ -743,7 +743,7 @@ class AlternativeSolarProfiles:
         # Create a date range object for each start datetime
         date_ranges = [pd.date_range(start=start_date,
                                      periods=self.length_trials,
-                                     freq='H')
+                                     freq='h')
                        for start_date in start_datetimes]
 
         # Remove any leap days and pad the date_range accordingly
@@ -757,7 +757,7 @@ class AlternativeSolarProfiles:
                 # Add more timesteps
                 date_ranges[i] = date_range.append(pd.date_range(
                     date_range[-1] + dt.timedelta(hours=1),
-                    periods=replace_timesteps, freq='H'))
+                    periods=replace_timesteps, freq='h'))
 
         return date_ranges
 

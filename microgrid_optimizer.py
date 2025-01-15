@@ -397,16 +397,16 @@ class GridSearchOptimizer(Optimizer):
         # De-localize timezones from profiles
         for re_resource, profiles in self.power_profiles.items():
             for profile in profiles:
-                profile.index = profile.index.map(lambda x: x.tz_localize(None))
+                profile.index = profile.index.tz_localize(None)
         if tmy_solar is not None:
-            tmy_solar.index = tmy_solar.index.map(lambda x: x.tz_localize(None))
+            tmy_solar.index = tmy_solar.index.tz_localize(None)
         if tmy_mre is not None:
-            tmy_mre.index = tmy_mre.index.map(lambda x: x.tz_localize(None))
+            tmy_mre.index = tmy_mre.index.tz_localize(None)
 
         # Fix annual load profile index
         self.annual_load_profile.index = pd.date_range(
             start='1/1/2017', end='1/1/2018',
-            freq='{}S'.format(int(self.duration)))[:-1]
+            freq='{}s'.format(int(self.duration)))[:-1]
         if self.off_grid_load_profile is not None:
             self.off_grid_load_profile.index = self.annual_load_profile.index
 
@@ -1062,7 +1062,7 @@ class GridSearchOptimizer(Optimizer):
         twoyear_load_profile = pd.concat([load_profile, load_profile])
         twoyear_load_profile.index = pd.date_range(
             start='1/1/2017', end='1/1/2019',
-            freq='{}S'.format(int(self.duration)))[:-1]
+            freq='{}s'.format(int(self.duration)))[:-1]
 
         # Loop over each RE generation profile
         for power_profile in self.power_profiles[self.renewable_resources[0]]:
@@ -1080,7 +1080,7 @@ class GridSearchOptimizer(Optimizer):
             # Create a datetime index 
             temp_index = pd.date_range(start=start_time,
                                        periods=len(power_profile),
-                                       freq='{}S'.format(int(self.duration)))
+                                       freq='{}s'.format(int(self.duration)))
 
             # Get the load profile values at the corresponding
             #   date/times
