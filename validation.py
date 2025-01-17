@@ -824,19 +824,23 @@ def check_spg_advanced_inputs(advanced_inputs):
             print("{} does not have a validation function. Skipping "
                   "validation...".format(key))
         else:
-            # If the field has a custom function, include custom args
-            if 'custom_func' in kwargs.keys():
-                if 'custom_args' in kwargs.keys() and len(kwargs['custom_args']):
-                    # Note: the following line requires that if a custom validation function
-                    #   for a parameter in advanced_inputs has custom arguments then those
-                    #   arguments must also be included in the advanced_inputs dictionary.
-                    kwargs['custom_args'] = \
-                        {key: advanced_inputs[key] for key in
-                         kwargs['custom_args'].split(',')}
-                else:
-                    kwargs['custom_args'] = {}
+            # If parameter is None, skip
+            if val is None:
+                continue
+            else:
+                # If the field has a custom function, include custom args
+                if 'custom_func' in kwargs.keys():
+                    if 'custom_args' in kwargs.keys() and len(kwargs['custom_args']):
+                        # Note: the following line requires that if a custom validation function
+                        #   for a parameter in advanced_inputs has custom arguments then those
+                        #   arguments must also be included in the advanced_inputs dictionary.
+                        kwargs['custom_args'] = \
+                            {key: advanced_inputs[key] for key in
+                            kwargs['custom_args'].split(',')}
+                    else:
+                        kwargs['custom_args'] = {}
 
-            validate_parameter(key, val, **kwargs)
+                validate_parameter(key, val, **kwargs)
     return True
 
 def check_tpg_advanced_inputs(advanced_inputs):

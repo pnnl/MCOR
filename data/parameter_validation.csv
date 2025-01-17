@@ -68,6 +68,7 @@ loading_level_to_add_unit,"int,float",0,1,,,,,
 loading_level_to_remove_unit,"int,float",0,1,,,,,
 location,dict,,,,,check_location,,"Location must be a dictionary with the following keys and value datatypes:  {'longitude': float, 'latitude': float, 'timezone': string,  'altitude': float}"
 longitude,"int,float",-180,180,,,,,
+losses,"int,float",0,100,,,,,
 max_iter,int,1,1000,,,,,
 maximum_cp,float,0,1,,,,,
 mismatch,"int,float",0,100,,,,,

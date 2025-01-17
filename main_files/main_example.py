@@ -44,7 +44,10 @@ def run_mcor(input_dict):
                                     pv_racking=pv_inputs['pv_racking'], pv_tracking=pv_inputs['pv_tracking'],
                                     suppress_warnings=warning_inputs['suppress_warnings'],
                                     multithreading=multithreading_inputs['multithreading'],
-                                    solar_source=pv_inputs['solar_data_source'])
+                                    solar_source=pv_inputs['solar_data_source'],
+                                    advanced_inputs=pv_inputs['advanced_inputs'],
+                                    get_solar_data_from_file=pv_inputs['get_solar_data_from_file'],
+                                    get_solar_profiles_from_file=pv_inputs['get_solar_profiles_from_file'])
 
         if pv_inputs['get_solar_data']:
             spg.get_solar_data()
@@ -143,9 +146,17 @@ def run_mcor(input_dict):
     optim.get_load_profiles()
 
     # Create a grid of systems
-    optim.define_grid(include_pv=sizing_inputs['include_pv'],
-                      include_batt=sizing_inputs['include_batt'],
-                      include_mre=sizing_inputs['include_mre'])
+    if input_dict['system_inputs']['size_only_specific_system']:
+        system_name, system = optim.create_new_system(
+            sizing_inputs['include_pv'][0], sizing_inputs['include_mre'][0],
+            sizing_inputs['include_batt'][0])
+        if 'generator' in optim.existing_components:
+            system.add_component(optim.existing_components['generator'], validate=False)
+        optim.input_system_grid[system_name] = system
+    else:
+        optim.define_grid(include_pv=sizing_inputs['include_pv'],
+                        include_batt=sizing_inputs['include_batt'],
+                        include_mre=sizing_inputs['include_mre'])
 
     # Run all simulations
     optim.run_sims()
@@ -182,6 +193,7 @@ if __name__ == "__main__":
         'size_re_resources_based_on_tmy': False,
         'size_battery_based_on_tmy': True,
         'size_resources_with_battery_eff_term': True,
+        'size_only_specific_system': False,
         'start_datetimes': None,  # If you want to specify specific times to start the scenarios,
         're_constraints': {}  # {'total': 2000, 'pv': 2000, 'mre': 2000} Any sizing constraints for the RE system, in kW, can include keys: 'total', 'pv', or 'mre'
     }
@@ -196,6 +208,9 @@ if __name__ == "__main__":
         'solar_data_source': 'nsrdb',
         'solar_data_start_year': 1998,
         'solar_data_end_year': 2022,
+        'advanced_inputs': {},
+        'get_solar_data_from_file': True,
+        'get_solar_profiles_from_file': True,
         'get_solar_data': True,
         'get_solar_profiles': True
     }

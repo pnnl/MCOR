@@ -62,6 +62,7 @@ PV_DEFAULTS = {'albedo': 0.12,
                    'database': 'CECInverter',
                    'model': 'SMA_America__SB5000US__240V_'},
                'strings': {'mods_per_string': 7, 'strings_per_inv': 2},
+               'losses': None
                }
 
 
@@ -538,6 +539,7 @@ class SolarProfileGenerator:
                 max_track_angle=self.max_track_angle,
                 backtrack=self.backtrack, validate=False,
                 suppress_warnings=self.suppress_warnings,
+                losses=self.advanced_inputs['losses'],
                 advanced_inputs=self.advanced_inputs)]
 
         # Get TMY solar PV power
@@ -590,6 +592,7 @@ class SolarProfileGenerator:
             pv_tracking=self.pv_tracking, max_track_angle=self.max_track_angle,
             backtrack=self.backtrack, validate=False,
             suppress_warnings=self.suppress_warnings,
+            losses=self.advanced_inputs['losses'],
             advanced_inputs=self.advanced_inputs)
 
     def get_power_profiles_from_upload(self, annual_production, temperature=None,
@@ -948,7 +951,7 @@ def parse_himawari_tmy(response, path, latitude, longitude):
 def calc_pv_prod(solar_profile, temp_profile, latitude, longitude, altitude, tilt, azimuth,
                  wind_speed, albedo, pv_racking, module_name, inverter_name, strings,
                  pv_tracking='fixed', max_track_angle=90, backtrack=True, validate=True,
-                 suppress_warnings=False, advanced_inputs={}):
+                 suppress_warnings=False, losses=None, advanced_inputs={}):
     """ Calculates the PV production from a solar profile using pvlib. """
 
     if validate:
@@ -1123,7 +1126,8 @@ def calc_pv_prod(solar_profile, temp_profile, latitude, longitude, altitude, til
     params = {key: val for key, val in advanced_inputs.items()
               if key in ['soiling', 'shading', 'snow', 'mismatch', 'wiring',
                          'connections', 'lid', 'nameplate_rating', 'age', 'availability']}
-    losses = pvsystem.pvwatts_losses(**params)
+    if not losses:
+        losses = pvsystem.pvwatts_losses(**params)
     dc_power['p_mp'] = dc_power['p_mp'] * (1 - losses / 100)
 
     # If dhi was < 0 at any point, plot power to make sure it looks reasonable
