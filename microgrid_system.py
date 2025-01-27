@@ -23,6 +23,7 @@ File contents:
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+from scipy import stats
 import matplotlib.pyplot as plt
 import warnings
 
@@ -818,6 +819,7 @@ class Generator(Component):
         # Calculate total fuel consumption
         total_fuel = (grouped_load['fuel_used']
                       * grouped_load['num_hours']).sum()
+        total_fuel = np.max([total_fuel, 0.])
 
         return grouped_load, total_fuel
 
@@ -877,7 +879,7 @@ class GeneratorGroup(Component):
             validate_all_parameters(args_dict)
 
     def __repr__(self):
-        return f'GeneratorGroup: {[print(gen) for gen in self.generator_list]}'
+        return f'GeneratorGroup: {", ".join([gen.__repr__() for gen in self.generator_list])}'
 
     def calc_capital_cost(self, cost_df, *args):
         """ Calculate generator group capital costs """
@@ -1010,6 +1012,8 @@ class MicrogridSystem:
             revenue for either the total RE system or an existing system.
 
         calc_payback: calculates system payback in years
+
+        calculate_resilience_metrics: calculates various resilience metrics
         
         set_outputs: sets system outputs from aggregated simulations
         
@@ -1076,6 +1080,9 @@ class MicrogridSystem:
         pass
     
     def calc_annual_RE_benefits(self, *args):
+        pass
+
+    def calculate_resilience_metrics(self, *args):
         pass
 
     def calc_payback(self):
@@ -1675,6 +1682,77 @@ class SimpleMicrogridSystem(MicrogridSystem):
         gen_load_duration.loc['{}%_smaller_gen_cost'.format(
             perc)] = gen.capital_cost * gen.num_units
         return gen_load_duration
+    
+    def calculate_resilience_metrics(self):
+        """
+        Calculate aggregated resilience metrics:
+            Resilience goal met (percent, cdf)
+            Fuel requirements (max, cdf)
+            Percent load not met (mean, cdf)
+            Total load not met (mean, cdf)
+            Peak load not met (mean, cdf)
+        """
+
+        res_metrics = {
+            'res_goal': {},
+            'fuel_req': {},
+            'percent_not_met': {},
+            'total_not_met': {},
+            'peak_not_met': {}
+        }
+        
+        resilience_metrics = self.outputs['resilience_metrics']
+        num_sims = len(self.simulations)
+        sim_length = len(self.simulations[0].load_profile)
+        sim_time_range = [elem for elem in range(sim_length)]
+        for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
+            # Resilience goal met - percentage of simulations for which there was no load shortfall
+            res_metrics['res_goal'][system_option] = {}
+            res_metrics['res_goal'][system_option]['scalar'] = \
+                np.sum([sim[system_option]['total_load_not_met'] == 0. for sim in resilience_metrics]) / num_sims
+            # Probability that the load will be met for at least X hours
+            hours = [sim[system_option]['hours_before_shortfall'] for sim in resilience_metrics]
+            cdf = stats.ecdf(hours).sf.evaluate(sim_time_range)
+            res_metrics['res_goal'][system_option]['cdf'] = (sim_time_range, cdf.tolist())
+
+            # Fuel requirements
+            # Maximum fuel requirements for simulatons for which all load was met
+            res_metrics['fuel_req'][system_option] = {}
+            fuel = np.array([sim[system_option]['fuel_use'] for sim in resilience_metrics])
+            fuel = fuel[fuel >= 0]
+            res_metrics['fuel_req'][system_option]['scalar'] = np.max(fuel) if len(fuel) else 0.
+            # % of simulations requiring X gal or less of fuel 
+            cdf = stats.ecdf(fuel).cdf
+            res_metrics['fuel_req'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+
+            # % load not met
+            res_metrics['percent_not_met'][system_option] = {}
+            perc_load = np.array([sim[system_option]['percent_load_not_met'] for sim in resilience_metrics])
+            perc_load = perc_load[perc_load > 0]
+            res_metrics['percent_not_met'][system_option]['scalar'] = np.mean(perc_load) if len(perc_load) else 0.
+            # % of simulations where X % load or less is not met
+            cdf = stats.ecdf(perc_load).cdf
+            res_metrics['percent_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+
+            # total load not met
+            res_metrics['total_not_met'][system_option] = {}
+            total_load = np.array([sim[system_option]['total_load_not_met'] for sim in resilience_metrics])
+            total_load = total_load[total_load > 0]
+            res_metrics['total_not_met'][system_option]['scalar'] = np.mean(total_load) if len(total_load) else 0.
+            # % of simulations where X kWh of load or less is not met
+            cdf = stats.ecdf(total_load).cdf
+            res_metrics['total_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+
+            # peak load not met
+            res_metrics['peak_not_met'][system_option] = {}
+            peak_load = np.array([sim[system_option]['peak_load_not_met'] for sim in resilience_metrics])
+            peak_load = peak_load[peak_load > 0]
+            res_metrics['peak_not_met'][system_option]['scalar'] = np.mean(peak_load) if len(peak_load) else 0.
+            # % of simulations where the peak load not met is X kW or less
+            cdf = stats.ecdf(peak_load).cdf
+            res_metrics['peak_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+
+        return res_metrics
 
 
 if __name__ == "__main__":

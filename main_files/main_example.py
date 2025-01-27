@@ -274,7 +274,7 @@ if __name__ == "__main__":
     #         azimuth=input_dict['pv_inputs']['azimuth'],
     #         module_capacity=0.360, module_area=3, spacing_buffer=2,
     #         pv_tracking='fixed', pv_racking='ground')
-    # input_dict['sizing_inputs']['existing_components'] = {'pv': pv}
+    # input_dict['sizing_inputs']['existing_components'].update({'pv': pv})
     # gen_group = GeneratorGroup(
     #     [Generator(
     #         existing=True, rated_power=100, num_units=1, prime_generator=True, 
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     #               fuel_curve_model={'1/4 Load (gal/hr)': 1.8, '1/2 Load (gal/hr)': 2.9, 
     #                                 '3/4 Load (gal/hr)': 3.8, 'Full Load (gal/hr)': 4.8}, 
     #                 )])
-    # input_dict['sizing_inputs']['existing_components'] = {'generator': gen_group}
+    # input_dict['sizing_inputs']['existing_components'].update({'generator': gen_group})
 
     # Uncomment the following to specify specific pv and battery sizes
     # input_dict['sizing_inputs']['include_pv'] = (500, 400)
