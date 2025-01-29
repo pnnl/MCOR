@@ -31,8 +31,8 @@ import os
 import multiprocessing
 from scipy import stats
 import datetime as dt
-from validation import validate_all_parameters, log_error
-from config import SOLAR_DATA_DIR
+from MCOR.validation import validate_all_parameters, log_error
+from MCOR.config import SOLAR_DATA_DIR
 
 
 class AlternativeSolarProfiles:

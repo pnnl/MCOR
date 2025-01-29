@@ -9,11 +9,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from generate_solar_profile import SolarProfileGenerator
-from generate_tidal_profile import TidalProfileGenerator
-from microgrid_optimizer import GridSearchOptimizer
-from config import DATA_DIR
-from config import OUTPUT_DIR
+from MCOR.generate_solar_profile import SolarProfileGenerator
+from MCOR.generate_tidal_profile import TidalProfileGenerator
+from MCOR.microgrid_optimizer import GridSearchOptimizer
+from MCOR.config import DATA_DIR
+from MCOR.config import OUTPUT_DIR
 
 
 # Parameters that require re-running resource models

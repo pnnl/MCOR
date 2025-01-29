@@ -17,11 +17,11 @@ import copy
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from microgrid_system import Generator
-from microgrid_system import PV, Tidal, Wave, SimpleLiIonBattery, SimpleMicrogridSystem
-from generate_solar_profile import SolarProfileGenerator
-from generate_tidal_profile import TidalProfileGenerator
-from validation import validate_all_parameters, log_error
+from MCOR.microgrid_system import Generator
+from MCOR.microgrid_system import PV, Tidal, Wave, SimpleLiIonBattery, SimpleMicrogridSystem
+from MCOR.generate_solar_profile import SolarProfileGenerator
+from MCOR.generate_tidal_profile import TidalProfileGenerator
+from MCOR.validation import validate_all_parameters, log_error
 
 # Suppress pandas warnings
 pd.options.mode.chained_assignment = None

@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     from utide import solve, reconstruct
-from validation import validate_all_parameters, log_error, strings_warnings
-from config import TIDAL_DATA_DIR, ROOT_DIR
+from MCOR.validation import validate_all_parameters, log_error, strings_warnings
+from MCOR.config import TIDAL_DATA_DIR, ROOT_DIR
 
 TIDAL_DEFAULTS = {'tidal_turbine_rated_power': 550,
                   'depth': 10,

@@ -29,15 +29,15 @@ import pandas as pd
 import tabulate
 from geopy.geocoders import Nominatim
 
-from generate_solar_profile import SolarProfileGenerator
-from generate_tidal_profile import TidalProfileGenerator
-from microgrid_simulator import REBattGenSimulator
-from microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem, \
+from MCOR.generate_solar_profile import SolarProfileGenerator
+from MCOR.generate_tidal_profile import TidalProfileGenerator
+from MCOR.microgrid_simulator import REBattGenSimulator
+from MCOR.microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem, \
     GeneratorGroup
-from validation import validate_all_parameters, log_error, annual_load_profile_warnings
-from constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
+from MCOR.validation import validate_all_parameters, log_error, annual_load_profile_warnings
+from MCOR.constants import system_metrics, pv_metrics, battery_metrics, mre_metrics, \
     generator_metrics, re_metrics, metric_order_size_gen, metric_order_existing_gen
-from config import OUTPUT_DIR
+from MCOR.config import OUTPUT_DIR
 
 
 class Optimizer:

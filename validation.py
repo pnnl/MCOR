@@ -24,7 +24,7 @@ from scipy.stats import norm
 from scipy.signal import periodogram
 from pvlib import pvsystem
 import pytz
-from config import DATA_DIR
+from MCOR.config import DATA_DIR
 
 VALIDATION_TYPE_STRINGS = {
     "is_none": "not be blank",
@@ -317,11 +317,11 @@ def check_existing_components(existing_components):
         return False
 
     # Check the datatype for each elem
-    type_key = {'pv': 'microgrid_system.PV',
-                'batt': 'microgrid_system.Battery',
-                'mre': 'microgrid_system.MRE',
-                'generator': 'microgrid_system.GeneratorGroup',
-                'fuel_tank': 'microgrid_system.FuelTank'}
+    type_key = {'pv': 'MCOR.microgrid_system.PV',
+                'batt': 'MCOR.microgrid_system.Battery',
+                'mre': 'MCOR.microgrid_system.MRE',
+                'generator': 'MCOR.microgrid_system.GeneratorGroup',
+                'fuel_tank': 'MCOR.microgrid_system.FuelTank'}
     for key, val in existing_components.items():
         validate_parameter(key, val, data_type=[type_key[key]])
     return True
@@ -332,7 +332,7 @@ def check_generator_list(generator_list):
     """
 
     for elem in generator_list:
-        validate_parameter('generator', elem, data_type=['microgrid_system.Generator'])
+        validate_parameter('generator', elem, data_type=['MCOR.microgrid_system.Generator'])
     return True
 
 

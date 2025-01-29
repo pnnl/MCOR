@@ -27,7 +27,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import warnings
 
-from validation import validate_all_parameters, log_error
+from MCOR.validation import validate_all_parameters, log_error
 
 
 # Microgrid components

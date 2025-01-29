@@ -11,12 +11,12 @@ import sys
 import os
 import pickle
 import pandas as pd
-from generate_solar_profile import SolarProfileGenerator
-from generate_tidal_profile import TidalProfileGenerator
-from microgrid_optimizer import GridSearchOptimizer
-from microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank, GeneratorGroup
-from config import DATA_DIR
-from config import OUTPUT_DIR
+from MCOR.generate_solar_profile import SolarProfileGenerator
+from MCOR.generate_tidal_profile import TidalProfileGenerator
+from MCOR.microgrid_optimizer import GridSearchOptimizer
+from MCOR.microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank, GeneratorGroup
+from MCOR.config import DATA_DIR
+from MCOR.config import OUTPUT_DIR
 
 
 def run_mcor(input_dict):

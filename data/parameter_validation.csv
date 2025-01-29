@@ -18,7 +18,7 @@ capital_cost,"int,float",0,,,,,,
 category,str,,,"pv,battery,generator",,,,
 cld_hours,tuple,,,,2,check_cld_hours,,each element in cld_hours must be between 0 and 23
 comparison_param,str,,,"pv_capacity,mre_capacity,battery_capacity,battery_power,generator_power_kW,fuel_tank_size_gal,pv_area_ft2,mre_area_ft2',capital_cost_usd,pv_capital,mre_capital,battery_capital,generator_capital,fuel_tank_capital,pv_o&m,mre_o&m,battery_o&m,generator_o&m,annual_benefits_usd,demand_benefits_usd,simple_payback_yr,pv_avg_load,pv_peak_load,mre_avg_load,mre_peak_load,gen_avg_load,gen_peak_load,batt_avg_load,batt_peak_load,pv_percent,mre_percent,batt_percent,gen_percent,fuel_used_gal,gen_total_load,storage_recovery_percent",,,,
-component,microgrid_system.Component,,,,,,,
+component,MCOR.microgrid_system.Component,,,,,,,
 connections,"int,float",0,100,,,,,
 demand_rate,"int,float",0,50,,,,,
 demand_rate_list,"int,float,list",,,,,check_demand_rate_list,,Demand charges must be in the form of a number or a list with 12 elements.
@@ -40,7 +40,7 @@ fuel_used_gal,"int,float",0,,,,,,
 gen_percent,"int,float",,,,,,,
 gen_power,pandas.core.frame.DataFrame,,,,,check_gen_power,,gen_power must be a DataFrame with a DateTimeIndex
 gen_power_percent,tuple,,,,,check_gen_power_percent,,Each value in gen_power_percent must be between 0 and 100.
-generator,microgrid_system.Generator,,,,,,,
+generator,MCOR.microgrid_system.Generator,,,,,,,
 generator_list,list,,,,,check_generator_list,,Generator_list must be a list of Generator objects
 generator_buffer,"int,float",0.9,2,,,,,
 generator_capital_cost,"int,float",0,,,,,,
@@ -85,7 +85,7 @@ nameplate_rating,"int,float",0,100,,,,,
 net_load,float,,,,,,,
 net_metering_limits,dict,,,,,check_net_metering_limits,,"Net metering limits must have the form: {type: ['capacity_cap' or 'percent_of_load'], value: [<kW value> or <percentage>]}."
 net_metering_rate,"int,float",0,1,,,,,
-new_system,microgrid_system.MicrogridSystem,,,,,,,
+new_system,MCOR.microgrid_system.MicrogridSystem,,,,,,,
 night_duration,"int,float",,,,,check_night_duration,is_night,The night duration must be > 0
 night_profile,pandas.core.frame.DataFrame,,,,,check_night_profile,,"The night profile does not have the necessary columns or index, make sure you are using a DataFrame produced by calc_night_duration."
 night_profiles,list,,,,,check_night_profiles,,"One more more of the night profiles does not have the necessary columns or index, make sure you are using a list produced by get_night_duration."
@@ -126,7 +126,7 @@ renewable_resources,list,,,,,check_renewable_resources,,"Renewable resources mus
 resilience_percent,"int,float",0,100,,,,,
 scenario_criteria,str,,,"pv,gen,mre",,,,
 shading,"int,float",0,100,,,,,
-sim,microgrid_simulator.Simulator,,,,,,,
+sim,MCOR.microgrid_simulator.Simulator,,,,,,,
 sim_label,str,,,"avg,max,min,distribution",,,,
 sitename,str,,,,,check_sitename,"path,start_year,end_year","The NREL data files for this location and year can not be found, make sure you have the correct sitename and path, and that get_solar_data has already been run for this location."
 size_battery_based_on_tmy,bool,,,,,,,
@@ -147,7 +147,7 @@ start_year,int,,,,,,,
 storage_recovery_percent,"int,float",,,,,,,
 strings,dict,,,,,check_strings,,The strings parameter much include both mods_per_string and strings_per_inv.
 strings_per_inv,int,1,,,,,,
-system,microgrid_system.MicrogridSystem,,,,,,,
+system,MCOR.microgrid_system.MicrogridSystem,,,,,,,
 system_costs,dict,,,,,check_system_costs,,"system_costs must be a dictionary with the following keys and value datatypes:  {'battery_costs': pd.DataFrame, 'generator_costs': pd.DataFrame,  'pv_costs': pd.DataFrame ,  'fuel_tank_costs': pd.DataFrame, 'om_costs': pd.DataFrame}."
 system_label,str,,,"least_fuel,least_cost,pv_only,mre_only,most_diversified,all",,,,
 temp_bins,range,,,,,,,

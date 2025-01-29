@@ -50,9 +50,9 @@ import yaml
 
 from pvlib.temperature import sapm_cell, TEMPERATURE_MODEL_PARAMETERS
 from pvlib import solarposition, irradiance, atmosphere, pvsystem, tracking
-from validation import validate_all_parameters, log_error, strings_warnings
-from alternative_solar_profiles import AlternativeSolarProfiles
-from config import SOLAR_DATA_DIR, ROOT_DIR
+from MCOR.validation import validate_all_parameters, log_error, strings_warnings
+from MCOR.alternative_solar_profiles import AlternativeSolarProfiles
+from MCOR.config import SOLAR_DATA_DIR, ROOT_DIR
 
 PV_DEFAULTS = {'albedo': 0.12,
                'module': {'database': 'CECMod',
