@@ -20,7 +20,6 @@ from copy import deepcopy
 from MCOR.microgrid_system import Generator
 from MCOR.microgrid_system import PV, Tidal, Wave, SimpleLiIonBattery, SimpleMicrogridSystem
 from MCOR.generate_solar_profile import SolarProfileGenerator
-from MCOR.generate_tidal_profile import TidalProfileGenerator
 from MCOR.validation import validate_all_parameters, log_error
 
 # Suppress pandas warnings
@@ -721,6 +720,7 @@ if __name__ == "__main__":
     spg.get_power_profiles()
     spg.get_night_duration(percent_at_night=0.2, validate=True)
     start_datetimes = [profile.index[0] for profile in spg.power_profiles]
+    from MCOR.generate_tidal_profile import TidalProfileGenerator
     tpg = TidalProfileGenerator(latitude, longitude, timezone, num_trials, length_trials, 
                                 start_year=1998, end_year=2022)
     tpg.get_tidal_data_from_upload()

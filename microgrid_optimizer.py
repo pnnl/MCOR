@@ -15,10 +15,8 @@ File contents:
 """
 
 import json
-from logging import raiseExceptions
 import multiprocessing
 import os
-import sys
 import urllib
 import copy
 
@@ -30,7 +28,6 @@ import tabulate
 from geopy.geocoders import Nominatim
 
 from MCOR.generate_solar_profile import SolarProfileGenerator
-from MCOR.generate_tidal_profile import TidalProfileGenerator
 from MCOR.microgrid_simulator import REBattGenSimulator
 from MCOR.microgrid_system import PV, Wave, Tidal, SimpleLiIonBattery, SimpleMicrogridSystem, \
     GeneratorGroup
@@ -402,6 +399,9 @@ class GridSearchOptimizer(Optimizer):
             tmy_solar.index = tmy_solar.index.tz_localize(None)
         if tmy_mre is not None:
             tmy_mre.index = tmy_mre.index.tz_localize(None)
+
+        # Fix load profile to only be one year long, not include leap days, and start on January 1
+        self.annual_load_profile = fix_load_profile(self.annual_load_profile)
 
         # Fix annual load profile index
         self.annual_load_profile.index = pd.date_range(
@@ -2230,6 +2230,38 @@ def get_electricity_rate(location, validate=True):
         # If there is an error, return the median electricity rate
         print('Reverse Geocoding fail, using median U.S. electricity rate')
         return rates['Average retail price (cents/kWh)'].median() / 100
+    
+
+def fix_load_profile(load_profile):
+    """Fix load profile to only be one year long (8760 elements), not include leap days,
+        and start on January 1. 
+
+    Args:
+        load_profile (Pandas.Series): Pandas series with a full year-long load
+            profile. It must have a DateTimeIndex with a timezone.
+    """
+
+    # Transform index to DateTimeIndex
+    load_profile.index = pd.DatetimeIndex(load_profile.index)
+
+    # Check if leap days are included and remove if there are still sufficient data points
+    if bool(len([elem for elem in load_profile.index if elem.month == 2 and elem.day == 29 ])):
+        if len(load_profile) >= 8784:
+            load_profile = load_profile[~((load_profile.index.month == 2) & (load_profile.index.day == 29))]
+        else:
+            load_profile.index = pd.date_range(start=load_profile.index[0].replace(year=2017), freq=load_profile.index.freq,
+                                               periods=len(load_profile.index))
+
+    # Check if there are still more than 8760 elements
+    if len(load_profile) > 8760:
+        load_profile = load_profile.iloc[:8760]
+
+    # If the load profile does not start on January 1, re-organize data
+    load_profile.index = load_profile.index.map(lambda x: x.replace(year=2017))
+    load_profile = load_profile.sort_index()
+
+    return load_profile
+
 
 if __name__ == "__main__":
     # Used for testing
@@ -2253,6 +2285,7 @@ if __name__ == "__main__":
     start_datetimes = [profile.index[0] for profile in spg.power_profiles]
 
     # Set up tidal profiles
+    from MCOR.generate_tidal_profile import TidalProfileGenerator
     tpg = TidalProfileGenerator(marine_data_filename='PortAngeles_2015_alldepths.csv', latitude = 46.34, longitude =-119.28, timezone = 'US/Pacific', num_trials = 5, length_trials = 14, tidal_turbine_rated_power = 550,
                   depth = 10, tidal_rotor_radius = 10, tidal_rotor_number = 2, maximum_cp = 0.42, tidal_cut_in_velocity = 0.5,
                   tidal_cut_out_velocity = 3, tidal_inverter_efficiency = 0.9, tidal_turbine_losses = 10, start_year=1998, end_year=2022)

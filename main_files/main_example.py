@@ -12,7 +12,6 @@ import os
 import pickle
 import pandas as pd
 from MCOR.generate_solar_profile import SolarProfileGenerator
-from MCOR.generate_tidal_profile import TidalProfileGenerator
 from MCOR.microgrid_optimizer import GridSearchOptimizer
 from MCOR.microgrid_system import PV, Tidal, SimpleLiIonBattery, Generator, FuelTank, GeneratorGroup
 from MCOR.config import DATA_DIR
@@ -84,6 +83,7 @@ def run_mcor(input_dict):
     if 'mre' in system_inputs['renewable_resources'] and mre_inputs['generator_type'] == 'tidal':
         # Run get_tidal_profile
         # Set MRE params
+        from MCOR.generate_tidal_profile import TidalProfileGenerator
         tpg = TidalProfileGenerator(mre_inputs['marine_data_filename'], system_inputs['latitude'], system_inputs['longitude'], system_inputs['timezone'],float(system_inputs['num_trials']),
                                     float(system_inputs['length_trials']), mre_inputs['tidal_turbine_rated_power'], float(mre_inputs['depth']), mre_inputs['tidal_rotor_radius'],
                                     mre_inputs['tidal_rotor_number'], mre_inputs['maximum_cp'], mre_inputs['tidal_cut_in_velocity'], mre_inputs['tidal_cut_out_velocity'],

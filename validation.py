@@ -676,21 +676,20 @@ def check_annual_load_profile(annual_load_profile, duration):
     # Check that the index can be converted to datetime
     try:
         converted_index = pd.to_datetime(annual_load_profile.index).map(
-            lambda x: x.replace(year=2017))
+            lambda x: x.replace(year=2016))
     except:
-        message = 'The annual load profile must have a datetime index, and not contain ' \
-                  'leap days.'
+        message = 'The annual load profile must have a datetime index.'
         log_error(message)
         raise Exception(message)
 
     # Check that the index has all of the expected values
-    comp_index = pd.date_range(start='1/1/2017', end='1/1/2018',
-                               freq='{}s'.format(int(duration)))[:-1]
-    if len(set(comp_index).symmetric_difference(set(converted_index))):
-        message = 'The annual load profile must begin on January 1 at ' \
-                  '00:00:00 and have no missing values.'
-        log_error(message)
-        return False
+    # comp_index = pd.date_range(start='1/1/2017', end='1/1/2018',
+    #                            freq='{}s'.format(int(duration)))[:-1]
+    # if len(set(comp_index).symmetric_difference(set(converted_index))):
+    #     message = 'The annual load profile must begin on January 1 at ' \
+    #               '00:00:00 and have no missing values.'
+    #     log_error(message)
+    #     return False
 
     # Check that values are > 0
     if len(annual_load_profile[annual_load_profile < 0]):
