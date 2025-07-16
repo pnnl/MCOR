@@ -754,9 +754,15 @@ class AlternativeSolarProfiles:
                 # Remove 2/29
                 date_range = date_range[date_range.date != dt.date(date_range[0].year, 2, 29)]
 
+                # Handle case where new date_range ends on 2/28
+                if date_range[-1].day == 28:
+                    addl_range_start = date_range[-1] + dt.timedelta(days=1)
+                else:
+                    addl_range_start = date_range[-1]
+
                 # Add more timesteps
                 date_ranges[i] = date_range.append(pd.date_range(
-                    date_range[-1] + dt.timedelta(hours=1),
+                    addl_range_start + dt.timedelta(hours=1),
                     periods=replace_timesteps, freq='h'))
 
         return date_ranges
