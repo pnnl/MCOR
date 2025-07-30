@@ -1729,7 +1729,7 @@ class SimpleMicrogridSystem(MicrogridSystem):
             res_metrics['percent_not_met'][system_option] = {}
             perc_load = np.array([sim[system_option]['percent_load_not_met'] for sim in resilience_metrics])
             perc_load = perc_load[perc_load > 0]
-            res_metrics['percent_not_met'][system_option]['scalar'] = np.mean(perc_load) if len(perc_load) else 0.
+            res_metrics['percent_not_met'][system_option]['scalar'] = np.mean(perc_load)/100. if len(perc_load) else 0.
             # % of simulations where X % load or less is not met
             cdf = stats.ecdf(perc_load).cdf
             res_metrics['percent_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
