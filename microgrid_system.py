@@ -1705,6 +1705,12 @@ class SimpleMicrogridSystem(MicrogridSystem):
         num_sims = len(self.simulations)
         sim_length = len(self.simulations[0].load_profile)
         sim_time_range = [elem for elem in range(sim_length)]
+
+        # Handle case where a generator is not included
+        no_gen = False
+        if self.components['generator'].rated_power == 0:
+            no_gen = True
+        
         for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
             # Resilience goal met - percentage of simulations for which there was no load shortfall
             res_metrics['res_goal'][system_option] = {}
@@ -1724,6 +1730,8 @@ class SimpleMicrogridSystem(MicrogridSystem):
             # % of simulations requiring X gal or less of fuel 
             cdf = stats.ecdf(fuel).cdf
             res_metrics['fuel_req'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+            if no_gen:
+                res_metrics['fuel_req'][system_option]['cdf'] = ([], [])
 
             # % load not met
             res_metrics['percent_not_met'][system_option] = {}
@@ -1733,6 +1741,8 @@ class SimpleMicrogridSystem(MicrogridSystem):
             # % of simulations where X % load or less is not met
             cdf = stats.ecdf(perc_load).cdf
             res_metrics['percent_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+            if no_gen and system_option == 'gen':
+                res_metrics['percent_not_met'][system_option]['cdf'] = ([], [])
 
             # total load not met
             res_metrics['total_not_met'][system_option] = {}
@@ -1742,6 +1752,8 @@ class SimpleMicrogridSystem(MicrogridSystem):
             # % of simulations where X kWh of load or less is not met
             cdf = stats.ecdf(total_load).cdf
             res_metrics['total_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+            if no_gen and system_option == 'gen':
+                res_metrics['total_not_met'][system_option]['cdf'] = ([], [])
 
             # peak load not met
             res_metrics['peak_not_met'][system_option] = {}
@@ -1751,6 +1763,8 @@ class SimpleMicrogridSystem(MicrogridSystem):
             # % of simulations where the peak load not met is X kW or less
             cdf = stats.ecdf(peak_load).cdf
             res_metrics['peak_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
+            if no_gen and system_option == 'gen':
+                res_metrics['peak_not_met'][system_option]['cdf'] = ([], [])
 
         return res_metrics
 
