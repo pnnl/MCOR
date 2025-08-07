@@ -10,6 +10,7 @@ File contents:
 
 """
 import pandas as pd
+import datetime
 import matplotlib.pyplot as plt
 import random
 from scipy.integrate import trapezoid
@@ -195,7 +196,7 @@ class WaveProfileGenerator:
                seasonal regularites.
 
     """
-     def __init__(self, file_dir, model, outage_month, outage_length, 
+     def __init0__(self, file_dir, model, outage_month, outage_length, 
                   outage_starttime, number_of_devices, start_year, end_year, plot, validate = True):
           self.file_dir = file_dir
           self.model = model
@@ -238,7 +239,22 @@ class WaveProfileGenerator:
 #              number_of_devices, int, 1, 1000,,,,,
 #              plot, str, 'energy'; 'power'; 'SWH'; 'EP'
          
-     def get_wave_data_from_upload(self):
+     def __init__(self, file_dir, model, num_trials, length_trials, num_devices, validate=False):
+          self.file_dir = file_dir
+          self.model = model
+          self.num_trials = num_trials
+          self.length_trials = length_trials
+          self.num_devices = num_devices
+          self.wave_data_df = None
+          self.power_matrix = None
+          self.wave_profiles = []
+          self.power_profiles = []
+
+          if validate:
+               # TO DO - implement
+               pass
+          
+     def get_wave_data_from_upload0(self):
           """   
           Definition to upload 'wave_data'
      
@@ -377,6 +393,31 @@ class WaveProfileGenerator:
           self.full_ep_list = full_energy_period
           self.full_points_list = full_points_list
 
+     def get_wave_data_from_upload(self):
+          """
+          Include info on expected data format
+          """
+
+          # Iterate through files in data dir, read, and add to dataframe
+          self.wave_data_df = pd.DataFrame(columns=['year', 'month', 'day', 'hour', 'minute', 
+                                          'ep', 'swh'])
+          for filename in os.listdir(self.file_dir):
+               df_sub = pd.read_csv(os.path.join(self.file_dir, filename), skiprows=2, 
+                                    usecols=[0, 1, 2, 3, 4, 5, 6], names=self.wave_data_df.columns,
+                                    header=0)
+               self.wave_data_df = pd.concat([self.wave_data_df, df_sub])
+
+          # Create datetime index
+          self.wave_data_df.index = self.wave_data_df.apply(lambda x: datetime.datetime.strptime(
+               f'{x["year"]}/{x["month"]}/{x["day"]} {x["hour"]}:{x["minute"]}', '%Y/%m/%d %H:%M'), axis=1)
+          self.wave_data_df.drop(columns=['year', 'month', 'day', 'hour', 'minute'], inplace=True)            
+
+          # If data is not hourly, interpolate to hourly
+          dt = self.wave_data_df.index[1] - self.wave_data_df.index[0]
+          if dt.total_seconds() != 3600.:
+               self.wave_data_df = self.wave_data_df.resample('1h').interpolate(method='linear')
+
+
      def interpolate_data_points(self, data, num_interpolations =2):
 
         """   
@@ -486,18 +527,18 @@ class WaveProfileGenerator:
                for model in ['A', 'B', 'C', 'D']
           ]
           if self.model == 'A' or self.model == 'a':
-               power_list = pd.read_excel(power_files[0], skiprows=0)
+               self.power_matrix = pd.read_excel(power_files[0], skiprows=0)
           elif self.model == 'B' or self.model =='b':
-               power_list = pd.read_excel(power_files[1], skiprows=0)  
+               self.power_matrix = pd.read_excel(power_files[1], skiprows=0)  
           elif self.model == 'C' or self.model=='c':
-               power_list = pd.read_excel(power_files[2], skiprows=0)
+               self.power_matrix = pd.read_excel(power_files[2], skiprows=0)
           elif self.model == 'D' or self.model =='d':
-               power_list = pd.read_excel(power_files[3], skiprows=0)  
+               self.power_matrix = pd.read_excel(power_files[3], skiprows=0)  
           else:
+               # TODO - add more robust error handling - add to parameter validation
                print('That is not a valid model selection, choose: A, B, C, or D from the' 
                      'Small WEC Tool -> Two-body point absorber')
                return
-          self.power_matrix = power_list.values.tolist()
 
           #TODO right now, the power excel sheets are all hand typed from the small wec tool since
           #I couldn't get the raw data to work. It may be beneficial to take directly from the website.
@@ -506,6 +547,8 @@ class WaveProfileGenerator:
           
           # Definition to validate the users inputs, and turns the month input into the 
           # full word for use in graphs.
+
+          # TODO - Add to param validation
 
           if isinstance(self.outage_month,int) and 1 <= self.outage_month <=12:
                sample_month = self.outage_month
@@ -584,6 +627,30 @@ class WaveProfileGenerator:
           elif sample_month ==12:
                output_month = 'December'
           self.output_month =output_month
+
+     def generate_wave_profiles(self, start_datetimes=None, validate=False):
+          # TODO - Double check, but I think the code is just choosing a slice based on start year, month, day
+          # If start_datetimes is provided, use these as the basis for the profiles, otherwise, randomly generate them
+          if start_datetimes is None:
+               data_index_sub = self.wave_data_df[:-self.length_trials]
+               start_datetimes = data_index_sub.sample(int(self.num_trials)).index.values
+
+          # TODO - Deal with case where start_datetimes are provided and exceed the range of data
+
+          # Create a date range object for each start datetime
+          date_ranges = [pd.date_range(start=start_date,
+                                        periods=self.length_trials,
+                                        freq='h')
+                         for start_date in start_datetimes]
+
+          # Sample profiles from uploaded wave data
+          for i, date_range in enumerate(date_ranges):
+               self.wave_profiles += [self.wave_data_df.loc[date_range]]
+
+     def generate_power_profiles(self):
+          # Iterate through each wave profile and calculate wave power generation
+          for wave_profile in self.wave_profiles:
+               self.power_profiles += [generate_power_profile(self.power_matrix, wave_profile, self.num_devices)]
 
      def generate_random_sample(self):
           """   
@@ -1432,28 +1499,60 @@ class WaveProfileGenerator:
           else:
                pass
 
+
+
+def generate_power_profile(power_matrix, wave_profile, num_devices):
+     # Find the swh and ep from the power matrix closest to the values for each timestep
+     swh_unique = list(set(power_matrix['SWH (m)']))
+     ep_unique = list(set(power_matrix['EP (s)']))
+
+     # Bin the swh and ep from the profile to the closest values from the power matrix
+     wave_profile['swh_binned'] = wave_profile['swh'].apply(lambda x: min(swh_unique, key=lambda swh_ref: abs(swh_ref-x)))
+     wave_profile['ep_binned'] = wave_profile['ep'].apply(lambda x: min(ep_unique, key=lambda ep_ref: abs(ep_ref-x)))
+
+     # Find the corresponding power values for each timestep
+     wave_profile_merge = pd.merge(wave_profile, power_matrix, how='left', left_on=['swh_binned', 'ep_binned'],
+                                   right_on=['SWH (m)', 'EP (s)'])
+     wave_profile_merge.index = wave_profile.index
+
+     return wave_profile_merge['Power (Kw)'] * num_devices
+
+
 if __name__ == "__main__":
 
-     wave_profile = WaveProfileGenerator(
-     file_dir=os.path.join(WAVE_DATA_DIR, 'Hobuck_Beach_MEA_Data'),
-     model = 'd',
-     outage_month = 11,
-     outage_length = 13,
-     outage_starttime = 13,
-     number_of_devices = 2,
-     start_year=1979,
-     end_year=2010,
-     plot = ['SWH', 'EP','power', 'energy']
-     )
+     # wave_profile = WaveProfileGenerator(
+     # file_dir=os.path.join(WAVE_DATA_DIR, 'Hobuck_Beach_MEA_Data'),
+     # model = 'd',
+     # outage_month = 11,
+     # outage_length = 13,
+     # outage_starttime = 13,
+     # number_of_devices = 2,
+     # start_year=1979,
+     # end_year=2010,
+     # plot = ['SWH', 'EP','power', 'energy']
+     # )
 
-     data = wave_profile.get_wave_data_from_upload()
-     interpolate = wave_profile.generate_interpolated_data()
-     power = wave_profile.read_power_matrix()
-     inputs = wave_profile.validate_inputs()
-     random_sample = wave_profile.generate_random_sample()
-     binned_values = wave_profile.find_binned_values()
-     sample_plots = wave_profile.generate_sample_plots()
-     all_data = wave_profile.generate_all_data()
-     all_plots = wave_profile.generate_all_plots()
-     yearly_boxplot = wave_profile.generate_full_year_boxplot()
+     wave_profile_generator = WaveProfileGenerator(
+          file_dir=os.path.join(WAVE_DATA_DIR, 'Hobuck_Beach_MEA_Data'),
+          model = 'd', 
+          num_trials = 2, 
+          length_trials = 14*24, 
+          num_devices = 2, 
+          validate=False)
+
+     #data = wave_profile.get_wave_data_from_upload()
+     wave_profile_generator.get_wave_data_from_upload()
+     wave_profile_generator.read_power_matrix()
+     wave_profile_generator.generate_wave_profiles(start_datetimes=None)
+     wave_profile_generator.generate_power_profiles()
+
+     # interpolate = wave_profile.generate_interpolated_data()
+     # power = wave_profile.read_power_matrix()
+     # inputs = wave_profile.validate_inputs()
+     # random_sample = wave_profile.generate_random_sample()
+     # binned_values = wave_profile.find_binned_values()
+     # sample_plots = wave_profile.generate_sample_plots()
+     # all_data = wave_profile.generate_all_data()
+     # all_plots = wave_profile.generate_all_plots()
+     # yearly_boxplot = wave_profile.generate_full_year_boxplot()
    
