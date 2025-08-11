@@ -29,6 +29,7 @@ import random
 import math
 import os
 import multiprocessing
+multiprocessing.set_start_method('spawn', True)
 from scipy import stats
 import datetime as dt
 from MCOR.validation import validate_all_parameters, log_error
