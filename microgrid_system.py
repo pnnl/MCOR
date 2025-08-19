@@ -1786,7 +1786,7 @@ class SimpleMicrogridSystem(MicrogridSystem):
                                                                 metric_data[system_option]['cdf'][1],
                                                                 extrapolate=False)
                     new_y = interpolation_function(new_xaxis)
-                    metric_data[system_option]['cdf_new'] = (new_xaxis, new_y)
+                    metric_data[system_option]['cdf'] = (new_xaxis, new_y)
 
         return res_metrics
 
