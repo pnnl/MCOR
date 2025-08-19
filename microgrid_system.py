@@ -23,7 +23,7 @@ File contents:
 from copy import deepcopy
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import stats, interpolate
 import matplotlib.pyplot as plt
 import warnings
 
@@ -1765,6 +1765,28 @@ class SimpleMicrogridSystem(MicrogridSystem):
             res_metrics['peak_not_met'][system_option]['cdf'] = (cdf.quantiles.tolist(), cdf.probabilities.tolist())
             if no_gen and system_option == 'gen':
                 res_metrics['peak_not_met'][system_option]['cdf'] = ([], [])
+
+        # For each of the metrics, make the x-axis consistent amount the different system options
+        for metric_name, metric_data in res_metrics.items():
+            # Don't include a system if there is no data for this metric
+            new_xaxis = []
+            for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
+                if len(metric_data[system_option]['cdf'][0]) > 1:
+                    new_xaxis += metric_data[system_option]['cdf'][0]
+            # Get rid of duplicates
+            new_xaxis = np.array(list(set(new_xaxis)))
+
+            # Sort axis
+            new_xaxis.sort()
+
+            # Interpolate each cdf result to new x-axis
+            for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
+                if len(metric_data[system_option]['cdf'][0]) > 1:
+                    interpolation_function = interpolate.PchipInterpolator(metric_data[system_option]['cdf'][0], 
+                                                                metric_data[system_option]['cdf'][1],
+                                                                extrapolate=False)
+                    new_y = interpolation_function(new_xaxis)
+                    metric_data[system_option]['cdf_new'] = (new_xaxis, new_y)
 
         return res_metrics
 
