@@ -26,6 +26,7 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib.pyplot as plt
 import warnings
+import math
 
 from MCOR.validation import validate_all_parameters, log_error
 
@@ -1786,7 +1787,10 @@ class SimpleMicrogridSystem(MicrogridSystem):
                                                                 metric_data[system_option]['cdf'][1],
                                                                 extrapolate=False)
                     new_y = interpolation_function(new_xaxis)
-                    metric_data[system_option]['cdf'] = (new_xaxis.tolist(), new_y.tolist())
+
+                    # Replace nans with None for json parsing
+                    new_y_cleaned = [None if (isinstance(item, float) and math.isnan(item)) else float(item) for item in new_y]
+                    metric_data[system_option]['cdf'] = (new_xaxis.tolist(), new_y_cleaned)
 
         return res_metrics
 
