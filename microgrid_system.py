@@ -1769,29 +1769,30 @@ class SimpleMicrogridSystem(MicrogridSystem):
 
         # For each of the metrics, make the x-axis consistent amount the different system options
         for metric_name, metric_data in res_metrics.items():
-            # Don't include a system if there is no data for this metric
-            new_xaxis = []
-            for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
-                if len(metric_data[system_option]['cdf'][0]) > 1:
-                    new_xaxis += metric_data[system_option]['cdf'][0]
-            # Get rid of duplicates
-            new_xaxis = np.array(list(set(new_xaxis)))
+            if metric_name != 'res_goal':
+                # Don't include a system if there is no data for this metric
+                new_xaxis = []
+                for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
+                    if len(metric_data[system_option]['cdf'][0]) > 1:
+                        new_xaxis += metric_data[system_option]['cdf'][0]
+                # Get rid of duplicates
+                new_xaxis = np.array(list(set(new_xaxis)))
 
-            # Sort axis
-            new_xaxis.sort()
+                # Sort axis
+                new_xaxis.sort()
 
-            # Interpolate each cdf result to new x-axis
-            for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
-                if len(metric_data[system_option]['cdf'][0]) > 1:
-                    interpolation_function = interpolate.PchipInterpolator(metric_data[system_option]['cdf'][0], 
-                                                                metric_data[system_option]['cdf'][1],
-                                                                extrapolate=False)
-                    new_y = interpolation_function(new_xaxis)
+                # Interpolate each cdf result to new x-axis
+                for system_option in ['RE_batt_gen', 'RE_batt', 'gen']:
+                    if len(metric_data[system_option]['cdf'][0]) > 1:
+                        interpolation_function = interpolate.PchipInterpolator(metric_data[system_option]['cdf'][0], 
+                                                                    metric_data[system_option]['cdf'][1],
+                                                                    extrapolate=False)
+                        new_y = interpolation_function(new_xaxis)
 
-                    # Replace nans with None for json parsing
-                    new_y_cleaned = [None if (isinstance(item, float) and math.isnan(item)) else float(item) for item in new_y]
-                    metric_data[system_option]['cdf'] = (new_xaxis.tolist(), new_y_cleaned)
-
+                        # Replace nans with 0 or 1 
+                        new_y_cleaned = pd.Series(new_y).ffill().fillna(0).values.tolist()
+                        metric_data[system_option]['cdf'] = (new_xaxis.tolist(), new_y_cleaned)
+                    
         return res_metrics
 
 
