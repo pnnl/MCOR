@@ -1791,6 +1791,7 @@ class SimpleMicrogridSystem(MicrogridSystem):
 
                         # Replace nans with 0 or 1 
                         new_y_cleaned = pd.Series(new_y).ffill().fillna(0).values.tolist()
+                        new_y_cleaned = [elem if elem <= 1. else 1. for elem in new_y_cleaned]
                         metric_data[system_option]['cdf'] = (new_xaxis.tolist(), new_y_cleaned)
                     
         return res_metrics
